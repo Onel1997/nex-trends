@@ -4,15 +4,17 @@ import {
   APP_NAME,
   DEFAULT_CREDITS,
   MAX_CREDITS,
-  NAV_TOOLS,
   PRO_PRICE_LABEL,
-  type NavToolId,
+  SIDEBAR_ITEMS,
+  STRIPE_CHECKOUT_URL,
+  type DashboardToolId,
 } from '@/lib'
 import { cn } from '@/lib'
+import { supabase } from '@/lib/supabase'
 
 type SidebarProps = {
-  activeTool: NavToolId
-  onSelectTool: (id: NavToolId) => void
+  activeTool: DashboardToolId
+  onSelectTool: (id: DashboardToolId) => void
   credits?: number
   className?: string
 }
@@ -46,12 +48,12 @@ export function Sidebar({
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 lg:px-4" aria-label="Werkzeuge">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 lg:px-4" aria-label="Navigation">
         <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
           Werkzeuge
         </p>
         <ul className="space-y-1">
-          {NAV_TOOLS.map((tool) => {
+          {SIDEBAR_ITEMS.map((tool) => {
             const isActive = activeTool === tool.id
             return (
               <li key={tool.id}>
@@ -60,7 +62,7 @@ export function Sidebar({
                   onClick={() => onSelectTool(tool.id)}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors',
+                    'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors duration-200',
                     isActive
                       ? 'bg-violet-600/15 text-violet-200 ring-1 ring-inset ring-violet-500/30'
                       : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200',
@@ -111,10 +113,22 @@ export function Sidebar({
           </p>
         </div>
 
-        <Button variant="pro" fullWidth>
+        <Button
+          variant="pro"
+          fullWidth
+          onClick={() => window.open(STRIPE_CHECKOUT_URL, '_blank')}
+        >
           <CrownIcon className="size-4" />
           Pro-Abo · {PRO_PRICE_LABEL}
         </Button>
+
+        <button
+          type="button"
+          onClick={() => supabase.auth.signOut()}
+          className="w-full rounded-lg py-2 text-sm font-medium text-zinc-500 transition-colors hover:text-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-600"
+        >
+          Abmelden
+        </button>
       </div>
     </aside>
   )

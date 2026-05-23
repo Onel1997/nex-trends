@@ -1,33 +1,36 @@
-import { MOCK_VIRAL_TRENDS } from '@/lib/mock-trends'
-import { TrendCard } from './TrendCard'
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import TrendCard from './TrendCard'
 
 export function TrendsGrid() {
-  return (
-    <section aria-labelledby="viral-trends-heading" className="mt-6 sm:mt-8">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2
-            id="viral-trends-heading"
-            className="text-lg font-semibold tracking-tight text-white sm:text-xl"
-          >
-            Aktuelle virale Trends
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            {MOCK_VIRAL_TRENDS.length} Trends · sortiert nach Reichweite
-          </p>
-        </div>
-        <p className="text-xs text-zinc-600 sm:text-right">
-          Aktualisiert vor wenigen Minuten
-        </p>
-      </div>
+  const [trends, setTrends] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-      <ul className="mt-4 grid grid-cols-1 gap-4 sm:mt-5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-        {MOCK_VIRAL_TRENDS.map((trend) => (
-          <li key={trend.id}>
-            <TrendCard trend={trend} />
-          </li>
-        ))}
-      </ul>
-    </section>
-  )
+  useEffect(() => {
+    async function fetchTrends() {
+      // Holt Daten aus deiner echten Datenbank
+      const { data, error } = await supabase
+        .from('trends')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Fehler beim Laden:", error);
+      } else {
+        setTrends(data || []);
+      }
+      setLoading(false);
+    }
+    fetchTrends();
+  }, []);
+
+  if (loading) return <div className="text-white p-4">Lade echte Trends aus Datenbank...</div>;
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {trends.map((trend) => (
+        <TrendCard key={trend.id} trend={trend} />
+      ))}
+    </div>
+  );
 }

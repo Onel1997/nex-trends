@@ -1,8 +1,68 @@
+import type { DashboardToolId } from '@/lib'
 import { APP_NAME } from '@/lib'
+import type { ToolCreditsProps } from './ToolGeneratorPanel'
+import {
+  AdCopyTool,
+  HookTool,
+  LandingAnalyzerTool,
+  SeoTitleTool,
+} from './tools'
 import { TrendScoutSearch } from './TrendScoutSearch'
 import { TrendsGrid } from './TrendsGrid'
 
-export function DashboardMain() {
+type DashboardMainProps = {
+  activeTool: DashboardToolId
+  credits: number
+  decrementCredits: () => void
+}
+
+function TrendsOverview() {
+  return (
+    <>
+      <header className="mb-5 sm:mb-8">
+        <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Dashboard
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          Willkommen zurück
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
+          Scoute die heißesten Trends für {APP_NAME} — optimiert für TikTok und
+          Instagram.
+        </p>
+      </header>
+      <TrendScoutSearch />
+      <TrendsGrid />
+    </>
+  )
+}
+
+function renderToolContent(
+  activeTool: DashboardToolId,
+  toolProps: ToolCreditsProps,
+) {
+  switch (activeTool) {
+    case 'ad-copy':
+      return <AdCopyTool {...toolProps} />
+    case 'hook':
+      return <HookTool {...toolProps} />
+    case 'seo':
+      return <SeoTitleTool {...toolProps} />
+    case 'analyzer':
+      return <LandingAnalyzerTool {...toolProps} />
+    case 'trends':
+    default:
+      return <TrendsOverview />
+  }
+}
+
+export function DashboardMain({
+  activeTool,
+  credits,
+  decrementCredits,
+}: DashboardMainProps) {
+  const toolProps: ToolCreditsProps = { credits, decrementCredits }
+
   return (
     <div className="relative min-h-full overflow-hidden">
       <div
@@ -15,21 +75,7 @@ export function DashboardMain() {
       />
 
       <div className="relative mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        <header className="mb-5 sm:mb-8">
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-            Dashboard
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Willkommen zurück
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-            Scoute die heißesten Trends für {APP_NAME} — optimiert für TikTok und
-            Instagram.
-          </p>
-        </header>
-
-        <TrendScoutSearch />
-        <TrendsGrid />
+        {renderToolContent(activeTool, toolProps)}
       </div>
     </div>
   )
