@@ -1,0 +1,88 @@
+import { Card, CardBody, CardHeader } from '@/components/ui/Card'
+import { EyeIcon } from '@/components/ui/icons'
+import { useDashboardData } from '@/hooks/useDashboardData'
+import { cn } from '@/lib'
+
+const STAGGER_DELAYS = [
+  'animation-delay-100',
+  'animation-delay-200',
+  'animation-delay-300',
+  'animation-delay-400',
+] as const
+
+export function TrendAnalyticsSection() {
+  const { trendInsights } = useDashboardData()
+
+  return (
+    <Card className="animate-fade-in animation-delay-300">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <EyeIcon className="size-5 text-fuchsia-400" aria-hidden />
+          <div>
+            <h3 className="text-sm font-semibold text-white">Trend Analytics</h3>
+            <p className="text-xs text-zinc-500">Virale Insights für TikTok & Instagram</p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardBody>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {trendInsights.map((trend, index) => (
+            <TrendInsightCard
+              key={trend.id}
+              trend={trend}
+              delayClass={STAGGER_DELAYS[index] ?? 'animation-delay-100'}
+            />
+          ))}
+        </div>
+      </CardBody>
+    </Card>
+  )
+}
+
+function TrendInsightCard({
+  trend,
+  delayClass,
+}: {
+  trend: {
+    id: string
+    title: string
+    platform: string
+    views: string
+    change: string
+    gradientFrom: string
+    gradientTo: string
+  }
+  delayClass: string
+}) {
+  return (
+    <article
+      className={cn(
+        'group overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/50 transition-all duration-300 hover:-translate-y-0.5 hover:border-zinc-700 hover:shadow-lg hover:shadow-violet-900/10',
+        delayClass,
+        'animate-fade-in',
+      )}
+    >
+      <div
+        className={cn(
+          'relative flex h-20 items-end bg-gradient-to-br p-3',
+          trend.gradientFrom,
+          trend.gradientTo,
+        )}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <span className="relative rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-semibold uppercase text-white">
+          {trend.platform}
+        </span>
+      </div>
+      <div className="p-3">
+        <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-white">
+          {trend.title}
+        </h4>
+        <div className="mt-2 flex items-center justify-between text-xs">
+          <span className="text-zinc-400">{trend.views} Views</span>
+          <span className="font-semibold text-emerald-400">{trend.change}</span>
+        </div>
+      </div>
+    </article>
+  )
+}

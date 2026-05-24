@@ -1,36 +1,63 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import TrendCard from './TrendCard'
+import { TrendCard, type DisplayTrend } from '@/components/dashboard/TrendCard'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { SearchIcon, SparklesIcon } from '@/components/ui/icons'
 
-export function TrendsGrid() {
-  const [trends, setTrends] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+type TrendsGridProps = {
+  trends: DisplayTrend[]
+  isSearching: boolean
+  creditsRemaining?: number | null
+  creditsLimit?: number
+}
 
-  useEffect(() => {
-    async function fetchTrends() {
-      // Holt Daten aus deiner echten Datenbank
-      const { data, error } = await supabase
-        .from('trends')
-        .select('*')
-        .order('created_at', { ascending: false });
+function LoadingSpinner() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 py-16" role="status" aria-live="polite">
+      <span className="relative block size-12" aria-hidden>
+        <span className="absolute inset-0 rounded-full border-2 border-violet-900/60" />
+        <span className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-violet-500 border-r-fuchsia-500" />
+      </span>
+      <span className="text-sm text-zinc-400">KI analysiert virale Trends …</span>
+    </div>
+  )
+}
 
-      if (error) {
-        console.error("Fehler beim Laden:", error);
-      } else {
-        setTrends(data || []);
-      }
-      setLoading(false);
-    }
-    fetchTrends();
-  }, []);
+export function TrendsGrid({
+  trends,
+  isSearching,
+  creditsRemaining,
+  creditsLimit = 10,
+}: TrendsGridProps) {
+  if (isSearching) {
+    return <LoadingSpinner />
+  }
 
-  if (loading) return <div className="text-white p-4">Lade echte Trends aus Datenbank...</div>;
+  if (trends.length === 0) {
+    const creditsHint =
+      creditsRemaining != null
+        ? `Du hast ${creditsRemaining} von ${creditsLimit} Credits — starte jetzt deine erste Suche!`
+        : 'Gib eine Nische ein und entdecke virale Trends für TikTok & Instagram.'
+
+    return (
+      <EmptyState
+        className="mt-6"
+        icon={<SearchIcon className="size-6 text-violet-400" aria-hidden />}
+        title="Bereit zum Scouting?"
+        description={creditsHint}
+        action={
+          <p className="inline-flex items-center gap-2 text-xs text-violet-400/90">
+            <SparklesIcon className="size-4" aria-hidden />
+            Trend-Scouting ist für Free User freigeschaltet
+          </p>
+        }
+      />
+    )
+  }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
       {trends.map((trend) => (
         <TrendCard key={trend.id} trend={trend} />
       ))}
     </div>
-  );
+  )
 }

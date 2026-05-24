@@ -1,31 +1,26 @@
-import { Button } from '@/components/ui/Button'
-import { CreditIcon, CrownIcon, ToolIcon } from '@/components/ui/icons'
+import { Badge } from '@/components/ui/Badge'
+import { CrownIcon, ToolIcon } from '@/components/ui/icons'
+import { CreditsCard } from '@/components/subscription/UsageLimitBar'
 import {
   APP_NAME,
-  DEFAULT_CREDITS,
-  MAX_CREDITS,
   PRO_PRICE_LABEL,
   SIDEBAR_ITEMS,
-  STRIPE_CHECKOUT_URL,
+  isPremiumTool,
   type DashboardToolId,
 } from '@/lib'
 import { cn } from '@/lib'
+import { navigateToHome } from '@/lib/navigation'
+import { useSubscription } from '@/hooks/useSubscription'
 import { supabase } from '@/lib/supabase'
 
 type SidebarProps = {
   activeTool: DashboardToolId
   onSelectTool: (id: DashboardToolId) => void
-  credits?: number
   className?: string
 }
 
-export function Sidebar({
-  activeTool,
-  onSelectTool,
-  credits = DEFAULT_CREDITS,
-  className,
-}: SidebarProps) {
-  const creditPercent = Math.min(100, Math.round((credits / MAX_CREDITS) * 100))
+export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
+  const { hasProAccess, openStripeCheckout } = useSubscription()
 
   return (
     <aside
@@ -35,26 +30,36 @@ export function Sidebar({
       )}
     >
       <div className="border-b border-zinc-800/80 px-4 py-5 lg:px-5">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-sm font-bold text-white shadow-lg shadow-violet-900/30">
-            N
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold tracking-tight text-white">
+        <button
+          type="button"
+          onClick={() => {
+            navigateToHome()
+            onSelectTool('trends')
+          }}
+          className="group flex w-full items-center gap-3 rounded-xl p-1 text-left transition-all duration-200 hover:bg-violet-500/5"
+          aria-label={`${APP_NAME} Home`}
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-sm font-bold text-white shadow-lg shadow-violet-900/30 transition-transform group-hover:scale-105">
+            NT
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold tracking-tight text-white">
               {APP_NAME}
-            </p>
-            <p className="truncate text-xs text-zinc-500">Marketing AI Suite</p>
-          </div>
-        </div>
+            </span>
+            <span className="block truncate text-xs text-zinc-500">Marketing AI Suite</span>
+          </span>
+        </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 lg:px-4" aria-label="Navigation">
-        <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+      <nav className="flex-1 overflow-y-auto px-3 py-5 lg:px-4" aria-label="Navigation">
+        <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
           Werkzeuge
         </p>
-        <ul className="space-y-1">
+        <ul className="space-y-1.5">
           {SIDEBAR_ITEMS.map((tool) => {
             const isActive = activeTool === tool.id
+            const isPremium = isPremiumTool(tool.id)
+
             return (
               <li key={tool.id}>
                 <button
@@ -62,20 +67,27 @@ export function Sidebar({
                   onClick={() => onSelectTool(tool.id)}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors duration-200',
+                    'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-200',
                     isActive
-                      ? 'bg-violet-600/15 text-violet-200 ring-1 ring-inset ring-violet-500/30'
-                      : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200',
+                      ? 'bg-violet-600/15 text-violet-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-inset ring-violet-500/35'
+                      : 'text-zinc-400 hover:bg-violet-500/8 hover:text-zinc-100 hover:ring-1 hover:ring-inset hover:ring-violet-500/15',
                   )}
                 >
                   <ToolIcon
                     toolId={tool.id}
                     className={cn(
-                      'size-5 shrink-0',
-                      isActive ? 'text-violet-400' : 'text-zinc-500',
+                      'size-5 shrink-0 transition-colors',
+                      isActive
+                        ? 'text-violet-400'
+                        : 'text-zinc-500 group-hover:text-violet-400/80',
                     )}
                   />
-                  <span className="leading-snug">{tool.label}</span>
+                  <span className="flex-1 leading-snug">{tool.label}</span>
+                  {isPremium && !hasProAccess && (
+                    <Badge variant="pro" className="px-1.5 py-0 text-[10px]">
+                      Pro
+                    </Badge>
+                  )}
                 </button>
               </li>
             )
@@ -83,49 +95,32 @@ export function Sidebar({
         </ul>
       </nav>
 
-      <div className="space-y-3 border-t border-zinc-800/80 p-4 lg:p-5">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <CreditIcon className="size-4 text-violet-400" />
-              <span className="text-xs font-medium text-zinc-400">Credits</span>
-            </div>
-            <span className="text-sm font-semibold text-white">
-              {credits}
-              <span className="font-normal text-zinc-500"> / {MAX_CREDITS}</span>
-            </span>
-          </div>
-          <div
-            className="mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-800"
-            role="progressbar"
-            aria-valuenow={credits}
-            aria-valuemin={0}
-            aria-valuemax={MAX_CREDITS}
-            aria-label="Verbleibende Credits"
-          >
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 transition-all"
-              style={{ width: `${creditPercent}%` }}
-            />
-          </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-            Jedes Tool verbraucht 1 Credit. Mit Pro unbegrenzt.
-          </p>
-        </div>
+      <div className="space-y-4 border-t border-zinc-800/80 p-4 lg:p-5">
+        <CreditsCard compact />
 
-        <Button
-          variant="pro"
-          fullWidth
-          onClick={() => window.open(STRIPE_CHECKOUT_URL, '_blank')}
-        >
-          <CrownIcon className="size-4" />
-          Pro-Abo · {PRO_PRICE_LABEL}
-        </Button>
+        {!hasProAccess && (
+          <button
+            type="button"
+            onClick={() => void openStripeCheckout()}
+            className={cn(
+              'group relative w-full overflow-hidden rounded-xl p-px',
+              'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500',
+              'shadow-[0_0_28px_-6px_rgba(217,70,239,0.55)] transition-all duration-300',
+              'hover:shadow-[0_0_36px_-4px_rgba(217,70,239,0.65)] hover:scale-[1.02]',
+            )}
+          >
+            <span className="flex w-full items-center justify-center gap-2 rounded-[11px] bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-bold text-white transition-all group-hover:from-violet-500 group-hover:to-fuchsia-500">
+              <CrownIcon className="size-4" aria-hidden />
+              Upgrade to Pro
+              <span className="hidden text-violet-200/90 sm:inline">· {PRO_PRICE_LABEL}</span>
+            </span>
+          </button>
+        )}
 
         <button
           type="button"
           onClick={() => supabase.auth.signOut()}
-          className="w-full rounded-lg py-2 text-sm font-medium text-zinc-500 transition-colors hover:text-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-600"
+          className="w-full rounded-lg py-2 text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-900/60 hover:text-red-400"
         >
           Abmelden
         </button>

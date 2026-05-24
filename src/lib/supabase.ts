@@ -15,4 +15,12 @@ function requireEnv(value: string | undefined, name: string): string {
 export const supabase = createClient(
   requireEnv(supabaseUrl, 'VITE_SUPABASE_URL'),
   requireEnv(supabaseAnonKey, 'VITE_SUPABASE_ANON_KEY'),
+  {
+    auth: {
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  },
 )

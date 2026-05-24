@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { CreditsUpgradeBox } from '@/components/dashboard/CreditsUpgradeBox'
+import { UsageLimitWarning } from '@/components/subscription/UsageLimitWarning'
 import { SparklesIcon } from '@/components/ui/icons'
+import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { cn } from '@/lib'
 
 type ToolGeneratorPanelProps = {
@@ -9,16 +10,9 @@ type ToolGeneratorPanelProps = {
   briefingLabel?: string
   briefingPlaceholder: string
   resultPlaceholder: string
-  credits: number
-  decrementCredits: () => void
   onGenerate?: (briefing: string) => Promise<string>
   className?: string
 }
-
-export type ToolCreditsProps = Pick<
-  ToolGeneratorPanelProps,
-  'credits' | 'decrementCredits'
->
 
 export function ToolGeneratorPanel({
   title,
@@ -26,17 +20,15 @@ export function ToolGeneratorPanel({
   briefingLabel = 'Dein Briefing',
   briefingPlaceholder,
   resultPlaceholder,
-  credits,
-  decrementCredits,
   onGenerate,
   className,
 }: ToolGeneratorPanelProps) {
+  const { hasProAccess, isUsageLimitReached, consumeUsage, openUpgradeModal } =
+    useUsageLimit()
   const [briefing, setBriefing] = useState('')
   const [result, setResult] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const inputId = title.replace(/\s+/g, '-').toLowerCase()
-
-  const hasNoCredits = credits <= 0
 
   const isError =
     result !== null &&
@@ -46,7 +38,10 @@ export function ToolGeneratorPanel({
       result.startsWith('Bitte gib'))
 
   async function handleGenerate() {
-    if (hasNoCredits) return
+    if (isUsageLimitReached && !hasProAccess) {
+      openUpgradeModal()
+      return
+    }
 
     if (!briefing.trim()) {
       setResult('Bitte gib ein Briefing ein.')
@@ -58,11 +53,19 @@ export function ToolGeneratorPanel({
       return
     }
 
-    decrementCredits()
     setIsGenerating(true)
     setResult(null)
 
     try {
+      const usageResult = await consumeUsage({
+        tool: title,
+        label: `${title}: Analyse gestartet`,
+      })
+      if (!usageResult.allowed) {
+        openUpgradeModal()
+        return
+      }
+
       const generated = await onGenerate(briefing.trim())
       setResult(generated)
     } catch (error) {
@@ -100,17 +103,17 @@ export function ToolGeneratorPanel({
           onChange={(e) => setBriefing(e.target.value)}
           rows={4}
           placeholder={briefingPlaceholder}
-          disabled={isGenerating || hasNoCredits}
+          disabled={isGenerating || (isUsageLimitReached && !hasProAccess)}
           className="w-full resize-none rounded-xl border border-zinc-800 bg-black/50 px-4 py-3 text-sm leading-relaxed text-zinc-200 placeholder:text-zinc-600 transition-colors focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 disabled:opacity-60"
         />
 
         <button
           type="button"
-          onClick={handleGenerate}
-          disabled={isGenerating || hasNoCredits}
+          onClick={() => void handleGenerate()}
+          disabled={isGenerating || (isUsageLimitReached && !hasProAccess)}
           className={cn(
             'mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-300 sm:w-auto',
-            hasNoCredits
+            isUsageLimitReached && !hasProAccess
               ? 'cursor-not-allowed bg-zinc-700 text-zinc-400'
               : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-900/30 hover:from-violet-500 hover:to-fuchsia-500 disabled:cursor-not-allowed disabled:opacity-60',
           )}
@@ -124,8 +127,8 @@ export function ToolGeneratorPanel({
             KI-Ergebnis
           </p>
 
-          {hasNoCredits ? (
-            <CreditsUpgradeBox />
+          {isUsageLimitReached && !hasProAccess ? (
+            <UsageLimitWarning />
           ) : (
             <div
               className={cn(

@@ -1,27 +1,41 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components'
 import { DashboardMain } from '@/components/dashboard/DashboardMain'
-import { MAX_CREDITS, type DashboardToolId } from '@/lib'
+import { UpgradeModal } from '@/components/subscription'
+import type { DashboardToolId } from '@/lib'
+import { readToolFromUrl, writeToolToUrl } from '@/lib/navigation'
 
 export function HomePage() {
-  const [activeTool, setActiveTool] = useState<DashboardToolId>('trends')
-  const [credits, setCredits] = useState(MAX_CREDITS)
+  const [activeTool, setActiveTool] = useState<DashboardToolId>(() => readToolFromUrl())
 
-  const decrementCredits = useCallback(() => {
-    setCredits((current) => Math.max(0, current - 1))
+  const handleSelectTool = useCallback((tool: DashboardToolId) => {
+    setActiveTool(tool)
+    writeToolToUrl(tool)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
+  useEffect(() => {
+    const onPopState = () => {
+      setActiveTool(readToolFromUrl())
+    }
+
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  useEffect(() => {
+    writeToolToUrl(activeTool)
+  }, [activeTool])
+
   return (
-    <DashboardLayout
-      activeTool={activeTool}
-      onSelectTool={setActiveTool}
-      credits={credits}
-    >
-      <DashboardMain
-        activeTool={activeTool}
-        credits={credits}
-        decrementCredits={decrementCredits}
-      />
-    </DashboardLayout>
+    <>
+      <DashboardLayout activeTool={activeTool} onSelectTool={handleSelectTool}>
+        <DashboardMain
+          activeTool={activeTool}
+          onNavigateHome={() => handleSelectTool('trends')}
+        />
+      </DashboardLayout>
+      <UpgradeModal />
+    </>
   )
 }

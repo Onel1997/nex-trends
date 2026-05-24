@@ -10,6 +10,17 @@ const SEO_TITLE_SYSTEM_PROMPT =
 const LANDING_ANALYZER_SYSTEM_PROMPT =
   'Du bist ein Conversion-Rate-Optimierer (CRO). Der User gibt eine Idee, Zielgruppe oder ein Produkt für eine Landingpage ein. Analysiere das Potenzial und gib 3 konkrete, psychologische Tipps, wie man die Landingpage aufbauen muss, um maximale Verkäufe/Leads zu generieren. Nutze übersichtliche Bulletpoints.'
 
+const TREND_SCOUT_SYSTEM_PROMPT =
+  'Du bist ein Social Media Trend-Analyst. Der User nennt dir eine Nische. Generiere 4 aktuell virale Content-Trends für TikTok und Instagram als JSON-Array. Jedes Objekt muss folgende Keys haben: title (Titel des Trends), platform (TikTok oder Instagram), views (realistische, hohe Aufrufzahl als String, z.B. 1.2M), engagement (z.B. 8.5%), description (kurze Erklärung, warum es viral geht). Antworte ausschließlich mit einem JSON-Objekt der Form {"trends": [...]} ohne weiteren Text.'
+
+export type ScoutedTrend = {
+  title: string
+  platform: string
+  views: string
+  engagement: string
+  description: string
+}
+
 type ChatCompletionResponse = {
   choices?: Array<{
     message?: {
@@ -76,4 +87,64 @@ export function generateSeoTitles(briefing: string) {
 
 export function analyzeLandingPage(briefing: string) {
   return callOpenAI(LANDING_ANALYZER_SYSTEM_PROMPT, briefing)
+}
+
+async function callOpenAIJson(
+  systemPrompt: string,
+  userMessage: string,
+): Promise<string> {
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+
+  if (!apiKey?.trim()) {
+    throw new Error(
+      'VITE_OPENAI_API_KEY fehlt. Bitte trage deinen OpenAI API-Key in der .env-Datei ein.',
+    )
+  }
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-3.5-turbo',
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+    }),
+  })
+
+  const data = (await response.json()) as ChatCompletionResponse
+
+  if (!response.ok) {
+    throw new Error(
+      data.error?.message ?? `OpenAI API Fehler (Status ${response.status})`,
+    )
+  }
+
+  const content = data.choices?.[0]?.message?.content?.trim()
+
+  if (!content) {
+    throw new Error('Keine Antwort von OpenAI erhalten.')
+  }
+
+  return content
+}
+
+export async function searchTrends(niche: string): Promise<ScoutedTrend[]> {
+  const content = await callOpenAIJson(TREND_SCOUT_SYSTEM_PROMPT, niche)
+  const parsed = JSON.parse(content) as
+    | ScoutedTrend[]
+    | { trends?: ScoutedTrend[] }
+
+  const raw = Array.isArray(parsed) ? parsed : parsed.trends
+
+  if (!raw?.length) {
+    throw new Error('Keine Trends in der Antwort erhalten.')
+  }
+
+  return raw.slice(0, 4)
 }

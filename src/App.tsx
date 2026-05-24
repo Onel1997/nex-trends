@@ -1,36 +1,41 @@
-import { useEffect, useState } from 'react'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { SubscriptionProvider } from '@/context/SubscriptionContext'
+import { ToastProvider } from '@/context/ToastContext'
+import { useSubscription } from '@/hooks/useSubscription'
+import { CheckoutHandler } from '@/components/app/CheckoutHandler'
 import LandingPage from '@/pages/LandingPage'
 import { HomePage } from '@/pages/HomePage'
 
-export default function App() {
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+function AppContent() {
+  const { session, isAuthLoading } = useSubscription()
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  if (loading) {
+  if (isAuthLoading) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-zinc-950">
-        <p className="text-sm text-zinc-400">Lade …</p>
+        <div className="text-center">
+          <div className="relative mx-auto size-10" aria-hidden>
+            <div className="absolute inset-0 rounded-full border-2 border-zinc-800" />
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-violet-500 border-r-fuchsia-500" />
+          </div>
+          <p className="mt-4 text-sm text-zinc-400">NexTrends wird geladen …</p>
+        </div>
       </div>
     )
   }
 
-  return session ? <HomePage /> : <LandingPage />
+  return (
+    <>
+      {session && <CheckoutHandler />}
+      {session ? <HomePage /> : <LandingPage />}
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <SubscriptionProvider>
+        <AppContent />
+      </SubscriptionProvider>
+    </ToastProvider>
+  )
 }

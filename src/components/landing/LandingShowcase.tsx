@@ -35,12 +35,12 @@ export function LandingShowcase() {
       <div className="relative mx-auto max-w-3xl">
         <p
           id="showcase-heading"
-          className="mb-8 text-center text-sm font-medium text-zinc-500 sm:text-base"
+          className="animate-fade-in mb-8 text-center text-sm font-medium text-zinc-500 sm:text-base"
         >
-          So sieht NexTrends in Aktion aus
+          So sieht NexTrends in Aktion aus — in unter 2 Minuten zum viralen Skript
         </p>
 
-        <article className="overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950/90 shadow-[0_0_60px_-12px_rgba(168,85,247,0.35),0_25px_50px_-12px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all duration-500 hover:border-violet-500/30 hover:shadow-[0_0_80px_-8px_rgba(217,70,239,0.4),0_25px_50px_-12px_rgba(0,0,0,0.9)]">
+        <article className="animate-fade-in animation-delay-100 overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950/90 shadow-[0_0_60px_-12px_rgba(168,85,247,0.35),0_25px_50px_-12px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-all duration-500 hover:border-violet-500/30 hover:shadow-[0_0_80px_-8px_rgba(217,70,239,0.4),0_25px_50px_-12px_rgba(0,0,0,0.9)]">
           <header className="flex items-center gap-4 border-b border-zinc-800/80 bg-zinc-900/80 px-4 py-3.5 sm:px-5">
             <MacTrafficLights />
             <div className="flex min-w-0 flex-1 items-center justify-center gap-2 sm:justify-start">

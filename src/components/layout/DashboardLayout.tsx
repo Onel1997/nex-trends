@@ -2,25 +2,30 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { CloseIcon, MenuIcon } from '@/components/ui/icons'
 import { APP_NAME, type DashboardToolId } from '@/lib'
 import { cn } from '@/lib'
+import { navigateToHome } from '@/lib/navigation'
 import { Sidebar } from './Sidebar'
 
 type DashboardLayoutProps = {
   children: ReactNode
   activeTool: DashboardToolId
   onSelectTool: (id: DashboardToolId) => void
-  credits?: number
 }
 
 export function DashboardLayout({
   children,
   activeTool,
   onSelectTool,
-  credits,
 }: DashboardLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleSelectTool = (id: DashboardToolId) => {
     onSelectTool(id)
+    setMobileOpen(false)
+  }
+
+  const handleNavigateHome = () => {
+    navigateToHome()
+    onSelectTool('trends')
     setMobileOpen(false)
   }
 
@@ -58,7 +63,6 @@ export function DashboardLayout({
         <Sidebar
           activeTool={activeTool}
           onSelectTool={handleSelectTool}
-          credits={credits}
           className="shadow-2xl shadow-black/50 lg:shadow-none"
         />
       </div>
@@ -78,7 +82,13 @@ export function DashboardLayout({
               <MenuIcon className="size-5" />
             )}
           </button>
-          <span className="text-sm font-semibold text-white">{APP_NAME}</span>
+          <button
+            type="button"
+            onClick={handleNavigateHome}
+            className="truncate text-sm font-semibold text-white"
+          >
+            {APP_NAME}
+          </button>
         </header>
 
         <main className="flex-1 overflow-y-auto">{children}</main>

@@ -1,7 +1,7 @@
 export const APP_NAME = 'NexTrends'
 
 export const SIDEBAR_ITEMS = [
-  { id: 'trends', label: 'Virale Trends' },
+  { id: 'trends', label: 'Dashboard' },
   { id: 'ad-copy', label: 'AI Ad Copy Generator' },
   { id: 'hook', label: 'Hook Generator' },
   { id: 'seo', label: 'SEO Title Generator' },
@@ -18,7 +18,10 @@ export type NavToolId = DashboardToolId
 
 export const DEFAULT_CREDITS = 20
 export const MAX_CREDITS = 20
+export const FREE_CREDITS = 10
+/** @alias FREE_CREDITS */
+export const FREE_MONTHLY_AI_LIMIT = FREE_CREDITS
 export const PRO_PRICE_LABEL = '9,99 € / Monat'
 
 export const STRIPE_CHECKOUT_URL =
-  'https://buy.stripe.com/test_dRm4gzgrM72bfak8Anfbq0'
+  'https://buy.stripe.com/test_dRm4gzgrM72Bfak8Anfbq00'
