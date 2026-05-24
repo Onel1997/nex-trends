@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { TrendCard, type DisplayTrend } from '@/components/dashboard/TrendCard'
+import { TrendDetailModal } from '@/components/dashboard/TrendDetailModal'
 import { TrendAnalysisLoading } from '@/components/dashboard/TrendAnalysisLoading'
 import { TrendProUpsell } from '@/components/dashboard/TrendProUpsell'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -23,6 +25,8 @@ export function TrendsGrid({
   creditsLimit = 15,
   onTryDemo,
 }: TrendsGridProps) {
+  const [selectedTrend, setSelectedTrend] = useState<DisplayTrend | null>(null)
+
   if (isSearching) {
     return (
       <div className="mt-6 space-y-4">
@@ -66,14 +70,22 @@ export function TrendsGrid({
 
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-600">
-            Vorschau · Beispiel-Trends
+            Vorschau · Virale Trend Cards
           </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {DEMO_TREND_INTELLIGENCE.slice(0, 2).map((trend) => (
-              <TrendCard key={trend.id} trend={trend} />
+          <div className="trends-masonry">
+            {DEMO_TREND_INTELLIGENCE.slice(0, 2).map((trend, i) => (
+              <div key={trend.id} className="trends-masonry-item">
+                <TrendCard
+                  trend={trend}
+                  onClick={() => setSelectedTrend(trend)}
+                  priority={i === 0}
+                />
+              </div>
             ))}
           </div>
         </div>
+
+        <TrendDetailModal trend={selectedTrend} onClose={() => setSelectedTrend(null)} />
       </div>
     )
   }
@@ -93,23 +105,30 @@ export function TrendsGrid({
 
       {!isDemo && (
         <p className="mt-4 text-xs text-zinc-600">
-          KI-geschätzte Metriken basierend auf Nischen-Signalen · keine Live-API-Daten
+          KI-geschätzte Metriken basierend auf Nischen-Signalen · Video-Vorschauen aus Demo-Pool
         </p>
       )}
 
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-4">
+      <div className="trends-masonry mt-4">
         {trends.map((trend, index) => (
           <div
             key={trend.id}
-            className="animate-fade-in"
-            style={{ animationDelay: `${Math.min(index * 60, 240)}ms` }}
+            className="trends-masonry-item animate-fade-in"
+            style={{ animationDelay: `${Math.min(index * 70, 280)}ms` }}
           >
-            <TrendCard trend={trend} />
+            <TrendCard
+              trend={trend}
+              onClick={() => setSelectedTrend(trend)}
+              priority={index < 2}
+            />
           </div>
         ))}
       </div>
 
       {!isDemo && trends.length > 0 && <TrendProUpsell />}
+
+      <TrendDetailModal trend={selectedTrend} onClose={() => setSelectedTrend(null)} />
     </>
   )
 }
+

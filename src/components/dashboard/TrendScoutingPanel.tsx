@@ -3,13 +3,9 @@ import { TrendScoutSearch, type ScoutPlatform } from '@/components/dashboard/Tre
 import { TrendsGrid } from '@/components/dashboard/TrendsGrid'
 import { LowCreditBanner } from '@/components/subscription/LowCreditBanner'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { searchTrendIntelligence } from '@/lib/openai'
 import { MAX_FREE_CREDITS } from '@/lib/constants'
-import {
-  DEMO_TREND_INTELLIGENCE,
-  markDemoSeen,
-  shouldShowDemoOnLoad,
-} from '@/lib/trend-intelligence'
+import { markDemoSeen, shouldShowDemoOnLoad } from '@/lib/trend-intelligence'
+import { fetchDemoTrends, fetchTrendsByNiche } from '@/lib/trends-api'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export function TrendScoutingPanel() {
@@ -17,6 +13,7 @@ export function TrendScoutingPanel() {
   const [searchQuery, setSearchQuery] = useState('')
   const [platform, setPlatform] = useState<ScoutPlatform>('all')
   const [isSearching, setIsSearching] = useState(false)
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false)
   const [trends, setTrends] = useState<TrendIntelligence[]>([])
   const [isDemo, setIsDemo] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,16 +21,24 @@ export function TrendScoutingPanel() {
   const remaining = hasProAccess ? null : (usage.remaining ?? 0)
   const creditLimit = usage.limit ?? MAX_FREE_CREDITS
 
-  const loadDemo = useCallback(() => {
-    setTrends(DEMO_TREND_INTELLIGENCE)
-    setIsDemo(true)
+  const loadDemo = useCallback(async () => {
+    setIsLoadingDemo(true)
     setError(null)
-    markDemoSeen()
+    try {
+      const results = await fetchDemoTrends()
+      setTrends(results)
+      setIsDemo(true)
+      markDemoSeen()
+    } catch {
+      setError('Demo-Daten konnten nicht geladen werden.')
+    } finally {
+      setIsLoadingDemo(false)
+    }
   }, [])
 
   useEffect(() => {
     if (shouldShowDemoOnLoad()) {
-      loadDemo()
+      void loadDemo()
     }
   }, [loadDemo])
 
@@ -59,14 +64,8 @@ export function TrendScoutingPanel() {
         }
       }
 
-      const results = await searchTrendIntelligence(query)
-      setTrends(
-        results.map((t) => ({
-          ...t,
-          niche: query,
-          isDemo: false,
-        })),
-      )
+      const results = await fetchTrendsByNiche(query)
+      setTrends(results)
       markDemoSeen()
     } catch (err) {
       const message =
@@ -101,8 +100,8 @@ export function TrendScoutingPanel() {
         onSearchQueryChange={setSearchQuery}
         platform={platform}
         onPlatformChange={setPlatform}
-        isSearching={isSearching}
-        disabled={isSearching}
+        isSearching={isSearching || isLoadingDemo}
+        disabled={isSearching || isLoadingDemo}
         onSearch={handleSearch}
         onNicheSelect={handleNicheSelect}
       />
@@ -135,11 +134,11 @@ export function TrendScoutingPanel() {
 
       <TrendsGrid
         trends={filteredTrends}
-        isSearching={isSearching}
+        isSearching={isSearching || isLoadingDemo}
         isDemo={isDemo}
         creditsRemaining={remaining}
         creditsLimit={creditLimit}
-        onTryDemo={loadDemo}
+        onTryDemo={() => void loadDemo()}
       />
     </>
   )
