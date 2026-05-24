@@ -1,3 +1,4 @@
+import { EmptyState } from '@/components/ui/EmptyState'
 import { SparklesIcon } from '@/components/ui/icons'
 import { useDashboardData } from '@/hooks/useDashboardData'
 
@@ -6,23 +7,23 @@ export function RecentActivityList() {
 
   return (
     <div>
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-600">
         Letzte Aktivitäten
       </p>
 
       {activities.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-800 bg-zinc-950/30 px-4 py-8 text-center">
-          <SparklesIcon className="mx-auto size-6 text-zinc-600" aria-hidden />
-          <p className="mt-2 text-sm text-zinc-500">
-            Noch keine KI-Aktivitäten. Starte deine erste Analyse!
-          </p>
-        </div>
+        <EmptyState
+          size="compact"
+          title="Noch keine Aktivität"
+          description="Starte deine erste KI-Analyse — sie erscheint hier."
+          icon={<SparklesIcon className="size-5 text-zinc-500" aria-hidden />}
+        />
       ) : (
         <ul className="space-y-2">
           {activities.map((item) => (
             <li
               key={item.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800/60 bg-zinc-950/40 px-3 py-2.5 transition-colors hover:border-zinc-700/60"
+              className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800/50 bg-zinc-950/40 px-4 py-3 transition-smooth hover:border-zinc-700/60 hover:bg-zinc-900/40"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-zinc-200">
@@ -30,7 +31,7 @@ export function RecentActivityList() {
                 </p>
                 <p className="text-xs text-zinc-500">{item.tool}</p>
               </div>
-              <time className="shrink-0 text-[11px] text-zinc-600">
+              <time className="shrink-0 text-[11px] tabular-nums text-zinc-600">
                 {formatRelativeTime(item.timestamp)}
               </time>
             </li>

@@ -1,11 +1,15 @@
 import { invokeEdgeFunction } from './edgeFunctions'
-import { FREE_MONTHLY_AI_LIMIT } from './constants'
+import {
+  MAX_FREE_CREDITS,
+  SIGNUP_CREDITS,
+  FREE_MONTHLY_AI_LIMIT,
+} from './constants'
 import { hasProAccess } from './subscription'
 import { supabase } from './supabase'
 import type { UserProfile } from '@/types/subscription'
 import type { UsageAction, UsageLimitResult } from '@/types/usage'
 
-export { FREE_MONTHLY_AI_LIMIT }
+export { FREE_MONTHLY_AI_LIMIT, MAX_FREE_CREDITS, SIGNUP_CREDITS }
 
 export function getUsageFromProfile(profile: UserProfile | null): UsageLimitResult {
   if (!profile) {
@@ -14,7 +18,7 @@ export function getUsageFromProfile(profile: UserProfile | null): UsageLimitResu
       unlimited: false,
       used: 0,
       remaining: 0,
-      limit: FREE_MONTHLY_AI_LIMIT,
+      limit: MAX_FREE_CREDITS,
       usageResetDate: null,
     }
   }
@@ -33,20 +37,23 @@ export function getUsageFromProfile(profile: UserProfile | null): UsageLimitResu
     }
   }
 
-  const remaining = Math.max(0, FREE_MONTHLY_AI_LIMIT - used)
+  const remaining = Math.max(0, profile.credit_balance ?? 0)
 
   return {
     allowed: remaining > 0,
     unlimited: false,
     used,
     remaining,
-    limit: FREE_MONTHLY_AI_LIMIT,
+    limit: MAX_FREE_CREDITS,
     usageResetDate,
   }
 }
 
-async function invokeUsageLimit(action: UsageAction): Promise<UsageLimitResult> {
-  return invokeEdgeFunction<UsageLimitResult>('usage-limit', { action })
+async function invokeUsageLimit(
+  action: UsageAction,
+  extra?: Record<string, unknown>,
+): Promise<UsageLimitResult> {
+  return invokeEdgeFunction<UsageLimitResult>('usage-limit', { action, ...extra })
 }
 
 export async function checkUsageLimit(
@@ -64,9 +71,10 @@ export async function checkUsageLimit(
 
 export async function incrementUsage(
   fallbackProfile?: UserProfile | null,
+  cost = 1,
 ): Promise<UsageLimitResult> {
   try {
-    return await invokeUsageLimit('increment')
+    return await invokeUsageLimit('increment', { cost })
   } catch (err) {
     if (fallbackProfile) {
       const local = getUsageFromProfile(fallbackProfile)

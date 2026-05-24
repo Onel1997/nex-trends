@@ -27,6 +27,12 @@ import { supabase } from '@/lib/supabase'
 import type { UserProfile } from '@/types/subscription'
 import type { UsageLimitResult } from '@/types/usage'
 
+type ConsumeUsageOptions = {
+  tool: string
+  label: string
+  cost?: number
+}
+
 type SubscriptionContextValue = {
   session: Session | null
   profile: UserProfile | null
@@ -36,11 +42,10 @@ type SubscriptionContextValue = {
   hasProAccess: boolean
   usage: UsageLimitResult
   isUsageLimitReached: boolean
+  isCreditsLow: boolean
   refreshProfile: () => Promise<void>
   refreshUsage: () => Promise<UsageLimitResult>
-  consumeUsage: (
-    activity?: { tool: string; label: string },
-  ) => Promise<UsageLimitResult>
+  consumeUsage: (activity?: ConsumeUsageOptions) => Promise<UsageLimitResult>
   isUpgradeModalOpen: boolean
   openUpgradeModal: () => void
   closeUpgradeModal: () => void
@@ -55,12 +60,30 @@ type SubscriptionProviderProps = {
   children: ReactNode
 }
 
+const PROFILE_SELECT =
+  'is_pro, subscription_status, stripe_customer_id, stripe_subscription_id, credit_balance, monthly_usage_count, last_weekly_refill_at, usage_reset_date'
+
+function mapProfileRow(data: Record<string, unknown>): UserProfile {
+  return {
+    is_pro: data.is_pro === true,
+    subscription_status:
+      data.subscription_status === 'active' ? 'active' : 'inactive',
+    stripe_customer_id: (data.stripe_customer_id as string | null) ?? null,
+    stripe_subscription_id: (data.stripe_subscription_id as string | null) ?? null,
+    credit_balance: (data.credit_balance as number | null) ?? getDefaultProfile().credit_balance,
+    monthly_usage_count: (data.monthly_usage_count as number | null) ?? 0,
+    last_weekly_refill_at: (data.last_weekly_refill_at as string | null) ?? null,
+    usage_reset_date: (data.usage_reset_date as string | null) ?? null,
+  }
+}
+
 function applyUsageToProfile(
   profile: UserProfile,
   usage: UsageLimitResult,
 ): UserProfile {
   return {
     ...profile,
+    credit_balance: usage.remaining ?? profile.credit_balance,
     monthly_usage_count: usage.used,
     usage_reset_date: usage.usageResetDate,
   }
@@ -81,29 +104,40 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const fetchProfile = useCallback(async (userId: string): Promise<UserProfile> => {
     const { data, error } = await supabase
       .from('profiles')
-      .select(
-        'is_pro, subscription_status, stripe_customer_id, stripe_subscription_id, monthly_usage_count, usage_reset_date',
-      )
+      .select(PROFILE_SELECT)
       .eq('id', userId)
-      .single()
+      .maybeSingle()
+
+    if (data && !error) {
+      const next = mapProfileRow(data)
+      writeProfileCache(userId, next)
+      return next
+    }
 
     if (error) {
       console.error('Profil laden fehlgeschlagen:', error)
-      return profileRef.current ?? getDefaultProfile()
     }
 
-    const next: UserProfile = {
-      is_pro: data.is_pro === true,
-      subscription_status:
-        data.subscription_status === 'active' ? 'active' : 'inactive',
-      stripe_customer_id: data.stripe_customer_id ?? null,
-      stripe_subscription_id: data.stripe_subscription_id ?? null,
-      monthly_usage_count: data.monthly_usage_count ?? 0,
-      usage_reset_date: data.usage_reset_date ?? null,
+    try {
+      await fetchUsageLimit()
+      const { data: retryData, error: retryError } = await supabase
+        .from('profiles')
+        .select(PROFILE_SELECT)
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (retryData && !retryError) {
+        const next = mapProfileRow(retryData)
+        writeProfileCache(userId, next)
+        return next
+      }
+    } catch (ensureErr) {
+      console.error('Profil konnte nicht angelegt werden:', ensureErr)
     }
 
-    writeProfileCache(userId, next)
-    return next
+    const fallback = profileRef.current ?? getDefaultProfile()
+    writeProfileCache(userId, fallback)
+    return fallback
   }, [])
 
   const syncUsageFromServer = useCallback(async () => {
@@ -222,9 +256,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const proAccess = hasProAccess(profile)
 
   const consumeUsage = useCallback(
-    async (
-      activity?: { tool: string; label: string },
-    ): Promise<UsageLimitResult> => {
+    async (activity?: ConsumeUsageOptions): Promise<UsageLimitResult> => {
       if (proAccess) {
         if (activity) logActivity(activity.tool, activity.label)
         const unlimited = getUsageFromProfile(profile)
@@ -232,11 +264,15 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       }
 
       try {
-        const result = await fetchIncrementUsage(profileRef.current)
+        const result = await fetchIncrementUsage(profileRef.current, activity?.cost ?? 1)
         setUsage(result)
 
         if (result.allowed && activity) {
           logActivity(activity.tool, activity.label)
+        }
+
+        if (!result.allowed && (result.remaining ?? 0) <= 0) {
+          setIsUpgradeModalOpen(true)
         }
 
         const userId = session?.user?.id
@@ -274,7 +310,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const isReady =
     !isAuthLoading && (!session?.user?.id || profile !== null)
 
-  const isUsageLimitReached = !usage.unlimited && !usage.allowed
+  const remainingCredits = usage.remaining ?? 0
+  const isUsageLimitReached = !usage.unlimited && remainingCredits <= 0
+  const isCreditsLow = !usage.unlimited && remainingCredits > 0 && remainingCredits <= 3
 
   const value = useMemo<SubscriptionContextValue>(
     () => ({
@@ -286,6 +324,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       hasProAccess: proAccess,
       usage,
       isUsageLimitReached,
+      isCreditsLow,
       refreshProfile,
       refreshUsage: syncUsageFromServer,
       consumeUsage,
@@ -303,6 +342,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       proAccess,
       usage,
       isUsageLimitReached,
+      isCreditsLow,
       refreshProfile,
       syncUsageFromServer,
       consumeUsage,

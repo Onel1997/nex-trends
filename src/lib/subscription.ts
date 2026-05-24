@@ -1,4 +1,4 @@
-import { type DashboardToolId } from './constants'
+import { type DashboardToolId, SIGNUP_CREDITS } from './constants'
 import type { SubscriptionStatus, UserProfile } from '@/types/subscription'
 
 export const PREMIUM_TOOL_IDS = [
@@ -23,13 +23,16 @@ export function hasProAccess(profile: UserProfile | null): boolean {
 }
 
 export function getDefaultProfile(): UserProfile {
+  const now = new Date()
   return {
     is_pro: false,
     subscription_status: 'inactive',
     stripe_customer_id: null,
     stripe_subscription_id: null,
+    credit_balance: SIGNUP_CREDITS,
     monthly_usage_count: 0,
-    usage_reset_date: null,
+    last_weekly_refill_at: now.toISOString(),
+    usage_reset_date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   }
 }
 

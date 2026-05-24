@@ -1,11 +1,12 @@
 import { useSubscription } from '@/hooks/useSubscription'
 
-/** Convenience hook für Usage-Limits (Free: 5/Monat, Pro: unlimited). */
+/** Convenience hook für Credit-Limits (Free: wöchentliche Aufladung, Pro: unlimited). */
 export function useUsageLimit() {
   const {
     usage,
     hasProAccess,
     isUsageLimitReached,
+    isCreditsLow,
     consumeUsage,
     refreshUsage,
     openUpgradeModal,
@@ -16,6 +17,7 @@ export function useUsageLimit() {
     usage,
     hasProAccess,
     isUsageLimitReached,
+    isCreditsLow,
     consumeUsage,
     refreshUsage,
     openUpgradeModal,

@@ -13,18 +13,23 @@ export function UserOverviewCard() {
   return (
     <Card hover className="animate-fade-in overflow-hidden">
       <div
-        className="pointer-events-none h-1 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-violet-600"
+        className="pointer-events-none h-px bg-gradient-to-r from-transparent via-violet-500/60 to-transparent"
         aria-hidden
       />
-      <CardBody>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <CardBody className="py-6 sm:py-7">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-lg font-bold text-white shadow-lg shadow-violet-900/30">
+            <div className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl gradient-accent text-lg font-bold text-white shadow-lg shadow-violet-900/30 ring-1 ring-white/10">
               {user.avatarInitials}
+              {hasProAccess && (
+                <span className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full bg-fuchsia-500 ring-2 ring-zinc-900">
+                  <CrownIcon className="size-2.5 text-white" aria-hidden />
+                </span>
+              )}
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-semibold text-white">{user.name}</h2>
+                <h2 className="text-lg font-semibold tracking-tight text-white">{user.name}</h2>
                 {hasProAccess && (
                   <Badge variant="pro">
                     <CrownIcon className="mr-1 inline size-3" aria-hidden />
@@ -32,7 +37,7 @@ export function UserOverviewCard() {
                   </Badge>
                 )}
               </div>
-              <p className="mt-0.5 text-sm text-zinc-400">{user.email}</p>
+              <p className="mt-1 text-sm text-zinc-500">{user.email}</p>
             </div>
           </div>
 
@@ -61,15 +66,15 @@ function StatPill({
   return (
     <div
       className={cn(
-        'rounded-xl border border-zinc-800/80 bg-zinc-950/60 px-3 py-2.5',
+        'rounded-xl border border-zinc-800/60 bg-zinc-950/50 px-4 py-3 transition-smooth hover:border-zinc-700/60',
         highlight && 'border-violet-500/20 bg-violet-500/5',
         className,
       )}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
         {label}
       </p>
-      <p className="mt-0.5 text-sm font-semibold text-white">{value}</p>
+      <p className="mt-1 text-sm font-semibold tracking-tight text-white">{value}</p>
     </div>
   )
 }

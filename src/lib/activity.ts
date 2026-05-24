@@ -1,4 +1,5 @@
 import type { ActivityItem } from '@/types/dashboard'
+import { generateId } from '@/lib/utils'
 
 const ACTIVITY_KEY = 'nextrends_recent_activity'
 const MAX_ACTIVITIES = 8
@@ -6,7 +7,7 @@ const MAX_ACTIVITIES = 8
 export function logActivity(tool: string, label: string): void {
   try {
     const item: ActivityItem = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       tool,
       label,
       timestamp: new Date().toISOString(),

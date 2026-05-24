@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import { UsageLimitWarning } from '@/components/subscription/UsageLimitWarning'
+import { LowCreditBanner } from '@/components/subscription/LowCreditBanner'
+import { Button } from '@/components/ui/Button'
+import { Textarea } from '@/components/ui/Input'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { SparklesIcon } from '@/components/ui/icons'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { cn } from '@/lib'
@@ -23,7 +27,7 @@ export function ToolGeneratorPanel({
   onGenerate,
   className,
 }: ToolGeneratorPanelProps) {
-  const { hasProAccess, isUsageLimitReached, consumeUsage, openUpgradeModal } =
+  const { hasProAccess, isUsageLimitReached, isCreditsLow, usage, consumeUsage } =
     useUsageLimit()
   const [briefing, setBriefing] = useState('')
   const [result, setResult] = useState<string | null>(null)
@@ -38,11 +42,6 @@ export function ToolGeneratorPanel({
       result.startsWith('Bitte gib'))
 
   async function handleGenerate() {
-    if (isUsageLimitReached && !hasProAccess) {
-      openUpgradeModal()
-      return
-    }
-
     if (!briefing.trim()) {
       setResult('Bitte gib ein Briefing ein.')
       return
@@ -62,7 +61,6 @@ export function ToolGeneratorPanel({
         label: `${title}: Analyse gestartet`,
       })
       if (!usageResult.allowed) {
-        openUpgradeModal()
         return
       }
 
@@ -80,69 +78,77 @@ export function ToolGeneratorPanel({
   }
 
   return (
-    <section className={cn('max-w-3xl', className)}>
+    <section className={cn('max-w-3xl animate-fade-in', className)}>
       <header className="mb-6 sm:mb-8">
         <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           {title}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-400 sm:text-base">
+        <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
           {description}
         </p>
       </header>
 
-      <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-6">
+      {!hasProAccess && isCreditsLow && (
+        <LowCreditBanner remaining={usage.remaining ?? 0} className="mb-5" />
+      )}
+
+      <div className="glass-card p-5 sm:p-7">
         <label
           htmlFor={inputId}
-          className="mb-2 block text-xs font-semibold uppercase tracking-wider text-zinc-500"
+          className="mb-2.5 block text-xs font-semibold uppercase tracking-widest text-zinc-600"
         >
           {briefingLabel}
         </label>
-        <textarea
+        <Textarea
           id={inputId}
           value={briefing}
           onChange={(e) => setBriefing(e.target.value)}
           rows={4}
           placeholder={briefingPlaceholder}
-          disabled={isGenerating || (isUsageLimitReached && !hasProAccess)}
-          className="w-full resize-none rounded-xl border border-zinc-800 bg-black/50 px-4 py-3 text-sm leading-relaxed text-zinc-200 placeholder:text-zinc-600 transition-colors focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20 disabled:opacity-60"
+          disabled={isGenerating}
         />
 
-        <button
-          type="button"
+        <Button
+          variant="pro"
+          size="lg"
+          fullWidth
+          loading={isGenerating}
+          disabled={isGenerating}
           onClick={() => void handleGenerate()}
-          disabled={isGenerating || (isUsageLimitReached && !hasProAccess)}
-          className={cn(
-            'mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-300 sm:w-auto',
-            isUsageLimitReached && !hasProAccess
-              ? 'cursor-not-allowed bg-zinc-700 text-zinc-400'
-              : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-900/30 hover:from-violet-500 hover:to-fuchsia-500 disabled:cursor-not-allowed disabled:opacity-60',
-          )}
+          className="mt-5 sm:w-auto"
         >
           <SparklesIcon className="size-4" aria-hidden />
-          {isGenerating ? 'Generiert...' : 'Generieren'}
-        </button>
+          {isGenerating ? 'Generiert …' : 'Generieren · 1 Credit'}
+        </Button>
 
-        <div className="mt-6">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        <div className="mt-7">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-600">
             KI-Ergebnis
           </p>
 
           {isUsageLimitReached && !hasProAccess ? (
             <UsageLimitWarning />
+          ) : isGenerating ? (
+            <div className="space-y-3 rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-5">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+              <Skeleton className="h-4 w-4/6" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
           ) : (
             <div
               className={cn(
-                'rounded-xl border p-4 sm:p-5',
+                'rounded-xl border p-5 transition-smooth sm:p-6',
                 isError
                   ? 'border-red-500/30 bg-red-950/20'
-                  : 'border-zinc-800/80 bg-zinc-950/80',
+                  : 'border-zinc-800/60 bg-zinc-950/60',
               )}
             >
               <p
                 className={cn(
                   'whitespace-pre-wrap text-sm leading-relaxed',
                   result === null
-                    ? 'text-zinc-400'
+                    ? 'text-zinc-500'
                     : isError
                       ? 'text-red-300'
                       : 'text-zinc-200',

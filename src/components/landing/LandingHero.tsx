@@ -6,7 +6,7 @@ export function LandingHero() {
   return (
     <section
       aria-labelledby="hero-heading"
-      className="relative overflow-hidden px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8 lg:pt-28"
+      className="relative overflow-hidden ambient-glow px-4 pb-16 pt-12 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8 lg:pt-28"
     >
       <div
         className="pointer-events-none absolute left-1/2 top-0 size-[min(100vw,52rem)] -translate-x-1/2 rounded-full bg-violet-600/20 blur-3xl"
@@ -24,7 +24,7 @@ export function LandingHero() {
       <div className="relative mx-auto max-w-5xl">
         <div className="text-center">
           <p className="animate-fade-in mb-6 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/10 px-4 py-1.5 text-xs font-medium text-violet-300 sm:text-sm">
-            <span className="size-1.5 animate-pulse rounded-full bg-fuchsia-400" aria-hidden />
+            <span className="size-1.5 animate-pulse-soft rounded-full bg-fuchsia-400" aria-hidden />
             AI Marketing Suite · TikTok & Instagram
           </p>
 
@@ -49,7 +49,7 @@ export function LandingHero() {
             <button
               type="button"
               onClick={() => scrollToSection('pricing')}
-              className="inline-flex w-full min-h-14 items-center justify-center rounded-xl border border-zinc-700 px-8 py-4 text-base font-semibold text-zinc-200 transition-all hover:border-zinc-600 hover:bg-zinc-900/80 sm:w-auto"
+              className="inline-flex w-full min-h-14 items-center justify-center rounded-xl border border-zinc-800/80 bg-zinc-900/40 px-8 py-4 text-base font-semibold text-zinc-200 backdrop-blur-sm transition-smooth hover:border-zinc-700 hover:bg-zinc-900/70 sm:w-auto active:scale-[0.98]"
             >
               Pläne vergleichen
             </button>

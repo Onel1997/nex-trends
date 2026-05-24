@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { APP_NAME, cn } from '@/lib'
 import { scrollToSection } from '@/lib/scroll'
 import { GoogleSignInButton } from '@/components/landing/GoogleSignInButton'
@@ -18,8 +18,16 @@ export function LandingHeader() {
     scrollToSection(id)
   }
 
+  useEffect(() => {
+    if (!mobileOpen) return
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileOpen])
+
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-800/60 bg-black/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-zinc-800/50 glass-subtle">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <a
           href="/"
@@ -38,7 +46,7 @@ export function LandingHeader() {
               key={id}
               type="button"
               onClick={() => handleNav(id)}
-              className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+              className="text-sm font-medium text-zinc-400 transition-smooth hover:text-white"
             >
               {label}
             </button>
@@ -49,7 +57,7 @@ export function LandingHeader() {
           <button
             type="button"
             onClick={() => handleNav('login')}
-            className="hidden rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-2 text-sm font-medium text-zinc-200 transition-all hover:border-violet-500/50 hover:bg-zinc-800 hover:text-white sm:inline-flex"
+            className="hidden rounded-xl border border-zinc-800/80 bg-zinc-900/50 px-4 py-2 text-sm font-medium text-zinc-200 transition-smooth hover:border-violet-500/30 hover:bg-zinc-800/80 hover:text-white sm:inline-flex active:scale-[0.98]"
           >
             Anmelden
           </button>
@@ -62,7 +70,7 @@ export function LandingHeader() {
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
             className={cn(
-              'inline-flex size-10 items-center justify-center rounded-lg border border-zinc-800 text-zinc-300 md:hidden',
+              'inline-flex size-10 items-center justify-center rounded-xl border border-zinc-800/80 text-zinc-300 transition-smooth md:hidden active:scale-95',
               mobileOpen && 'border-violet-500/40 bg-zinc-900',
             )}
             aria-label={mobileOpen ? 'Menü schließen' : 'Menü öffnen'}
@@ -75,7 +83,7 @@ export function LandingHeader() {
 
       {mobileOpen && (
         <nav
-          className="border-t border-zinc-800/60 bg-black/95 px-4 py-4 md:hidden"
+          className="border-t border-zinc-800/50 bg-zinc-950/95 px-4 py-4 backdrop-blur-xl md:hidden animate-fade-in"
           aria-label="Mobile Navigation"
         >
           <ul className="space-y-1">
@@ -84,7 +92,7 @@ export function LandingHeader() {
                 <button
                   type="button"
                   onClick={() => handleNav(id)}
-                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                  className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-300 transition-smooth hover:bg-zinc-900/80 hover:text-white"
                 >
                   {label}
                 </button>

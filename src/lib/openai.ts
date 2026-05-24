@@ -1,3 +1,6 @@
+import { mapRawToTrendIntelligence } from '@/lib/trend-intelligence'
+import type { ScoutedTrendRaw, TrendIntelligence } from '@/types/trend-intelligence'
+
 const AD_COPY_SYSTEM_PROMPT =
   'Du bist ein Top-Experte für Social Media Marketing, speziell TikTok und Instagram Reels. Schreibe ein kurzes, extrem virales Skript. Strukturiere es in 3 Teile: 1. Hook (Scroll-Stopper), 2. Body (Mehrwert/Problem lösen), 3. CTA (Call to Action). Halte es knackig und modern.'
 
@@ -10,16 +13,24 @@ const SEO_TITLE_SYSTEM_PROMPT =
 const LANDING_ANALYZER_SYSTEM_PROMPT =
   'Du bist ein Conversion-Rate-Optimierer (CRO). Der User gibt eine Idee, Zielgruppe oder ein Produkt für eine Landingpage ein. Analysiere das Potenzial und gib 3 konkrete, psychologische Tipps, wie man die Landingpage aufbauen muss, um maximale Verkäufe/Leads zu generieren. Nutze übersichtliche Bulletpoints.'
 
-const TREND_SCOUT_SYSTEM_PROMPT =
-  'Du bist ein Social Media Trend-Analyst. Der User nennt dir eine Nische. Generiere 4 aktuell virale Content-Trends für TikTok und Instagram als JSON-Array. Jedes Objekt muss folgende Keys haben: title (Titel des Trends), platform (TikTok oder Instagram), views (realistische, hohe Aufrufzahl als String, z.B. 1.2M), engagement (z.B. 8.5%), description (kurze Erklärung, warum es viral geht). Antworte ausschließlich mit einem JSON-Objekt der Form {"trends": [...]} ohne weiteren Text.'
+const TREND_SCOUT_SYSTEM_PROMPT = `Du bist ein Senior Social Media Trend Intelligence Analyst für TikTok und Instagram (DACH-Markt, 2025/2026).
 
-export type ScoutedTrend = {
-  title: string
-  platform: string
-  views: string
-  engagement: string
-  description: string
-}
+Der User nennt eine Nische. Erstelle 4 datengetriebene Trend-Insights als JSON.
+
+Regeln:
+- Realistische, plausible Metriken (keine utopischen Zahlen)
+- viralScore: Integer 55–96 (höher = viraleres Potenzial)
+- trendVelocity: "rising" | "peak" | "stable" | "cooling"
+- hashtags: 3–5 echte, relevante Hashtags mit #
+- contentIdeas: 2 konkrete Video-Ideen
+- hookSuggestions: 2 Scroll-Stopper-Hooks
+- creatorInspiration: 1 Satz mit Creator-Stil (kein erfundener @name nötig, eher Format-Stil)
+- engagementPrediction: 1 Satz Prognose für die nächsten 48–72h
+- platform: "TikTok" oder "Instagram"
+- views: String wie "1.2M" oder "890K"
+- engagement: Prozent-String wie "8.5%"
+
+Antworte NUR mit JSON: {"trends":[{...}]}`
 
 type ChatCompletionResponse = {
   choices?: Array<{
@@ -48,7 +59,8 @@ async function callOpenAI(systemPrompt: string, userMessage: string): Promise<st
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
@@ -108,7 +120,8 @@ async function callOpenAIJson(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o-mini',
+      temperature: 0.65,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: systemPrompt },
@@ -134,11 +147,17 @@ async function callOpenAIJson(
   return content
 }
 
-export async function searchTrends(niche: string): Promise<ScoutedTrend[]> {
-  const content = await callOpenAIJson(TREND_SCOUT_SYSTEM_PROMPT, niche)
+/** @deprecated Use searchTrendIntelligence */
+export type ScoutedTrend = ScoutedTrendRaw
+
+export async function searchTrendIntelligence(niche: string): Promise<TrendIntelligence[]> {
+  const content = await callOpenAIJson(
+    TREND_SCOUT_SYSTEM_PROMPT,
+    `Nische / Suchthema: ${niche.trim()}`,
+  )
   const parsed = JSON.parse(content) as
-    | ScoutedTrend[]
-    | { trends?: ScoutedTrend[] }
+    | ScoutedTrendRaw[]
+    | { trends?: ScoutedTrendRaw[] }
 
   const raw = Array.isArray(parsed) ? parsed : parsed.trends
 
@@ -146,5 +165,11 @@ export async function searchTrends(niche: string): Promise<ScoutedTrend[]> {
     throw new Error('Keine Trends in der Antwort erhalten.')
   }
 
-  return raw.slice(0, 4)
+  return raw.slice(0, 4).map((item, index) =>
+    mapRawToTrendIntelligence(item, index, `live-${Date.now()}`),
+  )
+}
+
+export async function searchTrends(niche: string): Promise<TrendIntelligence[]> {
+  return searchTrendIntelligence(niche)
 }

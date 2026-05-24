@@ -1,10 +1,10 @@
 import { CrownIcon, SparklesIcon } from '@/components/ui/icons'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { formatUsageResetDate } from '@/lib/usage'
-import { FREE_MONTHLY_AI_LIMIT, PRO_PRICE_LABEL } from '@/lib'
+import { formatUsageResetDate, MAX_FREE_CREDITS } from '@/lib/usage'
+import { PRO_PRICE_LABEL } from '@/lib'
 
 export function UsageLimitWarning() {
-  const { usage, openUpgradeModal, openStripeCheckout } = useUsageLimit()
+  const { usage, openStripeCheckout } = useUsageLimit()
 
   return (
     <div className="flex justify-center py-4 sm:py-6">
@@ -22,15 +22,15 @@ export function UsageLimitWarning() {
           Credits aufgebraucht
         </h3>
         <p className="relative mt-3 text-sm leading-relaxed text-zinc-400">
-          Du hast alle{' '}
+          Du hast alle verfügbaren Free Credits verbraucht (max.{' '}
           <strong className="font-semibold text-fuchsia-300">
-            {usage.limit ?? FREE_MONTHLY_AI_LIMIT} Free Credits
-          </strong>{' '}
-          verbraucht.
+            {usage.limit ?? MAX_FREE_CREDITS}
+          </strong>
+          ).
           {usage.usageResetDate && (
             <>
               {' '}
-              Dein Kontingent erneuert sich am{' '}
+              Nächste wöchentliche Aufladung (+5 Credits) am{' '}
               <strong className="text-zinc-300">
                 {formatUsageResetDate(usage.usageResetDate)}
               </strong>
@@ -41,16 +41,8 @@ export function UsageLimitWarning() {
 
         <button
           type="button"
-          onClick={openUpgradeModal}
-          className="relative mt-4 w-full rounded-xl border border-zinc-700 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-900/60"
-        >
-          Pläne vergleichen
-        </button>
-
-        <button
-          type="button"
           onClick={() => void openStripeCheckout()}
-          className="relative mt-3 w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-fuchsia-900/40 transition-all duration-300 hover:from-fuchsia-500 hover:to-violet-500 hover:shadow-[0_0_24px_rgba(217,70,239,0.45)]"
+          className="relative mt-5 w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-fuchsia-900/40 transition-smooth hover:from-fuchsia-500 hover:to-violet-500 hover:shadow-[0_0_24px_rgba(217,70,239,0.45)]"
         >
           <span className="inline-flex items-center justify-center gap-2">
             <CrownIcon className="size-4" aria-hidden />

@@ -42,7 +42,7 @@ export function GoogleSignInButton({
       type="button"
       onClick={() => signInWithGoogle()}
       className={cn(
-        'group inline-flex items-center justify-center gap-3 rounded-xl font-semibold transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400',
+        'group inline-flex items-center justify-center gap-3 rounded-xl font-semibold transition-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400/70 active:scale-[0.98]',
         size === 'lg' ? 'min-h-14 px-8 py-4 text-base' : 'min-h-11 px-6 py-2.5 text-sm',
         variant === 'gradient' &&
           'w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-xl shadow-violet-900/40 hover:scale-[1.02] hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-violet-800/50 sm:w-auto',

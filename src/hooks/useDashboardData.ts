@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getRecentActivities } from '@/lib/activity'
-import { FREE_MONTHLY_AI_LIMIT } from '@/lib/constants'
+import { MAX_FREE_CREDITS } from '@/lib/constants'
 import { formatUsageResetDate } from '@/lib/usage'
 import type { ActivityItem, DashboardUser, TrendInsight, WeeklyUsagePoint } from '@/types/dashboard'
 
@@ -96,7 +96,7 @@ export function useDashboardData() {
   const statusLabel = hasProAccess ? 'Aktiv' : 'Free'
   const remainingLabel = hasProAccess
     ? 'Unbegrenzt'
-    : `${usage.remaining ?? 0} / ${usage.limit ?? FREE_MONTHLY_AI_LIMIT}`
+    : `${usage.remaining ?? 0} / ${usage.limit ?? MAX_FREE_CREDITS}`
 
   const loadActivities = useCallback(() => {
     setActivities(getRecentActivities())

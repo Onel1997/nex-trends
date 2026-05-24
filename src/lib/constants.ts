@@ -16,11 +16,15 @@ export const NAV_TOOLS = SIDEBAR_ITEMS.filter((item) => item.id !== 'trends')
 /** @deprecated Use DashboardToolId */
 export type NavToolId = DashboardToolId
 
-export const DEFAULT_CREDITS = 20
-export const MAX_CREDITS = 20
-export const FREE_CREDITS = 10
-/** @alias FREE_CREDITS */
-export const FREE_MONTHLY_AI_LIMIT = FREE_CREDITS
+export const SIGNUP_CREDITS = 10
+export const WEEKLY_REFILL_CREDITS = 5
+export const MAX_FREE_CREDITS = 15
+/** @deprecated Use SIGNUP_CREDITS */
+export const FREE_CREDITS = SIGNUP_CREDITS
+/** @deprecated Use MAX_FREE_CREDITS */
+export const FREE_MONTHLY_AI_LIMIT = MAX_FREE_CREDITS
+export const DEFAULT_CREDITS = SIGNUP_CREDITS
+export const MAX_CREDITS = MAX_FREE_CREDITS
 export const PRO_PRICE_LABEL = '9,99 € / Monat'
 
 export const STRIPE_CHECKOUT_URL =

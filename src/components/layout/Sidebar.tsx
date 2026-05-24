@@ -1,11 +1,9 @@
-import { Badge } from '@/components/ui/Badge'
 import { CrownIcon, ToolIcon } from '@/components/ui/icons'
 import { CreditsCard } from '@/components/subscription/UsageLimitBar'
 import {
   APP_NAME,
   PRO_PRICE_LABEL,
   SIDEBAR_ITEMS,
-  isPremiumTool,
   type DashboardToolId,
 } from '@/lib'
 import { cn } from '@/lib'
@@ -25,21 +23,21 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'flex h-full w-full flex-col border-r border-zinc-800/80 bg-zinc-950',
+        'flex h-full w-full flex-col border-r border-zinc-800/50 bg-zinc-950/95 backdrop-blur-xl',
         className,
       )}
     >
-      <div className="border-b border-zinc-800/80 px-4 py-5 lg:px-5">
+      <div className="border-b border-zinc-800/50 px-4 py-5 lg:px-5">
         <button
           type="button"
           onClick={() => {
             navigateToHome()
             onSelectTool('trends')
           }}
-          className="group flex w-full items-center gap-3 rounded-xl p-1 text-left transition-all duration-200 hover:bg-violet-500/5"
+          className="group flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition-smooth hover:bg-white/[0.03]"
           aria-label={`${APP_NAME} Home`}
         >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-sm font-bold text-white shadow-lg shadow-violet-900/30 transition-transform group-hover:scale-105">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl gradient-accent text-sm font-bold text-white shadow-lg shadow-violet-900/30 transition-smooth group-hover:scale-105 group-hover:shadow-violet-900/40">
             NT
           </span>
           <span className="min-w-0">
@@ -52,13 +50,12 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-5 lg:px-4" aria-label="Navigation">
-        <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+        <p className="mb-3 px-2.5 text-[11px] font-semibold uppercase tracking-widest text-zinc-600">
           Werkzeuge
         </p>
-        <ul className="space-y-1.5">
+        <ul className="space-y-1">
           {SIDEBAR_ITEMS.map((tool) => {
             const isActive = activeTool === tool.id
-            const isPremium = isPremiumTool(tool.id)
 
             return (
               <li key={tool.id}>
@@ -67,27 +64,28 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
                   onClick={() => onSelectTool(tool.id)}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-200',
+                    'group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-smooth',
                     isActive
-                      ? 'bg-violet-600/15 text-violet-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ring-1 ring-inset ring-violet-500/35'
-                      : 'text-zinc-400 hover:bg-violet-500/8 hover:text-zinc-100 hover:ring-1 hover:ring-inset hover:ring-violet-500/15',
+                      ? 'bg-violet-500/10 text-violet-100 ring-1 ring-inset ring-violet-500/25'
+                      : 'text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-100',
                   )}
                 >
+                  {isActive && (
+                    <span
+                      className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-gradient-to-b from-violet-400 to-fuchsia-400"
+                      aria-hidden
+                    />
+                  )}
                   <ToolIcon
                     toolId={tool.id}
                     className={cn(
-                      'size-5 shrink-0 transition-colors',
+                      'size-[18px] shrink-0 transition-smooth',
                       isActive
                         ? 'text-violet-400'
-                        : 'text-zinc-500 group-hover:text-violet-400/80',
+                        : 'text-zinc-500 group-hover:text-violet-400/70',
                     )}
                   />
-                  <span className="flex-1 leading-snug">{tool.label}</span>
-                  {isPremium && !hasProAccess && (
-                    <Badge variant="pro" className="px-1.5 py-0 text-[10px]">
-                      Pro
-                    </Badge>
-                  )}
+                  <span className="flex-1 leading-snug font-medium">{tool.label}</span>
                 </button>
               </li>
             )
@@ -95,7 +93,7 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
         </ul>
       </nav>
 
-      <div className="space-y-4 border-t border-zinc-800/80 p-4 lg:p-5">
+      <div className="space-y-3 border-t border-zinc-800/50 p-4 lg:p-5">
         <CreditsCard compact />
 
         {!hasProAccess && (
@@ -103,13 +101,13 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
             type="button"
             onClick={() => void openStripeCheckout()}
             className={cn(
-              'group relative w-full overflow-hidden rounded-xl p-px',
+              'group relative w-full overflow-hidden rounded-xl p-px transition-smooth',
               'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500',
-              'shadow-[0_0_28px_-6px_rgba(217,70,239,0.55)] transition-all duration-300',
-              'hover:shadow-[0_0_36px_-4px_rgba(217,70,239,0.65)] hover:scale-[1.02]',
+              'shadow-[0_0_24px_-8px_rgba(217,70,239,0.5)] hover:shadow-[0_0_32px_-6px_rgba(217,70,239,0.6)]',
+              'active:scale-[0.98]',
             )}
           >
-            <span className="flex w-full items-center justify-center gap-2 rounded-[11px] bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-bold text-white transition-all group-hover:from-violet-500 group-hover:to-fuchsia-500">
+            <span className="flex w-full items-center justify-center gap-2 rounded-[11px] gradient-accent px-4 py-3 text-sm font-bold text-white transition-smooth group-hover:brightness-110">
               <CrownIcon className="size-4" aria-hidden />
               Upgrade to Pro
               <span className="hidden text-violet-200/90 sm:inline">· {PRO_PRICE_LABEL}</span>
@@ -120,7 +118,7 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
         <button
           type="button"
           onClick={() => supabase.auth.signOut()}
-          className="w-full rounded-lg py-2 text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-900/60 hover:text-red-400"
+          className="w-full rounded-xl py-2.5 text-sm font-medium text-zinc-500 transition-smooth hover:bg-zinc-900/60 hover:text-red-400"
         >
           Abmelden
         </button>

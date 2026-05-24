@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { cn } from '@/lib'
+import { cn, generateId } from '@/lib'
 
 export type ToastType = 'success' | 'error' | 'info'
 
@@ -34,7 +34,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback(
     ({ durationMs = 5000, ...toast }: Omit<Toast, 'id'> & { durationMs?: number }) => {
-      const id = crypto.randomUUID()
+      const id = generateId()
       setToasts((prev) => [...prev, { ...toast, id }])
 
       window.setTimeout(() => {
@@ -108,7 +108,7 @@ function ToastItem({
     <div
       role="status"
       className={cn(
-        'pointer-events-auto w-full max-w-sm animate-fade-in rounded-xl border px-4 py-3 shadow-2xl backdrop-blur-md',
+        'pointer-events-auto w-full max-w-sm animate-fade-in-scale rounded-xl border px-4 py-3.5 shadow-2xl shadow-black/40 backdrop-blur-xl',
         styles[toast.type],
       )}
     >
@@ -128,7 +128,7 @@ function ToastItem({
         <button
           type="button"
           onClick={() => onDismiss(toast.id)}
-          className="shrink-0 rounded-md p-1 text-xs opacity-70 transition-opacity hover:opacity-100"
+          className="shrink-0 rounded-lg p-1.5 text-xs opacity-70 transition-smooth hover:bg-white/10 hover:opacity-100"
           aria-label="Schließen"
         >
           ✕

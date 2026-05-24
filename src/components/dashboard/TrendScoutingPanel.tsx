@@ -1,28 +1,41 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { TrendScoutSearch, type ScoutPlatform } from '@/components/dashboard/TrendScoutSearch'
 import { TrendsGrid } from '@/components/dashboard/TrendsGrid'
+import { LowCreditBanner } from '@/components/subscription/LowCreditBanner'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { searchTrends } from '@/lib/openai'
-import { FREE_MONTHLY_AI_LIMIT } from '@/lib/constants'
-import type { DisplayTrend } from '@/components/dashboard/TrendCard'
-
-const CARD_GRADIENTS = [
-  { from: 'from-indigo-500', to: 'to-purple-600' },
-  { from: 'from-violet-600', to: 'to-fuchsia-600' },
-  { from: 'from-cyan-500', to: 'to-blue-600' },
-  { from: 'from-rose-500', to: 'to-orange-600' },
-] as const
+import { searchTrendIntelligence } from '@/lib/openai'
+import { MAX_FREE_CREDITS } from '@/lib/constants'
+import {
+  DEMO_TREND_INTELLIGENCE,
+  markDemoSeen,
+  shouldShowDemoOnLoad,
+} from '@/lib/trend-intelligence'
+import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export function TrendScoutingPanel() {
-  const { hasProAccess, usage, consumeUsage, openUpgradeModal } = useUsageLimit()
+  const { hasProAccess, usage, isCreditsLow, consumeUsage } = useUsageLimit()
   const [searchQuery, setSearchQuery] = useState('')
   const [platform, setPlatform] = useState<ScoutPlatform>('all')
   const [isSearching, setIsSearching] = useState(false)
-  const [trends, setTrends] = useState<DisplayTrend[]>([])
+  const [trends, setTrends] = useState<TrendIntelligence[]>([])
+  const [isDemo, setIsDemo] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const remaining = hasProAccess ? null : (usage.remaining ?? 0)
-  const creditLimit = usage.limit ?? FREE_MONTHLY_AI_LIMIT
+  const creditLimit = usage.limit ?? MAX_FREE_CREDITS
+
+  const loadDemo = useCallback(() => {
+    setTrends(DEMO_TREND_INTELLIGENCE)
+    setIsDemo(true)
+    setError(null)
+    markDemoSeen()
+  }, [])
+
+  useEffect(() => {
+    if (shouldShowDemoOnLoad()) {
+      loadDemo()
+    }
+  }, [loadDemo])
 
   async function handleSearch() {
     const query = searchQuery.trim()
@@ -31,13 +44,9 @@ export function TrendScoutingPanel() {
       return
     }
 
-    if (!hasProAccess && remaining !== null && remaining <= 0) {
-      openUpgradeModal()
-      return
-    }
-
     setError(null)
     setIsSearching(true)
+    setIsDemo(false)
 
     try {
       if (!hasProAccess) {
@@ -46,20 +55,19 @@ export function TrendScoutingPanel() {
           label: `Trend-Suche: ${query}`,
         })
         if (!usageResult.allowed) {
-          openUpgradeModal()
           return
         }
       }
 
-      const results = await searchTrends(query)
+      const results = await searchTrendIntelligence(query)
       setTrends(
-        results.map((trend, index) => ({
-          ...trend,
-          id: `${Date.now()}-${index}`,
-          gradientFrom: CARD_GRADIENTS[index % CARD_GRADIENTS.length].from,
-          gradientTo: CARD_GRADIENTS[index % CARD_GRADIENTS.length].to,
+        results.map((t) => ({
+          ...t,
+          niche: query,
+          isDemo: false,
         })),
       )
+      markDemoSeen()
     } catch (err) {
       const message =
         err instanceof Error
@@ -71,6 +79,10 @@ export function TrendScoutingPanel() {
     }
   }
 
+  function handleNicheSelect(niche: string) {
+    setSearchQuery(niche)
+  }
+
   const filteredTrends =
     platform === 'all'
       ? trends
@@ -80,6 +92,10 @@ export function TrendScoutingPanel() {
 
   return (
     <>
+      {!hasProAccess && isCreditsLow && (
+        <LowCreditBanner remaining={remaining ?? 0} className="mb-4" />
+      )}
+
       <TrendScoutSearch
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
@@ -88,12 +104,23 @@ export function TrendScoutingPanel() {
         isSearching={isSearching}
         disabled={isSearching}
         onSearch={handleSearch}
+        onNicheSelect={handleNicheSelect}
       />
 
       {!hasProAccess && remaining !== null && (
         <p className="mt-3 text-center text-xs text-zinc-500 sm:text-left">
           <span className="font-medium text-violet-300">{remaining}</span> von{' '}
-          {creditLimit} Credits · 1 Credit pro Suche
+          {creditLimit} Credits · 1 Credit pro Analyse
+          {usage.usageResetDate && (
+            <>
+              {' '}
+              · Nächste Aufladung{' '}
+              {new Intl.DateTimeFormat('de-DE', {
+                day: '2-digit',
+                month: 'short',
+              }).format(new Date(usage.usageResetDate))}
+            </>
+          )}
         </p>
       )}
 
@@ -109,8 +136,10 @@ export function TrendScoutingPanel() {
       <TrendsGrid
         trends={filteredTrends}
         isSearching={isSearching}
+        isDemo={isDemo}
         creditsRemaining={remaining}
         creditsLimit={creditLimit}
+        onTryDemo={loadDemo}
       />
     </>
   )

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Button } from '@/components/ui/Button'
 import { CrownIcon, LockIcon } from '@/components/ui/icons'
 import { PRO_PRICE_LABEL } from '@/lib'
 import { PRO_FEATURES } from '@/lib/landing'
@@ -41,18 +42,23 @@ export function UpgradeModal() {
       <button
         type="button"
         aria-label="Modal schließen"
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/75 backdrop-blur-md animate-fade-in"
         onClick={closeUpgradeModal}
       />
 
-      <article className="relative w-full max-w-md overflow-hidden rounded-2xl border border-violet-500/30 bg-zinc-950 shadow-[0_0_60px_-10px_rgba(139,92,246,0.45)]">
+      <article
+        className={cn(
+          'relative w-full max-w-md overflow-hidden rounded-2xl border border-violet-500/25 bg-zinc-950/95 shadow-[0_0_60px_-10px_rgba(139,92,246,0.4)] backdrop-blur-xl',
+          'animate-fade-in-scale',
+        )}
+      >
         <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-violet-600/10 to-transparent"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-violet-600/10 via-transparent to-fuchsia-600/5"
           aria-hidden
         />
 
         <div className="relative p-6 sm:p-8">
-          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl border border-violet-500/25 bg-violet-500/10 text-violet-300">
+          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/10">
             <CrownIcon className="size-7" aria-hidden />
           </div>
 
@@ -62,12 +68,12 @@ export function UpgradeModal() {
           >
             NexTrends Pro freischalten
           </h2>
-          <p className="mt-2 text-center text-sm leading-relaxed text-zinc-400">
+          <p className="mt-2.5 text-center text-sm leading-relaxed text-zinc-400">
             Alle Premium-KI-Tools, unbegrenzte Generierungen und priorisierter
             Zugriff — nur mit aktivem Pro-Abo.
           </p>
 
-          <ul className="mt-6 space-y-2.5">
+          <ul className="mt-6 space-y-3">
             {PRO_FEATURES.slice(0, 4).map((feature) => (
               <li
                 key={feature}
@@ -82,22 +88,22 @@ export function UpgradeModal() {
             ))}
           </ul>
 
-          <button
-            type="button"
+          <Button
+            variant="pro"
+            size="lg"
+            fullWidth
+            loading={isProfileLoading}
             disabled={isProfileLoading}
             onClick={() => void openStripeCheckout()}
-            className={cn(
-              'mt-6 w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-900/40 transition-all',
-              'hover:from-fuchsia-500 hover:to-purple-500 disabled:cursor-not-allowed disabled:opacity-60',
-            )}
+            className="mt-6"
           >
-            Pro-Abo starten · {PRO_PRICE_LABEL} ✨
-          </button>
+            Pro-Abo starten · {PRO_PRICE_LABEL}
+          </Button>
 
           <button
             type="button"
             onClick={closeUpgradeModal}
-            className="mt-3 w-full rounded-lg py-2 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+            className="mt-3 w-full rounded-xl py-2.5 text-sm text-zinc-500 transition-smooth hover:text-zinc-300"
           >
             Später
           </button>

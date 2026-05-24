@@ -11,15 +11,15 @@ export function DashboardHome() {
   const { isLoading, error } = useDashboardData()
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="space-y-8 lg:space-y-10">
       <header className="animate-fade-in">
-        <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600">
           Dashboard
         </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl lg:text-4xl">
           Willkommen zurück
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
           Dein {APP_NAME} Command Center — Analytics, Abo & Trend-Scouting an
           einem Ort.
         </p>
@@ -28,7 +28,7 @@ export function DashboardHome() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-3 text-sm text-red-300"
+          className="animate-fade-in rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-3.5 text-sm text-red-300"
         >
           {error}
         </div>
@@ -52,10 +52,12 @@ export function DashboardHome() {
       )}
 
       <section className="animate-fade-in animation-delay-300">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-white">Trend-Scouting</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Entdecke virale Nischen mit KI — direkt aus dem Dashboard.
+        <div className="mb-5">
+          <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">
+            Trend Intelligence
+          </h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
+            Viral Score, Hashtags, Velocity & Content Ideas für TikTok & Instagram.
           </p>
         </div>
         <TrendScoutingPanel />

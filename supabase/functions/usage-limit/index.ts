@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
 import {
   checkUsageLimit,
-  ensureUsagePeriod,
+  ensureProfile,
+  ensureWeeklyRefill,
   incrementUsage,
   type ProfileUsageRow,
 } from "../_shared/usage.ts";
@@ -65,6 +66,7 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const action = (body.action ?? "check") as UsageAction;
+    const cost = typeof body.cost === "number" ? body.cost : 1;
 
     if (action !== "check" && action !== "increment") {
       return new Response(JSON.stringify({ error: "Ungültige action" }), {
@@ -75,30 +77,20 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select(
-        "id, is_pro, subscription_status, monthly_usage_count, usage_reset_date",
-      )
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      console.error("Profil nicht gefunden:", profileError);
-      return new Response(JSON.stringify({ error: "Profil nicht gefunden" }), {
-        status: 404,
-        headers: jsonHeaders,
-      });
-    }
-
-    const currentProfile = await ensureUsagePeriod(
+    const profile = await ensureProfile(supabaseAdmin, user.id);
+    const currentProfile = await ensureWeeklyRefill(
       supabaseAdmin,
       profile as ProfileUsageRow,
     );
 
     const result =
       action === "increment"
-        ? await incrementUsage(supabaseAdmin, user.id, currentProfile)
+        ? await incrementUsage(
+            supabaseAdmin,
+            user.id,
+            currentProfile,
+            cost,
+          )
         : checkUsageLimit(currentProfile);
 
     return new Response(JSON.stringify(result), {

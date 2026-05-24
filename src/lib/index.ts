@@ -9,7 +9,7 @@ export {
   type DashboardToolId,
   type NavToolId,
 } from './constants'
-export { cn } from './utils'
+export { cn, generateId } from './utils'
 export { supabase } from './supabase'
 export {
   hasProAccess,
@@ -22,6 +22,8 @@ export {
   getUsageFromProfile,
   formatUsageResetDate,
   FREE_MONTHLY_AI_LIMIT,
+  MAX_FREE_CREDITS,
+  SIGNUP_CREDITS,
 } from './usage'
 export { useSession, signInWithGoogle, getAppOrigin, getAuthRedirectUrl, scrollToLogin } from './auth'
 export { openStripeCheckout, startStripeCheckoutFlow } from './stripe'

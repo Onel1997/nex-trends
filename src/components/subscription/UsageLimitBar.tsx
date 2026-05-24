@@ -1,7 +1,7 @@
 import { CreditIcon, CrownIcon } from '@/components/ui/icons'
 import { CreditsProgressBar } from '@/components/ui/CreditsProgressBar'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { formatUsageResetDate, FREE_MONTHLY_AI_LIMIT } from '@/lib/usage'
+import { formatUsageResetDate, MAX_FREE_CREDITS } from '@/lib/usage'
 import { cn } from '@/lib'
 
 type UsageLimitBarProps = {
@@ -45,7 +45,7 @@ export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps
     )
   }
 
-  const limit = usage.limit ?? FREE_MONTHLY_AI_LIMIT
+  const limit = usage.limit ?? MAX_FREE_CREDITS
   const remaining = usage.remaining ?? 0
   const isDepleted = remaining <= 0
   const isLow = remaining > 0 && remaining <= 3
@@ -95,12 +95,16 @@ export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps
             <span className="text-fuchsia-300/90">
               Keine Credits mehr — upgrade für unbegrenzten Zugriff.
             </span>
+          ) : isLow ? (
+            <span className="text-amber-300/90">
+              Wenige Credits übrig — jede Aktion kostet 1 Credit.
+            </span>
           ) : (
             <>
-              <span className="text-zinc-300">{remaining} Suche{remaining === 1 ? '' : 'n'}</span>{' '}
-              verbleibend · 1 Credit pro Suche.
+              <span className="text-zinc-300">{remaining} Credit{remaining === 1 ? '' : 's'}</span>{' '}
+              verfügbar · +5 wöchentlich (max. {limit}).
               {usage.usageResetDate && (
-                <> Reset {formatUsageResetDate(usage.usageResetDate)}.</>
+                <> Nächste Aufladung {formatUsageResetDate(usage.usageResetDate)}.</>
               )}
             </>
           )}

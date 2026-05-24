@@ -1,4 +1,6 @@
 import { SearchIcon } from '@/components/ui/icons'
+import { Button } from '@/components/ui/Button'
+import { InputWithIcon } from '@/components/ui/Input'
 import { cn } from '@/lib'
 
 export type ScoutPlatform = 'all' | 'tiktok' | 'instagram'
@@ -9,6 +11,14 @@ const PLATFORMS: { id: ScoutPlatform; label: string }[] = [
   { id: 'instagram', label: 'Instagram' },
 ]
 
+const NICHE_SUGGESTIONS = [
+  'Fitness',
+  'Beauty',
+  'Side Hustle',
+  'Productivity',
+  'Food',
+] as const
+
 type TrendScoutSearchProps = {
   searchQuery: string
   onSearchQueryChange: (query: string) => void
@@ -17,6 +27,7 @@ type TrendScoutSearchProps = {
   isSearching: boolean
   disabled?: boolean
   onSearch: () => void
+  onNicheSelect?: (niche: string) => void
 }
 
 export function TrendScoutSearch({
@@ -27,6 +38,7 @@ export function TrendScoutSearch({
   isSearching,
   disabled = false,
   onSearch,
+  onNicheSelect,
 }: TrendScoutSearchProps) {
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
@@ -38,28 +50,28 @@ export function TrendScoutSearch({
   return (
     <section
       aria-labelledby="trend-scout-heading"
-      className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-4 sm:p-5 lg:p-6"
+      className="glass-card p-5 sm:p-6 lg:p-7"
     >
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2
             id="trend-scout-heading"
             className="text-lg font-semibold tracking-tight text-white sm:text-xl"
           >
-            Trend-Scouting
+            Trend Intelligence
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            Virale Inhalte auf TikTok & Instagram finden · 1 Credit pro Suche
+          <p className="mt-1.5 text-sm leading-relaxed text-zinc-500">
+            Viral Score, Hashtags, Hooks & Content Ideas · 1 Credit pro Analyse
           </p>
         </div>
-        <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-400 sm:mt-0">
-          <span className="size-1.5 animate-pulse rounded-full bg-violet-400" aria-hidden />
+        <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[11px] font-medium text-violet-400 sm:mt-0">
+          <span className="size-1.5 animate-pulse-soft rounded-full bg-violet-400" aria-hidden />
           KI-gestützt
         </span>
       </div>
 
       <div
-        className="mt-4 flex flex-wrap gap-2"
+        className="mt-5 flex flex-wrap gap-2"
         role="group"
         aria-label="Plattform filtern"
       >
@@ -71,10 +83,11 @@ export function TrendScoutSearch({
             disabled={disabled || isSearching}
             onClick={() => onPlatformChange(item.id)}
             className={cn(
-              'min-h-9 rounded-lg px-3.5 py-2 text-xs font-medium transition-colors sm:text-sm disabled:cursor-not-allowed disabled:opacity-50',
+              'min-h-9 rounded-xl px-4 py-2 text-xs font-medium transition-smooth sm:text-sm',
+              'disabled:cursor-not-allowed disabled:opacity-50',
               platform === item.id
-                ? 'bg-violet-600/20 text-violet-200 ring-1 ring-inset ring-violet-500/40'
-                : 'bg-zinc-800/80 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
+                ? 'bg-violet-500/15 text-violet-200 ring-1 ring-inset ring-violet-500/30'
+                : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200',
             )}
           >
             {item.label}
@@ -83,7 +96,7 @@ export function TrendScoutSearch({
       </div>
 
       <form
-        className="relative mt-4 flex gap-2"
+        className="relative mt-5 flex flex-col gap-3 sm:flex-row sm:gap-2"
         onSubmit={(e) => {
           e.preventDefault()
           onSearch()
@@ -91,28 +104,52 @@ export function TrendScoutSearch({
       >
         <label className="relative block min-w-0 flex-1">
           <span className="sr-only">Trends durchsuchen</span>
-          <SearchIcon
-            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-zinc-500"
-            aria-hidden
-          />
-          <input
+          <InputWithIcon
             type="search"
+            icon={<SearchIcon className="size-5" aria-hidden />}
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={disabled || isSearching}
             placeholder="Nische, Hashtag oder Creator suchen …"
-            className="w-full min-h-12 rounded-xl border border-zinc-700/80 bg-zinc-950 py-3 pl-12 pr-4 text-base text-white placeholder:text-zinc-600 transition-colors focus:border-violet-500/60 focus:outline-none focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-14 sm:text-sm"
+            inputClassName="text-base sm:text-sm"
           />
         </label>
-        <button
+        <Button
           type="submit"
+          variant="pro"
+          size="lg"
+          loading={isSearching}
           disabled={disabled || isSearching}
-          className="shrink-0 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition-all hover:from-violet-500 hover:to-fuchsia-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="shrink-0 sm:min-w-[7rem]"
         >
-          {isSearching ? '…' : 'Suchen'}
-        </button>
+          {isSearching ? 'Suche …' : 'Suchen'}
+        </Button>
       </form>
+
+      {onNicheSelect && (
+        <div className="mt-4">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+            Beliebte Nischen
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {NICHE_SUGGESTIONS.map((niche) => (
+              <button
+                key={niche}
+                type="button"
+                disabled={disabled || isSearching}
+                onClick={() => onNicheSelect(niche)}
+                className={cn(
+                  'rounded-lg border border-zinc-800/80 bg-zinc-950/60 px-3 py-1.5 text-xs font-medium text-zinc-400 transition-smooth',
+                  'hover:border-violet-500/30 hover:text-violet-200 disabled:opacity-50',
+                )}
+              >
+                {niche}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   )
 }
