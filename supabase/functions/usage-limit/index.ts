@@ -2,9 +2,16 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
 import { isAdminEmail } from "../_shared/admin.ts";
 import {
+  recordAiGeneration,
+  updateAiGenerationStatus,
+  type GenerationStatus,
+  type GenerationType,
+} from "../_shared/analytics.ts";
+import {
   checkUsageLimit,
   ensureProfile,
   ensureWeeklyRefill,
+  hasProAccess,
   incrementUsage,
   type ProfileUsageRow,
 } from "../_shared/usage.ts";
@@ -17,7 +24,47 @@ const corsHeaders = {
 
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
-type UsageAction = "check" | "increment";
+type UsageAction = "check" | "increment" | "log_generation" | "update_generation";
+
+function readGenerationMeta(
+  body: Record<string, unknown>,
+  user: { id: string; email?: string },
+) {
+  const tool = typeof body.tool === "string" ? body.tool : "generation";
+  const label = typeof body.label === "string" ? body.label : "";
+  const niche = typeof body.niche === "string" ? body.niche : "";
+  const platform = typeof body.platform === "string" ? body.platform : "";
+  const promptRaw = typeof body.prompt === "string"
+    ? body.prompt
+    : label || tool;
+  const credits = typeof body.credits_used === "number"
+    ? body.credits_used
+    : typeof body.cost === "number"
+    ? body.cost
+    : 1;
+  const generation_type = (typeof body.generation_type === "string"
+    ? body.generation_type
+    : "text") as GenerationType;
+  const status = (typeof body.status === "string"
+    ? body.status
+    : "completed") as GenerationStatus;
+
+  return {
+    user_id: user.id,
+    email: user.email ?? "",
+    tool_used: tool,
+    generation_type,
+    status,
+    niche,
+    platform,
+    prompt: promptRaw,
+    credits_used: credits,
+    output_url: typeof body.output_url === "string" ? body.output_url : undefined,
+    error_message: typeof body.error_message === "string"
+      ? body.error_message
+      : undefined,
+  };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -69,7 +116,16 @@ serve(async (req) => {
     const action = (body.action ?? "check") as UsageAction;
     const cost = typeof body.cost === "number" ? body.cost : 1;
 
-    if (action !== "check" && action !== "increment") {
+    console.log("[usage-limit] action:", action, {
+      tool: body.tool,
+      type: body.generation_type,
+      status: body.status,
+    });
+
+    if (
+      action !== "check" && action !== "increment" &&
+      action !== "log_generation" && action !== "update_generation"
+    ) {
       return new Response(JSON.stringify({ error: "Ungültige action" }), {
         status: 400,
         headers: jsonHeaders,
@@ -99,20 +155,76 @@ serve(async (req) => {
       );
     }
 
-    if (isAdminEmail(user.email)) {
+    const isUnlimited = isAdminEmail(user.email) || hasProAccess(currentProfile);
+
+    if (action === "update_generation") {
+      const generationId = String(body.generation_id ?? "");
+      const status = body.status as GenerationStatus;
+      if (!generationId || !status) {
+        return new Response(JSON.stringify({ error: "generation_id/status fehlt" }), {
+          status: 400,
+          headers: jsonHeaders,
+        });
+      }
+      const patch = await updateAiGenerationStatus(supabaseAdmin, generationId, {
+        status,
+        output_url: typeof body.output_url === "string" ? body.output_url : undefined,
+        error_message: typeof body.error_message === "string"
+          ? body.error_message
+          : undefined,
+      });
+      return new Response(JSON.stringify({ ok: patch.ok }), {
+        status: 200,
+        headers: jsonHeaders,
+      });
+    }
+
+    if (action === "log_generation") {
+      const recorded = await recordAiGeneration(
+        supabaseAdmin,
+        readGenerationMeta(body, user),
+      );
       const used = currentProfile.monthly_usage_count ?? 0;
-      const result = {
+      return new Response(JSON.stringify({
+        ok: recorded.ok,
+        generationId: recorded.id ?? null,
+        allowed: true,
+        unlimited: isUnlimited,
+        used,
+        remaining: isUnlimited ? null : (currentProfile.credit_balance ?? 0),
+        limit: isUnlimited ? null : null,
+        usageResetDate: currentProfile.usage_reset_date ?? null,
+      }), { status: 200, headers: jsonHeaders });
+    }
+
+    if (isUnlimited && action === "increment") {
+      const recorded = await recordAiGeneration(
+        supabaseAdmin,
+        readGenerationMeta(body, user),
+      );
+      console.log("[usage-limit] unlimited increment logged", recorded.id);
+      const used = currentProfile.monthly_usage_count ?? 0;
+      return new Response(JSON.stringify({
         allowed: true,
         unlimited: true,
         used,
         remaining: null,
         limit: null,
         usageResetDate: currentProfile.usage_reset_date ?? null,
-      };
-      return new Response(JSON.stringify(result), {
-        status: 200,
-        headers: jsonHeaders,
-      });
+        generationId: recorded.id ?? null,
+      }), { status: 200, headers: jsonHeaders });
+    }
+
+    if (isUnlimited && action === "check") {
+      const used = currentProfile.monthly_usage_count ?? 0;
+      return new Response(JSON.stringify({
+        allowed: true,
+        unlimited: true,
+        used,
+        remaining: null,
+        limit: null,
+        usageResetDate: currentProfile.usage_reset_date ?? null,
+      }), { status: 200, headers: jsonHeaders });
     }
 
     const result =
@@ -125,17 +237,22 @@ serve(async (req) => {
           )
         : checkUsageLimit(currentProfile);
 
-    if (action === "increment" && result.allowed) {
-      const label = typeof body.label === "string" ? body.label : "";
-      const tool = typeof body.tool === "string" ? body.tool : "generation";
+    if (action === "increment" && result.allowed && body.skip_analytics_log !== true) {
+      const meta = readGenerationMeta(body, user);
+      const recorded = await recordAiGeneration(supabaseAdmin, meta);
+      console.log("[usage-limit] increment logged", recorded.id, meta.tool_used);
       const { error: logError } = await supabaseAdmin
         .from("analytics_events")
         .insert({
           user_id: user.id,
           event_type: "generation",
-          payload: { tool, label },
+          payload: {
+            tool: meta.tool_used,
+            label: typeof body.label === "string" ? body.label : "",
+            generation_type: meta.generation_type,
+          },
         });
-      if (logError) console.warn("analytics log failed:", logError);
+      if (logError) console.warn("[usage-limit] analytics_events:", logError.message);
     }
 
     return new Response(JSON.stringify(result), {
@@ -143,7 +260,7 @@ serve(async (req) => {
       headers: jsonHeaders,
     });
   } catch (err) {
-    console.error("FEHLER in usage-limit:", err);
+    console.error("[usage-limit] FEHLER:", err);
     const message = err instanceof Error ? err.message : String(err);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,

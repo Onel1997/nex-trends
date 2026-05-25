@@ -11,7 +11,9 @@ export const EMPTY_ADMIN_OVERVIEW: AdminOverview = {
   activeUsers: 0,
   totalGenerations: 0,
   proUsers: 0,
+  creditsConsumed: 0,
   revenuePlaceholder: '€ — Stripe Sync',
+  period: '7d',
 }
 
 export const EMPTY_ADMIN_TREND_STATS: AdminTrendStats = {

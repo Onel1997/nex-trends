@@ -80,10 +80,40 @@ export async function checkUsageLimit(
   }
 }
 
+export type UsageGenerationMeta = {
+  tool?: string
+  label?: string
+  niche?: string
+  platform?: string
+  prompt?: string
+  credits_used?: number
+  generation_type?: 'text' | 'video' | 'audio' | 'search' | 'image'
+  status?: 'queued' | 'generating' | 'completed' | 'failed'
+  output_url?: string
+  error_message?: string
+  skip_analytics_log?: boolean
+}
+
+export async function logGenerationUsage(
+  meta: UsageGenerationMeta,
+): Promise<string | null> {
+  try {
+    const result = await invokeUsageLimit('log_generation', {
+      ...meta,
+      credits_used: meta.credits_used ?? 1,
+      status: meta.status ?? 'completed',
+    }) as UsageLimitResult & { generationId?: string | null }
+    return result.generationId ?? null
+  } catch (err) {
+    console.warn('[usage] logGenerationUsage failed', err)
+    return null
+  }
+}
+
 export async function incrementUsage(
   fallbackProfile?: UserProfile | null,
   cost = 1,
-  meta?: { tool?: string; label?: string },
+  meta?: UsageGenerationMeta,
 ): Promise<UsageLimitResult> {
   try {
     return await invokeUsageLimit('increment', { cost, ...meta })

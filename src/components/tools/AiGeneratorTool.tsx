@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SparklesIcon } from '@/components/ui/icons'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
+import { runAiGenerationPipeline, type PipelineStatus } from '@/lib/ai-generation-pipeline'
 import { cn } from '@/lib'
 
 type AiGeneratorToolProps = {
@@ -19,6 +20,14 @@ type AiGeneratorToolProps = {
   generateLabel?: string
   onGenerate: (input: string) => Promise<string>
   toolActivityName: string
+}
+
+function pipelineLabel(status: PipelineStatus, detail: string | null, fallback: string): string {
+  if (detail) return detail
+  if (status === 'queued') return 'In Warteschlange …'
+  if (status === 'generating') return 'Generiert …'
+  if (status === 'failed') return 'Fehlgeschlagen'
+  return fallback
 }
 
 export function AiGeneratorTool({
@@ -41,6 +50,8 @@ export function AiGeneratorTool({
   const [input, setInput] = useState('')
   const [result, setResult] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus>('idle')
+  const [pipelineDetail, setPipelineDetail] = useState<string | null>(null)
   const inputId = `ai-tool-${title.replace(/\s+/g, '-').toLowerCase()}`
 
   async function handleGenerate() {
@@ -48,22 +59,46 @@ export function AiGeneratorTool({
 
     setIsGenerating(true)
     setResult(null)
+    setPipelineStatus('idle')
+    setPipelineDetail(null)
 
     try {
       if (!requireCredits()) return
 
-      const generated = await onGenerate(input.trim())
+      const trimmed = input.trim()
+      const generated = await runAiGenerationPipeline({
+        tool: toolActivityName,
+        label: `${toolActivityName}: ${trimmed.slice(0, 40)}`,
+        generation_type: 'text',
+        prompt: trimmed,
+        onStatus: (status, detail) => {
+          setPipelineStatus(status)
+          setPipelineDetail(detail ?? null)
+        },
+        run: () => onGenerate(trimmed),
+      })
+
       setResult(generated)
       await consumeCreditAfterSuccess({
         tool: toolActivityName,
-        label: `${toolActivityName}: ${input.trim().slice(0, 40)}`,
+        label: `${toolActivityName}: ${trimmed.slice(0, 40)}`,
+        prompt: trimmed.slice(0, 500),
+        generation_type: 'text',
+        skip_analytics_log: true,
       })
     } catch (err) {
-      setResult(err instanceof Error ? err.message : 'Generierung fehlgeschlagen.')
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Generierung fehlgeschlagen — Provider nicht erreichbar. Bitte später erneut versuchen.'
+      setResult(message)
+      setPipelineStatus('failed')
     } finally {
       setIsGenerating(false)
     }
   }
+
+  const busy = isGenerating
 
   return (
     <AiToolLayout title={title} description={description}>
@@ -80,21 +115,29 @@ export function AiGeneratorTool({
           onChange={(e) => setInput(e.target.value)}
           rows={4}
           placeholder={inputPlaceholder}
-          disabled={isGenerating}
+          disabled={busy}
         />
 
         <Button
           variant="pro"
           size="lg"
           fullWidth
-          loading={isGenerating}
-          disabled={isGenerating || !input.trim()}
+          loading={busy}
+          disabled={busy || !input.trim()}
           onClick={() => void handleGenerate()}
           className="mt-5"
         >
           <SparklesIcon className="size-4" aria-hidden />
-          {isGenerating ? 'Generiert …' : `${generateLabel} · 1 Credit`}
+          {busy
+            ? pipelineLabel(pipelineStatus, pipelineDetail, 'Generiert …')
+            : `${generateLabel} · 1 Credit`}
         </Button>
+
+        {busy && pipelineStatus === 'failed' && pipelineDetail ? (
+          <p className="mt-3 rounded-lg border border-red-900/40 bg-red-950/30 px-3 py-2 text-sm text-red-300/90">
+            {pipelineDetail}
+          </p>
+        ) : null}
       </div>
 
       <section className="mt-6">
@@ -104,7 +147,7 @@ export function AiGeneratorTool({
 
         {isUsageLimitReached && !hasProAccess ? (
           <UsageLimitWarning />
-        ) : isGenerating ? (
+        ) : busy ? (
           <div className="glass-card space-y-3 p-5">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />

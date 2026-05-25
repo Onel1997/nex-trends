@@ -11,12 +11,14 @@
     "fetch-demo-videos": "bash scripts/fetch-demo-videos.sh",
     "validate-demo-media": "node scripts/validate-demo-media.mjs",
     "deploy:admin-api": "supabase functions deploy admin-api",
-    "deploy:admin": "supabase db push && supabase functions deploy admin-api track-event usage-limit"
+    "deploy:admin": "supabase db push && supabase functions deploy admin-api track-event usage-limit",
+    "deploy:functions": "supabase functions deploy admin-api usage-limit track-event"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "recharts": "^2.15.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

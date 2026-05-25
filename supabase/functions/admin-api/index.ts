@@ -2,12 +2,18 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
 import { isAdminEmail } from "../_shared/admin.ts";
 import {
+  aggregateFromGenerations,
+  buildAnalyticsDashboard,
+  safeAiGenerationsInPeriod,
+} from "../_shared/admin-analytics.ts";
+import {
   safeAnalyticsCount,
   safeAnalyticsEvents,
   safeAppSettings,
   safeListAuthUsers,
   safeProfilesSelect,
 } from "../_shared/admin-db.ts";
+import { KNOWN_ADMIN_ACTIONS, normalizeAdminAction } from "../_shared/admin-actions.ts";
 import { MAX_FREE_CREDITS, SIGNUP_CREDITS } from "../_shared/usage.ts";
 
 const corsHeaders = {
@@ -27,13 +33,15 @@ const PROFILE_SELECT_OVERVIEW =
 
 type AdminAction =
   | "overview"
+  | "analytics"
   | "list_users"
   | "update_user"
   | "trend_stats"
   | "get_settings"
   | "update_settings"
   | "reset_credits_global"
-  | "log_event";
+  | "log_event"
+  | "health";
 
 type ProfileRow = {
   id: string;
@@ -174,13 +182,40 @@ serve(async (req) => {
 
     const { user, supabaseAdmin } = auth;
     const body = await req.json().catch(() => ({}));
-    const action = body.action as AdminAction;
+    const rawAction = body.action;
+    const normalized = normalizeAdminAction(rawAction);
 
-    if (!action) {
+    console.log("[admin-api] action:", {
+      raw: rawAction,
+      normalized,
+    });
+
+    if (!normalized) {
       return errorResponse("Ungültige action", 400);
     }
 
-    if (action === "overview") {
+    if (!KNOWN_ADMIN_ACTIONS.has(normalized)) {
+      return errorResponse(
+        `Unbekannte action: ${String(rawAction)} (normalisiert: ${normalized}). Bitte admin-api neu deployen.`,
+        400,
+      );
+    }
+
+    const action = normalized as AdminAction;
+
+    if (action === "health") {
+      return jsonResponse({
+        ok: true,
+        version: "20250526120000",
+        actions: [...KNOWN_ADMIN_ACTIONS],
+      });
+    }
+
+    if (action === "overview" || action === "analytics") {
+      const period = body.period === "24h" || body.period === "7d" ||
+          body.period === "30d"
+        ? body.period
+        : "7d";
       const warnings: string[] = [];
 
       const authResult = await safeListAuthUsers(supabaseAdmin);
@@ -200,16 +235,19 @@ serve(async (req) => {
       const proUsers = profileRows.filter(
         (p) => p.is_pro && p.subscription_status === "active",
       ).length;
-      const profileGenerations = profileRows.reduce(
-        (sum, p) => sum + (p.monthly_usage_count ?? 0),
-        0,
-      );
 
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        .toISOString();
-      const activeUsers = authUsers.length > 0
-        ? authUsers.filter((u) => u.created_at >= weekAgo).length
-        : profileRows.length;
+      const gensResult = await safeAiGenerationsInPeriod(
+        supabaseAdmin,
+        period,
+        5000,
+      );
+      warnings.push(...gensResult.warnings);
+
+      const aggregated = aggregateFromGenerations(gensResult.data, period);
+
+      const periodActiveUsers = aggregated.activeUsers;
+      const totalGenerations = aggregated.totalGenerations;
+      const creditsConsumed = aggregated.creditsConsumed;
 
       const eventCountResult = await safeAnalyticsCount(
         supabaseAdmin,
@@ -217,16 +255,26 @@ serve(async (req) => {
       );
       warnings.push(...eventCountResult.warnings);
 
-      return jsonResponse({
+      const overviewBase = {
         totalUsers,
-        activeUsers,
-        totalGenerations: Math.max(
-          profileGenerations,
-          eventCountResult.data,
-        ),
+        activeUsers: periodActiveUsers,
+        totalGenerations: Math.max(totalGenerations, eventCountResult.data),
         proUsers,
+        creditsConsumed,
         revenuePlaceholder: "€ — Stripe Sync",
+        period,
         _warnings: mergeWarnings(warnings),
+      };
+
+      if (action === "overview") {
+        return jsonResponse(overviewBase);
+      }
+
+      const dashboard = await buildAnalyticsDashboard(supabaseAdmin, period);
+      return jsonResponse({
+        ...overviewBase,
+        ...dashboard.data,
+        _warnings: mergeWarnings(warnings, dashboard.warnings),
       });
     }
 
@@ -365,7 +413,40 @@ serve(async (req) => {
     }
 
     if (action === "trend_stats") {
+      const period = body.period === "24h" || body.period === "7d" ||
+          body.period === "30d"
+        ? body.period
+        : "7d";
       const warnings: string[] = [];
+
+      const gensResult = await safeAiGenerationsInPeriod(
+        supabaseAdmin,
+        period,
+        500,
+      );
+      warnings.push(...gensResult.warnings);
+
+      if (gensResult.data.length > 0) {
+        const aggregated = aggregateFromGenerations(gensResult.data, period);
+        return jsonResponse({
+          topNiches: aggregated.topNiches,
+          topPlatforms: aggregated.topPlatforms,
+          topTools: aggregated.topTools,
+          recentGenerations: aggregated.recentGenerations.map((r) => ({
+            tool: r.tool_used,
+            label: r.prompt || r.niche || r.email,
+            email: r.email,
+            niche: r.niche,
+            platform: r.platform,
+            credits_used: r.credits_used,
+            created_at: r.created_at,
+          })),
+          creditsConsumed: aggregated.creditsConsumed,
+          totalGenerations: aggregated.totalGenerations,
+          period,
+          _warnings: mergeWarnings(warnings),
+        });
+      }
 
       const nicheResult = await safeAnalyticsEvents(
         supabaseAdmin,
@@ -385,6 +466,10 @@ serve(async (req) => {
 
       return jsonResponse({
         ...stats,
+        topTools: [],
+        creditsConsumed: 0,
+        totalGenerations: stats.recentGenerations.length,
+        period,
         _warnings: mergeWarnings(warnings),
       });
     }

@@ -16,6 +16,7 @@ import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { MAX_FREE_CREDITS } from '@/lib/constants'
 import { getDemoUserSeed } from '@/lib/demo-trend-seed'
 import { markDemoSeen, shouldShowDemoOnLoad } from '@/lib/trend-intelligence'
+import { runAiGenerationPipeline } from '@/lib/ai-generation-pipeline'
 import { trackAnalyticsEvent } from '@/lib/track-event'
 import { fetchDemoTrends, fetchTrendsByNiche } from '@/lib/trends-api'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
@@ -115,18 +116,33 @@ export function TrendIntelligencePanel() {
         return
       }
 
-      const results = await fetchTrendsByNiche(query, { userSeed: getDemoUserSeed() })
+      const platformLabel = platform === 'all' ? 'Alle Plattformen' : platform
+      const results = await runAiGenerationPipeline({
+        tool: 'Trend-Scouting',
+        label: `Trend-Suche: ${query}`,
+        generation_type: 'search',
+        niche: query,
+        platform: platformLabel,
+        prompt: `Trend-Suche: ${query}`,
+        trackAnalytics: false,
+        timeoutMs: 30_000,
+        run: () => fetchTrendsByNiche(query, { userSeed: getDemoUserSeed() }),
+      })
       setTrends(results)
       markDemoSeen()
-      logSearch(query, platform === 'all' ? 'Alle Plattformen' : platform, results.length)
+      logSearch(query, platformLabel, results.length)
       trackAnalyticsEvent('niche_search', {
         niche: query,
-        platform: platform === 'all' ? 'Alle Plattformen' : platform,
+        platform: platformLabel,
         results: results.length,
       })
       await consumeCreditAfterSuccess({
         tool: 'Trend-Scouting',
         label: `Trend-Suche: ${query}`,
+        niche: query,
+        platform: platformLabel,
+        prompt: `Trend-Suche: ${query}`,
+        generation_type: 'search',
       })
     } catch (err) {
       setError(

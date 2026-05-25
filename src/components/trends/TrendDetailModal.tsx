@@ -1,5 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { VideoGenerationProgress } from '@/components/trends/VideoGenerationProgress'
 import { VideoPreview } from '@/components/trends/VideoPreview'
+import { useVideoGeneration } from '@/hooks/useVideoGeneration'
 import { pickNextFallbackMedia } from '@/lib/trend-media-assignment'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
 import { Button } from '@/components/ui/Button'
@@ -54,6 +56,7 @@ export function TrendDetailModal({
   onToggleSave,
 }: TrendDetailModalProps) {
   const { showToast } = useToast()
+  const videoGen = useVideoGeneration()
   const failedVideosRef = useRef(new Set<string>())
   const [media, setMedia] = useState({
     videoUrl: trend?.videoUrl,
@@ -183,11 +186,12 @@ export function TrendDetailModal({
         <div className="flex flex-1 flex-col overflow-y-auto overscroll-contain lg:flex-row">
           <div className="video-preview-modal relative w-full shrink-0 bg-zinc-900/30 lg:w-[300px] xl:w-[340px]">
             <VideoPreview
-              key={`${trend.id}-${media.videoUrl ?? 'none'}`}
+              key={`${trend.id}-${videoGen.videoUrl ?? media.videoUrl ?? 'none'}`}
               playbackId={`modal-${trend.id}`}
               variant="detail"
-              thumbnailUrl={media.thumbnailUrl}
-              videoUrl={media.videoUrl}
+              enableAudio
+              thumbnailUrl={videoGen.posterUrl ?? media.thumbnailUrl}
+              videoUrl={videoGen.videoUrl ?? media.videoUrl}
               alt={trend.title}
               duration={media.videoDuration}
               aspectClass="aspect-[9/16] max-h-[42vh] sm:max-h-[50vh] lg:max-h-none lg:min-h-[420px]"
@@ -206,6 +210,48 @@ export function TrendDetailModal({
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">{trend.description}</p>
             </header>
+
+            <div className="space-y-3">
+              <Button
+                variant="pro"
+                size="md"
+                loading={videoGen.isLoading}
+                disabled={videoGen.isLoading}
+                onClick={() => {
+                  void videoGen.generate(trend).then((result) => {
+                    if (result?.status === 'completed') {
+                      setMedia({
+                        videoUrl: result.videoUrl,
+                        thumbnailUrl: result.posterUrl,
+                        videoDuration: result.duration,
+                      })
+                      showToast({
+                        type: 'success',
+                        title: 'Video bereit',
+                        message: result.hasAudio
+                          ? 'Tippe auf das Video für Wiedergabe mit Ton.'
+                          : result.message,
+                      })
+                    } else if (videoGen.error) {
+                      showToast({
+                        type: 'error',
+                        title: 'Video-Generierung',
+                        message: videoGen.error,
+                      })
+                    }
+                  })
+                }}
+              >
+                <SparklesIcon className="size-4" aria-hidden />
+                AI Video generieren
+              </Button>
+              <VideoGenerationProgress
+                status={videoGen.status}
+                detail={videoGen.detail}
+                error={videoGen.error}
+                onCancel={videoGen.cancel}
+              />
+            </div>
 
             <div className="flex items-center gap-3 rounded-xl border border-zinc-800/50 bg-zinc-900/30 p-3">
               <img

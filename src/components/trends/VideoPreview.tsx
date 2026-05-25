@@ -26,6 +26,8 @@ type VideoPreviewProps = {
   playbackId?: string
   /** card: taps pass through to TrendCard; detail: in-place playback */
   variant?: 'card' | 'detail'
+  /** Play with sound after explicit user gesture (detail modal) */
+  enableAudio?: boolean
   /** Swap to another MP4 when the current URL cannot play */
   onVideoUnavailable?: () => void
 }
@@ -58,6 +60,7 @@ export function VideoPreview({
   priority = false,
   playbackId: playbackIdProp,
   variant = 'detail',
+  enableAudio = false,
   onVideoUnavailable,
 }: VideoPreviewProps) {
   const isCard = variant === 'card'
@@ -81,7 +84,10 @@ export function VideoPreview({
   const [posterRejected, setPosterRejected] = useState(false)
   const [isNearViewport, setIsNearViewport] = useState(priority)
   const [isActiveViewport, setIsActiveViewport] = useState(priority)
+  const [loadTimedOut, setLoadTimedOut] = useState(false)
+  const [userWantsAudio, setUserWantsAudio] = useState(false)
   const qualityProbeRef = useRef(false)
+  const useAudio = enableAudio && userWantsAudio && !isCard
 
   const posterSrc = useMemo(
     () => resolvePosterSrc(thumbnailUrl, videoUrl, posterRejected),
@@ -112,8 +118,8 @@ export function VideoPreview({
     const video = videoRef.current
     if (!video || !canPlayRef.current) return
 
-    video.muted = true
-    video.defaultMuted = true
+    video.muted = !useAudio
+    video.defaultMuted = !useAudio
     video.playsInline = true
     video.setAttribute('playsinline', '')
     video.setAttribute('webkit-playsinline', 'true')
@@ -148,7 +154,7 @@ export function VideoPreview({
       setAutoplayBlocked(true)
       videoPlaybackManager.release(playbackId)
     }
-  }, [playbackId, videoUrl, isTouch, priority])
+  }, [playbackId, videoUrl, isTouch, priority, useAudio])
 
   const tryPlay = useCallback(() => {
     if (!canPlayRef.current || !isActiveRef.current) return
@@ -192,7 +198,25 @@ export function VideoPreview({
     setThumbLoaded(false)
     setThumbFailed(false)
     qualityProbeRef.current = false
+    setLoadTimedOut(false)
+    setUserWantsAudio(false)
   }, [videoUrl, displayPosterSrc])
+
+  useEffect(() => {
+    if (!shouldAttachVideo || videoReady) {
+      setLoadTimedOut(false)
+      return
+    }
+    const timer = window.setTimeout(() => {
+      if (!videoReady) {
+        setLoadTimedOut(true)
+        if (import.meta.env.DEV) {
+          console.warn('[VideoPreview] Load timeout — poster fallback', videoUrl)
+        }
+      }
+    }, 12_000)
+    return () => window.clearTimeout(timer)
+  }, [shouldAttachVideo, videoReady, videoUrl])
 
   useEffect(() => {
     if (!displayPosterSrc) {
@@ -287,7 +311,12 @@ export function VideoPreview({
     if (!video || !videoUrl || qualityProbeRef.current) return
     qualityProbeRef.current = true
 
-    const result = await probeVideoPlaybackQuality(video, videoUrl)
+    const skipProbe = isLocalDemoVideo(videoUrl) || trustedVideo
+    const probePromise = probeVideoPlaybackQuality(video, videoUrl, { skipProbe })
+    const timeout = new Promise<{ ok: boolean }>((resolve) => {
+      window.setTimeout(() => resolve({ ok: true }), 6_000)
+    })
+    const result = await Promise.race([probePromise, timeout])
     if (!result.ok) {
       markDemoVideoFailed(videoUrl)
       if (onVideoUnavailable) {
@@ -300,11 +329,12 @@ export function VideoPreview({
       pauseVideoRef.current()
     }
   }, [videoUrl, onVideoUnavailable])
-  const showThumbnail = !videoVisible || autoplayBlocked || videoFailed
+  const showThumbnail =
+    !videoVisible || autoplayBlocked || videoFailed || (loadTimedOut && !videoReady)
   const showPlaceholder =
     !displayPosterSrc ||
-    (!thumbLoaded && !thumbFailed) ||
-    (videoFailed && !thumbLoaded)
+    ((!thumbLoaded && !thumbFailed) && !loadTimedOut) ||
+    (videoFailed && !thumbLoaded && !loadTimedOut)
   const showMediaFallback = !displayPosterSrc && (thumbFailed || !formatValid)
 
   function handleMouseEnter() {
@@ -356,6 +386,8 @@ export function VideoPreview({
     if (isCard) return
     e.stopPropagation()
     if (!canPlay) return
+
+    if (enableAudio) setUserWantsAudio(true)
 
     if (isPlaying) {
       pauseVideo()
@@ -443,15 +475,15 @@ export function VideoPreview({
           ref={(node) => {
             videoRef.current = node
             if (node) {
-              node.muted = true
-              node.defaultMuted = true
+              node.muted = !useAudio
+              node.defaultMuted = !useAudio
               node.setAttribute('playsinline', '')
               node.setAttribute('webkit-playsinline', 'true')
             }
           }}
           src={videoUrl}
           poster={displayPosterSrc ?? undefined}
-          muted
+          muted={!useAudio}
           loop
           playsInline
           autoPlay={isActiveViewport && canPlay}
@@ -507,6 +539,18 @@ export function VideoPreview({
             </span>
           )}
         </div>
+      )}
+
+      {loadTimedOut && !videoReady && !videoFailed && (
+        <p className="pointer-events-none absolute bottom-10 left-2 right-2 z-10 rounded-lg bg-black/70 px-2 py-1 text-center text-[10px] text-zinc-300">
+          Video lädt langsam — Vorschaubild aktiv. Tippe zum erneuten Versuch.
+        </p>
+      )}
+
+      {useAudio && isPlaying && (
+        <span className="pointer-events-none absolute left-2.5 top-2.5 z-10 rounded-md bg-violet-600/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+          Audio an
+        </span>
       )}
 
       {duration && (

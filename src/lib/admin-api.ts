@@ -13,6 +13,7 @@ import {
   EMPTY_ADMIN_OVERVIEW,
   EMPTY_ADMIN_TREND_STATS,
 } from '@/lib/admin-defaults'
+import type { AdminAnalyticsDashboard, AnalyticsPeriod } from '@/types/analytics'
 import type {
   AdminOverview,
   AdminSettings,
@@ -110,8 +111,65 @@ async function adminApiRead<T>(
   }
 }
 
-export function fetchAdminOverview(): Promise<AdminApiResult<AdminOverview>> {
-  return adminApiRead('overview', {}, { ...EMPTY_ADMIN_OVERVIEW })
+export function fetchAdminOverview(
+  period: AnalyticsPeriod = '7d',
+): Promise<AdminApiResult<AdminOverview>> {
+  return adminApiRead('overview', { period }, { ...EMPTY_ADMIN_OVERVIEW, period })
+}
+
+const EMPTY_ANALYTICS_DASHBOARD: AdminAnalyticsDashboard = {
+  period: '7d',
+  totalUsers: 0,
+  proUsers: 0,
+  totalGenerations: 0,
+  creditsConsumed: 0,
+  activeUsers: 0,
+  revenuePlaceholder: '€ — Stripe Sync',
+  topTools: [],
+  topNiches: [],
+  topPlatforms: [],
+  dailySeries: [],
+  recentGenerations: [],
+  liveCounters: { last24h: 0, last7d: 0, last30d: 0 },
+}
+
+/** Full dashboard — falls back to overview if deployed admin-api lacks `analytics`. */
+export async function fetchAdminAnalytics(
+  period: AnalyticsPeriod = '7d',
+): Promise<AdminApiResult<AdminAnalyticsDashboard>> {
+  try {
+    return await adminApiRaw<AdminAnalyticsDashboard>('analytics', { period })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (!msg.toLowerCase().includes('unbekannte action')) {
+      return readFallback('analytics', err, { ...EMPTY_ANALYTICS_DASHBOARD, period })
+    }
+    logAdminWarn('analytics action missing — fallback to overview', msg)
+  }
+
+  const overview = await fetchAdminOverview(period)
+  return {
+    data: {
+      ...EMPTY_ANALYTICS_DASHBOARD,
+      period,
+      totalUsers: overview.data.totalUsers ?? 0,
+      proUsers: overview.data.proUsers ?? 0,
+      totalGenerations: overview.data.totalGenerations ?? 0,
+      creditsConsumed: overview.data.creditsConsumed ?? 0,
+      activeUsers: overview.data.activeUsers ?? 0,
+      revenuePlaceholder: overview.data.revenuePlaceholder,
+      liveCounters: {
+        last24h: overview.data.totalGenerations ?? 0,
+        last7d: overview.data.totalGenerations ?? 0,
+        last30d: overview.data.totalGenerations ?? 0,
+      },
+    },
+    warnings: [
+      ...overview.warnings,
+      'Analytics-Dashboard-Action nicht deployed — bitte `supabase functions deploy admin-api` ausführen.',
+    ],
+    offline: overview.offline,
+  }
 }
 
 export function fetchAdminUsers(search = ''): Promise<AdminApiResult<{ users: AdminUser[] }>> {
@@ -134,8 +192,10 @@ export function updateAdminUser(
     })
 }
 
-export function fetchAdminTrendStats(): Promise<AdminApiResult<AdminTrendStats>> {
-  return adminApiRead('trend_stats', {}, { ...EMPTY_ADMIN_TREND_STATS })
+export function fetchAdminTrendStats(
+  period: AnalyticsPeriod = '7d',
+): Promise<AdminApiResult<AdminTrendStats>> {
+  return adminApiRead('trend_stats', { period }, { ...EMPTY_ADMIN_TREND_STATS, period })
 }
 
 export function fetchAdminSettings(): Promise<AdminApiResult<{ settings: AdminSettings }>> {
@@ -173,6 +233,14 @@ export function resetCreditsGlobally(amount?: number): Promise<{ ok: boolean; am
 export async function probeAdminApi(): Promise<{ ok: boolean; offline: boolean; message?: string }> {
   logAdminDebug('probe', 'start')
   try {
+    try {
+      const health = await adminApiRaw<{ ok: boolean }>('health', {})
+      if (health.data?.ok) {
+        return { ok: true, offline: false }
+      }
+    } catch (healthErr) {
+      logAdminDebug('probe health skipped', healthErr)
+    }
     const result = await fetchAdminOverview()
     if (result.offline) {
       return { ok: false, offline: true, message: result.warnings[0] }

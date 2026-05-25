@@ -36,6 +36,9 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
         await consumeCreditAfterSuccess({
           tool: 'Hook-Generator',
           label: `Hooks: ${trend.title.slice(0, 30)}`,
+          niche: trend.niche,
+          platform: trend.platform,
+          prompt: trend.title,
         })
       }
     } catch (err) {

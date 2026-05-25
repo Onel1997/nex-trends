@@ -38,6 +38,7 @@ export function LandingPageAnalyzerPage() {
       await consumeCreditAfterSuccess({
         tool: 'Landing Page Analyzer',
         label: `LP-Analyse: ${input.trim().slice(0, 40)}`,
+        prompt: input.trim().slice(0, 500),
       })
     } finally {
       setIsAnalyzing(false)

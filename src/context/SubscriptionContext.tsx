@@ -23,6 +23,8 @@ import {
   checkUsageLimit as fetchUsageLimit,
   getUsageFromProfile,
   incrementUsage as fetchIncrementUsage,
+  logGenerationUsage,
+  type UsageGenerationMeta,
 } from '@/lib/usage'
 import { supabase } from '@/lib/supabase'
 import type { UserProfile } from '@/types/subscription'
@@ -32,6 +34,11 @@ type ConsumeUsageOptions = {
   tool: string
   label: string
   cost?: number
+  niche?: string
+  platform?: string
+  prompt?: string
+  generation_type?: 'text' | 'video' | 'audio' | 'search' | 'image'
+  skip_analytics_log?: boolean
 }
 
 type SubscriptionContextValue = {
@@ -279,8 +286,24 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
   const consumeUsage = useCallback(
     async (activity?: ConsumeUsageOptions): Promise<UsageLimitResult> => {
+      const generationMeta: UsageGenerationMeta | undefined = activity
+        ? {
+            tool: activity.tool,
+            label: activity.label,
+            niche: activity.niche,
+            platform: activity.platform,
+            prompt: activity.prompt ?? activity.label,
+            credits_used: activity.cost ?? 1,
+            generation_type: activity.generation_type,
+            skip_analytics_log: activity.skip_analytics_log,
+          }
+        : undefined
+
       if (isAdmin) {
-        if (activity) logActivity(activity.tool, activity.label)
+        if (activity) {
+          logActivity(activity.tool, activity.label)
+          void logGenerationUsage(generationMeta!)
+        }
         const unlimited = getAdminUsageResult(
           profileRef.current?.monthly_usage_count ?? 0,
           profileRef.current?.usage_reset_date ?? null,
@@ -290,7 +313,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       }
 
       if (premiumAccess) {
-        if (activity) logActivity(activity.tool, activity.label)
+        if (activity) {
+          logActivity(activity.tool, activity.label)
+          void logGenerationUsage(generationMeta!)
+        }
         const unlimited = getUsageFromProfile(profile, userEmail)
         return { ...unlimited, allowed: true, unlimited: true }
       }
@@ -299,7 +325,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         const result = await fetchIncrementUsage(
           profileRef.current,
           activity?.cost ?? 1,
-          activity ? { tool: activity.tool, label: activity.label } : undefined,
+          generationMeta,
         )
         setUsage(result)
 

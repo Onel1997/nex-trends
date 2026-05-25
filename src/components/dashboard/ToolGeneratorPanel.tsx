@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/Input'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { SparklesIcon } from '@/components/ui/icons'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
+import { runAiGenerationPipeline } from '@/lib/ai-generation-pipeline'
 import { cn } from '@/lib'
 
 type ToolGeneratorPanelProps = {
@@ -64,11 +65,21 @@ export function ToolGeneratorPanel({
     try {
       if (!requireCredits()) return
 
-      const generated = await onGenerate(briefing.trim())
+      const trimmed = briefing.trim()
+      const generated = await runAiGenerationPipeline({
+        tool: title,
+        label: `${title}: Analyse gestartet`,
+        generation_type: 'text',
+        prompt: trimmed,
+        run: () => onGenerate(trimmed),
+      })
       setResult(generated)
       await consumeCreditAfterSuccess({
         tool: title,
         label: `${title}: Analyse gestartet`,
+        prompt: trimmed.slice(0, 500),
+        generation_type: 'text',
+        skip_analytics_log: true,
       })
     } catch (error) {
       const message =

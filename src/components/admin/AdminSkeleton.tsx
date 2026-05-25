@@ -14,12 +14,20 @@ function Bone({ className }: { className?: string }) {
 export function AdminOverviewSkeleton() {
   return (
     <div className="space-y-6" aria-busy aria-label="Analytics werden geladen">
-      <div className="space-y-2">
-        <Bone className="h-8 w-56" />
-        <Bone className="h-4 w-80 max-w-full" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+        <div className="space-y-2">
+          <Bone className="h-8 w-56" />
+          <Bone className="h-4 w-80 max-w-full" />
+        </div>
+        <Bone className="h-10 w-64 rounded-xl" />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Bone key={i} className="h-16 rounded-xl" />
+        ))}
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
             className="glass-card rounded-2xl border border-zinc-800/50 p-5"
@@ -28,6 +36,10 @@ export function AdminOverviewSkeleton() {
             <Bone className="h-9 w-20" />
           </div>
         ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Bone className="h-64 rounded-2xl" />
+        <Bone className="h-64 rounded-2xl" />
       </div>
     </div>
   )
@@ -57,15 +69,22 @@ export function AdminTableSkeleton() {
 export function AdminTrendSkeleton() {
   return (
     <div className="space-y-6" aria-busy>
-      <div className="space-y-2">
-        <Bone className="h-8 w-48" />
-        <Bone className="h-4 w-72 max-w-full" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+        <div className="space-y-2">
+          <Bone className="h-8 w-48" />
+          <Bone className="h-4 w-72 max-w-full" />
+        </div>
+        <Bone className="h-10 w-64 rounded-xl" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Bone className="h-16 rounded-2xl" />
+        <Bone className="h-16 rounded-2xl" />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <Bone className="h-48 rounded-2xl" />
-        <Bone className="h-48 rounded-2xl" />
+        <Bone className="h-56 rounded-2xl" />
+        <Bone className="h-56 rounded-2xl" />
       </div>
-      <Bone className="h-56 rounded-2xl" />
+      <Bone className="h-72 rounded-2xl" />
     </div>
   )
 }

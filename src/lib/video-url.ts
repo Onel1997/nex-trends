@@ -67,8 +67,23 @@ export function probeVideoUrl(
       resolve(false)
     })
 
-    video.addEventListener('loadedmetadata', onReady, { once: true })
-    video.addEventListener('error', onError, { once: true })
+    const hardTimeout = window.setTimeout(() => {
+      cleanup()
+      resolve(false)
+    }, 10_000)
+
+    const onReadyWrapped = () => {
+      window.clearTimeout(hardTimeout)
+      onReady()
+    }
+
+    const onErrorWrapped = () => {
+      window.clearTimeout(hardTimeout)
+      onError()
+    }
+
+    video.addEventListener('loadedmetadata', onReadyWrapped, { once: true })
+    video.addEventListener('error', onErrorWrapped, { once: true })
     video.src = url
   })
 }

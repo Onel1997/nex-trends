@@ -7,4 +7,4 @@ export type UsageLimitResult = {
   usageResetDate: string | null
 }
 
-export type UsageAction = 'check' | 'increment'
+export type UsageAction = 'check' | 'increment' | 'log_generation' | 'update_generation'

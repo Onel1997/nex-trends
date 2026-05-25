@@ -6,6 +6,11 @@ type ConsumeActivity = {
   tool: string
   label: string
   cost?: number
+  niche?: string
+  platform?: string
+  prompt?: string
+  generation_type?: 'text' | 'video' | 'audio' | 'search' | 'image'
+  skip_analytics_log?: boolean
 }
 
 /** Convenience hook für Credit-Limits (Free: wöchentliche Aufladung, Pro: unlimited). */
@@ -32,13 +37,12 @@ export function useUsageLimit() {
     return true
   }, [hasProAccess, isUsageLimitReached, openUpgradeModal])
 
-  /** Deduct one credit after a successful generation (no-op for Pro). */
+  /** Deduct credit after success; Pro/Admin only logs analytics (no charge). */
   const consumeCreditAfterSuccess = useCallback(
     async (activity: ConsumeActivity): Promise<UsageLimitResult | null> => {
-      if (hasProAccess) return null
       return consumeUsage(activity)
     },
-    [hasProAccess, consumeUsage],
+    [consumeUsage],
   )
 
   return {

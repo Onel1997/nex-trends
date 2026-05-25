@@ -115,6 +115,9 @@ export function HookGeneratorTool() {
           await consumeCreditAfterSuccess({
             tool: 'Hook Generator',
             label: `Hooks: ${(selectedTrend?.title ?? briefing).slice(0, 40)}`,
+            niche: selectedTrend?.niche ?? briefing,
+            platform: selectedTrend?.platform ?? '',
+            prompt: selectedTrend?.title ?? briefing,
           })
         }
       } catch (err) {

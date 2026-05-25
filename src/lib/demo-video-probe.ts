@@ -72,10 +72,17 @@ async function seekAndSample(
 export async function probeVideoPlaybackQuality(
   video: HTMLVideoElement,
   videoUrl: string,
+  options?: { skipProbe?: boolean },
 ): Promise<VideoQualityProbeResult> {
   const key = cacheKey(videoUrl)
   const cached = probeCache.get(key)
   if (cached) return cached
+
+  if (options?.skipProbe) {
+    const pass = { ok: true as const }
+    probeCache.set(key, pass)
+    return pass
+  }
 
   const canvas = document.createElement('canvas')
   canvas.width = PROBE_SAMPLE_SIZE
