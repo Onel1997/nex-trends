@@ -30,7 +30,7 @@ export function Button({
         'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-smooth',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400/70',
         'disabled:pointer-events-none disabled:opacity-50',
-        'active:scale-[0.98]',
+        'btn-press active:scale-[0.98]',
         fullWidth && 'w-full',
         size === 'sm' && 'px-3.5 py-2 text-xs',
         size === 'md' && 'px-4 py-2.5 text-sm',

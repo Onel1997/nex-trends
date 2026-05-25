@@ -41,6 +41,14 @@ export function readToolFromUrl(): DashboardRouteId {
   return 'dashboard'
 }
 
+export const DASHBOARD_NAVIGATE_EVENT = 'dashboard:navigate'
+
+function notifyDashboardNavigate(tool: DashboardRouteId) {
+  window.dispatchEvent(
+    new CustomEvent(DASHBOARD_NAVIGATE_EVENT, { detail: { tool } }),
+  )
+}
+
 export function navigateToTool(
   tool: DashboardRouteId,
   options?: { replace?: boolean },
@@ -51,6 +59,7 @@ export function navigateToTool(
   } else {
     window.history.pushState({ tool }, '', href)
   }
+  notifyDashboardNavigate(tool)
 }
 
 /** @deprecated Use navigateToTool */

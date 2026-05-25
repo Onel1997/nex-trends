@@ -18,7 +18,7 @@ export function SubscriptionSection() {
   } = useDashboardData()
 
   return (
-    <Card className="animate-fade-in animation-delay-200">
+    <Card variant="glass" className="animate-fade-in animation-delay-200 glass-premium">
       <CardHeader>
         <h3 className="text-sm font-semibold tracking-tight text-white">Subscription</h3>
         <p className="mt-0.5 text-xs text-zinc-500">Plan verwalten & upgraden</p>

@@ -57,7 +57,7 @@ export function DashboardLayout({
       <div
         className={cn(
           'fixed inset-y-0 left-0 z-50 w-[min(100%,17.5rem)]',
-          'transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform',
+          'transition-[transform,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform',
           'lg:static lg:z-auto lg:w-[17.5rem] lg:translate-x-0 lg:transition-none lg:will-change-auto',
           mobileOpen
             ? 'translate-x-0 shadow-[4px_0_48px_-8px_rgba(0,0,0,0.65)]'
@@ -72,7 +72,7 @@ export function DashboardLayout({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-800/50 glass-subtle px-4 lg:hidden">
+        <header className="sticky-header-smooth sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-800/50 glass-subtle px-4 lg:hidden">
           <button
             type="button"
             aria-label={mobileOpen ? 'Menü schließen' : 'Menü öffnen'}
@@ -95,7 +95,9 @@ export function DashboardLayout({
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth-mobile">
+          {children}
+        </main>
       </div>
     </div>
   )

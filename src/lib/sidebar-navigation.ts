@@ -24,8 +24,8 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: 'AI Creator',
     routes: [
       'trend-intelligence',
-      'analyzer',
       'ai-studio',
+      'analyzer',
       'hook',
       'ad-copy',
       'seo',
@@ -43,14 +43,5 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     routes: ['settings'],
   },
 ]
-
-/** Core AI feature — subtle visual emphasis in sidebar */
-export const SIDEBAR_FEATURED_ROUTE: DashboardRouteId = 'trend-intelligence'
-
-/** AI Video Studio — minimal premium dot indicator */
-export const SIDEBAR_PREMIUM_ROUTE: DashboardRouteId = 'ai-studio'
-
-/** @deprecated Use SIDEBAR_PREMIUM_ROUTE */
-export const SIDEBAR_PRO_BADGE_ROUTE = SIDEBAR_PREMIUM_ROUTE
 
 export const SIDEBAR_LIBRARY_ROUTES: DashboardRouteId[] = ['my-videos', 'saved-trends']

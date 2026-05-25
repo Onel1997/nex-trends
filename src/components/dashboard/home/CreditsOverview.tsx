@@ -10,7 +10,7 @@ export function CreditsOverview() {
   const remaining = usage.remaining ?? 0
 
   return (
-    <Card className="animate-fade-in">
+    <Card variant="glass" className="animate-fade-in glass-premium">
       <CardBody className="py-5">
         <div className="flex items-center gap-3">
           <span className="flex size-10 items-center justify-center rounded-xl bg-violet-500/10 ring-1 ring-violet-500/20">

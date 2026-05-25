@@ -39,8 +39,8 @@ export function VideoLibraryCard({
   return (
     <article
       className={cn(
-        'group glass-card overflow-hidden transition-smooth',
-        'hover:border-violet-500/30 hover:shadow-[0_0_40px_-16px_rgba(139,92,246,0.35)]',
+        'ai-video-card group glass-card overflow-hidden transition-smooth duration-300',
+        'hover:border-violet-500/35 hover:shadow-[0_8px_40px_-12px_rgba(139,92,246,0.4)]',
       )}
     >
       <button
@@ -48,16 +48,23 @@ export function VideoLibraryCard({
         disabled={!canPlay}
         onClick={() => canPlay && onPlay(video)}
         className={cn(
-          'relative block w-full aspect-[9/16] overflow-hidden bg-zinc-900/80 text-left',
+          'relative block w-full aspect-[9/16] overflow-hidden bg-zinc-900/90 text-left',
           canPlay && 'cursor-pointer',
-          !canPlay && 'cursor-default opacity-80',
+          !canPlay && 'cursor-default opacity-85',
         )}
       >
         {video.posterUrl ? (
           <img
             src={video.posterUrl}
             alt=""
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            width={360}
+            height={640}
+            decoding="async"
+            className={cn(
+              'ai-video-card__thumb absolute inset-0 size-full',
+              'transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+              'group-hover:scale-[1.04] group-active:scale-[1.02]',
+            )}
             loading="lazy"
           />
         ) : (
@@ -68,30 +75,43 @@ export function VideoLibraryCard({
           </div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+        <div className="ai-video-card__glass pointer-events-none absolute inset-0" aria-hidden />
+        <div className="ai-video-card__fade pointer-events-none absolute inset-x-0 bottom-0 h-[55%]" aria-hidden />
 
         {canPlay && (
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
-            <div className="flex size-14 items-center justify-center rounded-full bg-violet-600/80 ring-2 ring-violet-400/40 backdrop-blur-sm">
+          <div
+            className={cn(
+              'absolute inset-0 flex items-center justify-center',
+              'opacity-100 sm:opacity-0 sm:transition-opacity sm:duration-300 sm:group-hover:opacity-100',
+            )}
+          >
+            <div
+              className={cn(
+                'flex size-14 items-center justify-center rounded-full',
+                'bg-violet-600/85 ring-2 ring-violet-400/50 backdrop-blur-md',
+                'shadow-[0_0_32px_-4px_rgba(139,92,246,0.65)]',
+                'transition-transform duration-300 group-hover:scale-105',
+              )}
+            >
               <PlayIcon className="ml-0.5 size-6 text-white" />
             </div>
           </div>
         )}
 
-        <span className="absolute bottom-2.5 right-2.5 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
+        <span className="absolute bottom-3 right-3 z-10 rounded-lg bg-black/55 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-white backdrop-blur-sm">
           {video.duration}
         </span>
 
         {video.provider && (
-          <span className="absolute left-2.5 top-2.5 rounded-md bg-black/50 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-zinc-300">
+          <span className="absolute left-3 top-3 z-10 rounded-lg border border-white/10 bg-black/45 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-zinc-200 backdrop-blur-md">
             {video.provider}
           </span>
         )}
       </button>
 
-      <div className="space-y-3 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-white">
+      <div className="space-y-3.5 p-4 sm:p-4">
+        <div className="flex items-start justify-between gap-2.5">
+          <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-white">
             {video.title}
           </h3>
           <Badge variant={statusBadgeVariant(video.status)} className="shrink-0 capitalize">
@@ -99,7 +119,7 @@ export function VideoLibraryCard({
           </Badge>
         </div>
 
-        <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-zinc-500">
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] text-zinc-500">
           <div>
             <dt className="text-zinc-600">Erstellt</dt>
             <dd className="font-medium text-zinc-400">{formatVideoDate(video.createdAt)}</dd>
@@ -122,13 +142,13 @@ export function VideoLibraryCard({
           ) : null}
         </dl>
 
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap gap-2 pt-0.5">
           <Button
             size="sm"
             variant="primary"
             disabled={!canPlay}
             onClick={() => onPlay(video)}
-            className="min-w-0 flex-1"
+            className="btn-press min-w-0 flex-1"
           >
             <PlayIcon className="size-3.5" />
             Abspielen
@@ -138,6 +158,7 @@ export function VideoLibraryCard({
             variant="secondary"
             disabled={!canDownload}
             onClick={() => downloadVideoMp4(video)}
+            className="btn-press"
             title="MP4 herunterladen"
           >
             <DownloadIcon className="size-4" />
@@ -148,6 +169,7 @@ export function VideoLibraryCard({
             disabled={!canRegenerate || isRegenerating}
             loading={isRegenerating}
             onClick={() => onRegenerate(video)}
+            className="btn-press"
             title="Erneut generieren"
           >
             {!isRegenerating && <ArrowPathIcon className="size-4" />}
@@ -158,7 +180,7 @@ export function VideoLibraryCard({
             disabled={isDeleting}
             loading={isDeleting}
             onClick={() => onDelete(video)}
-            className="text-red-400/90 hover:bg-red-500/10 hover:text-red-300"
+            className="btn-press text-red-400/90 hover:bg-red-500/10 hover:text-red-300"
             title="Löschen"
           >
             {!isDeleting && <TrashIcon className="size-4" />}

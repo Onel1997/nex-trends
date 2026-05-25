@@ -4,6 +4,7 @@ import { DashboardMain } from '@/components/dashboard/DashboardMain'
 import { UpgradeModal } from '@/components/subscription'
 import type { DashboardToolId } from '@/lib'
 import {
+  DASHBOARD_NAVIGATE_EVENT,
   ensureDashboardPath,
   navigateToTool,
   readToolFromUrl,
@@ -29,12 +30,14 @@ export function HomePage() {
   }, [])
 
   useEffect(() => {
-    const onPopState = () => {
-      setActiveTool(readToolFromUrl())
-    }
+    const syncFromUrl = () => setActiveTool(readToolFromUrl())
 
-    window.addEventListener('popstate', onPopState)
-    return () => window.removeEventListener('popstate', onPopState)
+    window.addEventListener('popstate', syncFromUrl)
+    window.addEventListener(DASHBOARD_NAVIGATE_EVENT, syncFromUrl)
+    return () => {
+      window.removeEventListener('popstate', syncFromUrl)
+      window.removeEventListener(DASHBOARD_NAVIGATE_EVENT, syncFromUrl)
+    }
   }, [])
 
   return (

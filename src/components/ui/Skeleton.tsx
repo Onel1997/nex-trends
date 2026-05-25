@@ -73,13 +73,20 @@ export function TrendsGridSkeleton() {
 
 export function DashboardSkeleton() {
   return (
-    <div className="space-y-6 lg:space-y-8">
-      <Skeleton className="h-40 w-full rounded-2xl" />
-      <div className="grid gap-6 xl:grid-cols-3">
-        <Skeleton className="h-80 rounded-2xl xl:col-span-2" />
-        <Skeleton className="h-80 rounded-2xl" />
+    <div className="dashboard-os mx-auto max-w-6xl flex flex-col gap-7">
+      <Skeleton className="h-44 w-full rounded-3xl sm:h-52" />
+      <div className="flex gap-3 overflow-hidden">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 min-w-[11rem] shrink-0 rounded-2xl" />
+        ))}
       </div>
-      <Skeleton className="h-56 w-full rounded-2xl" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Skeleton className="h-56 rounded-2xl md:col-span-2" />
+        <Skeleton className="h-56 rounded-2xl" />
+        <Skeleton className="h-56 rounded-2xl" />
+      </div>
+      <Skeleton className="h-48 w-full rounded-2xl" />
+      <Skeleton className="h-40 w-full rounded-2xl" />
     </div>
   )
 }

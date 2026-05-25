@@ -45,11 +45,12 @@ function renderPage(activeTool: DashboardToolId, onSelectTool: (tool: DashboardT
 
 export function DashboardMain({ activeTool, onSelectTool }: DashboardMainProps) {
   const immersive = isImmersiveTool(activeTool)
+  const isDashboard = activeTool === 'dashboard'
 
   return (
     <div
       className={cn(
-        'relative min-h-full',
+        'relative min-h-0',
         immersive ? 'ti-ambient' : 'ambient-glow',
       )}
     >
@@ -75,14 +76,19 @@ export function DashboardMain({ activeTool, onSelectTool }: DashboardMainProps) 
 
       <div
         className={cn(
-          'relative mx-auto w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10',
+          'relative mx-auto w-full px-4 sm:px-6 lg:px-8',
+          isDashboard
+            ? 'pt-2 pb-5 sm:pt-3 sm:pb-6 lg:pt-4 lg:pb-8'
+            : 'py-5 sm:py-6 lg:py-8',
           immersive
             ? 'max-w-6xl xl:max-w-7xl 2xl:max-w-[1680px]'
             : 'max-w-7xl',
         )}
       >
         <ToolPageHeader activeTool={activeTool} onBack={() => onSelectTool('dashboard')} />
-        {renderPage(activeTool, onSelectTool)}
+        <div key={activeTool} className="page-transition-enter">
+          {renderPage(activeTool, onSelectTool)}
+        </div>
       </div>
     </div>
   )

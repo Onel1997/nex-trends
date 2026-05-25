@@ -4,12 +4,7 @@ import { APP_NAME, type DashboardToolId } from '@/lib'
 import { cn } from '@/lib'
 import { navigateToHome } from '@/lib/navigation'
 import { getRouteConfig } from '@/lib/routes'
-import {
-  SIDEBAR_FEATURED_ROUTE,
-  SIDEBAR_LIBRARY_ROUTES,
-  SIDEBAR_PREMIUM_ROUTE,
-  SIDEBAR_SECTIONS,
-} from '@/lib/sidebar-navigation'
+import { SIDEBAR_LIBRARY_ROUTES, SIDEBAR_SECTIONS } from '@/lib/sidebar-navigation'
 import { navigateToAdmin } from '@/lib/admin-navigation'
 import { useSubscription } from '@/hooks/useSubscription'
 import { supabase } from '@/lib/supabase'
@@ -53,19 +48,15 @@ function SidebarDivider({ variant = 'default' }: { variant?: 'default' | 'librar
   )
 }
 
-/** Minimal premium marker — glowing dot, no text badge */
-function SidebarPremiumDot() {
+/** Active route indicator — only shown on the current page */
+function SidebarActiveDot() {
   return (
     <span
       className="relative flex size-2 shrink-0 items-center justify-center"
-      title="Premium"
-      aria-label="Premium feature"
+      aria-hidden
     >
-      <span
-        className="absolute inset-0 rounded-full bg-violet-500/40 blur-[3px]"
-        aria-hidden
-      />
-      <span className="relative size-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_1px_rgba(139,92,246,0.55)]" />
+      <span className="absolute inset-0 rounded-full bg-violet-500/50 blur-[3px]" />
+      <span className="relative size-1.5 rounded-full bg-violet-400 shadow-[0_0_8px_1px_rgba(139,92,246,0.65)]" />
     </span>
   )
 }
@@ -73,20 +64,11 @@ function SidebarPremiumDot() {
 type NavItemProps = {
   routeId: DashboardToolId
   isActive: boolean
-  isFeatured: boolean
   isLibrary: boolean
-  showPremium: boolean
   onSelect: () => void
 }
 
-function SidebarNavItem({
-  routeId,
-  isActive,
-  isFeatured,
-  isLibrary,
-  showPremium,
-  onSelect,
-}: NavItemProps) {
+function SidebarNavItem({ routeId, isActive, isLibrary, onSelect }: NavItemProps) {
   const route = getRouteConfig(routeId)
 
   return (
@@ -96,18 +78,14 @@ function SidebarNavItem({
         onClick={onSelect}
         aria-current={isActive ? 'page' : undefined}
         className={cn(
-          'group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] transition-smooth',
+          'group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] transition-smooth',
           'active:scale-[0.98]',
           isActive && 'sidebar-nav-item--active font-medium text-white',
+          !isActive && 'hover:translate-x-px',
           !isActive &&
-            isFeatured &&
-            'text-zinc-300 hover:bg-violet-500/[0.05] hover:text-zinc-100',
-          !isActive &&
-            !isFeatured &&
             isLibrary &&
             'font-normal text-zinc-500 hover:bg-zinc-800/25 hover:text-zinc-200',
           !isActive &&
-            !isFeatured &&
             !isLibrary &&
             'font-normal text-zinc-400 hover:bg-white/[0.03] hover:text-zinc-100',
         )}
@@ -116,20 +94,13 @@ function SidebarNavItem({
           toolId={routeId}
           className={cn(
             'size-[17px] shrink-0 transition-smooth',
-            isActive && 'text-violet-400',
-            !isActive && isFeatured && 'text-violet-400/70 group-hover:text-violet-300/90',
-            !isActive && !isFeatured && 'text-zinc-500 group-hover:text-zinc-300',
+            isActive ? 'text-violet-400' : 'text-zinc-500 group-hover:text-zinc-300',
           )}
         />
-        <span
-          className={cn(
-            'min-w-0 flex-1 truncate leading-snug tracking-tight',
-            !isActive && isFeatured && 'font-medium',
-          )}
-        >
+        <span className="min-w-0 flex-1 truncate leading-snug tracking-tight">
           {route.label}
         </span>
-        {showPremium ? <SidebarPremiumDot /> : null}
+        {isActive ? <SidebarActiveDot /> : null}
       </button>
     </li>
   )
@@ -178,29 +149,27 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
 
       {/* Navigation */}
       <nav
-        className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-thin"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 py-3 scrollbar-thin"
         aria-label="Main navigation"
       >
         {SIDEBAR_SECTIONS.map((section, sectionIndex) => (
           <div
             key={section.id}
             className={cn(
-              sectionIndex > 0 && 'mt-1',
-              section.id === 'library' && 'rounded-lg bg-zinc-900/20 px-0.5 py-0.5',
+              sectionIndex > 0 && 'mt-2',
+              section.id === 'library' && 'rounded-xl bg-zinc-900/25 px-1 py-1.5',
             )}
           >
             <SidebarSectionLabel variant={section.id === 'library' ? 'library' : 'default'}>
               {section.label}
             </SidebarSectionLabel>
-            <ul className="space-y-0.5 px-1">
+            <ul className="space-y-1 px-0.5">
               {section.routes.map((routeId) => (
                 <SidebarNavItem
                   key={routeId}
                   routeId={routeId}
                   isActive={activeTool === routeId}
-                  isFeatured={routeId === SIDEBAR_FEATURED_ROUTE}
                   isLibrary={SIDEBAR_LIBRARY_ROUTES.includes(routeId)}
-                  showPremium={routeId === SIDEBAR_PREMIUM_ROUTE}
                   onSelect={() => onSelectTool(routeId)}
                 />
               ))}

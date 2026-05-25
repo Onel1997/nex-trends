@@ -166,27 +166,39 @@ export function getSidebarRoutes(): DashboardRouteConfig[] {
   return NAV_ROUTE_ORDER.map((id) => getRouteConfig(id)).filter((r) => r.showInSidebar)
 }
 
-/** Dashboard tool grid — each product surface once, in display order */
-export const DASHBOARD_TOOL_GRID_ORDER = [
+/** Core NexTrends features — hero cards on dashboard (in order) */
+export const DASHBOARD_CORE_FEATURES = [
   'trend-intelligence',
+  'ai-studio',
+] as const satisfies readonly DashboardRouteId[]
+
+/** Remaining tools below core heroes on dashboard */
+export const DASHBOARD_SECONDARY_TOOL_ORDER = [
+  'analyzer',
   'hook',
   'ad-copy',
   'seo',
-  'analyzer',
-  'ai-studio',
   'saved-trends',
   'my-videos',
+] as const satisfies readonly DashboardRouteId[]
+
+/** Dashboard tool grid — each product surface once, in display order */
+export const DASHBOARD_TOOL_GRID_ORDER = [
+  ...DASHBOARD_CORE_FEATURES,
+  ...DASHBOARD_SECONDARY_TOOL_ORDER,
 ] as const satisfies readonly DashboardRouteId[]
 
 export function getDashboardToolGridRoutes(): DashboardRouteConfig[] {
   return DASHBOARD_TOOL_GRID_ORDER.map((id) => getRouteConfig(id))
 }
 
-/** Secondary tools in the marketing grid (excludes featured Trend Intelligence hero) */
+export function getDashboardCoreFeatureRoutes(): DashboardRouteConfig[] {
+  return DASHBOARD_CORE_FEATURES.map((id) => getRouteConfig(id))
+}
+
+/** Secondary tools in the marketing grid (excludes core hero cards) */
 export function getMarketingToolRoutes(): DashboardRouteConfig[] {
-  return DASHBOARD_TOOL_GRID_ORDER.filter((id) => id !== 'trend-intelligence').map((id) =>
-    getRouteConfig(id),
-  )
+  return DASHBOARD_SECONDARY_TOOL_ORDER.map((id) => getRouteConfig(id))
 }
 
 /** @deprecated Use getDashboardToolGridRoutes */
