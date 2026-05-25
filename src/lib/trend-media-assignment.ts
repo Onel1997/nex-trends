@@ -3,9 +3,11 @@ import {
   type DemoMediaAsset,
   isPlayableDemoPosterUrl,
   isPlayableDemoVideoUrl,
+  isQualityBlockedVideoUrl,
   isTrustedDemoVideoUrl,
   posterForVideoUrl,
 } from '@/lib/demo-media'
+import { getCachedVideoQualityProbe } from '@/lib/demo-video-probe'
 import type { DemoCatalogNiche } from '@/lib/demo-catalog-niches'
 import { isVideoInNichePool, resolveMediaNiche } from '@/lib/demo-media-niches'
 import { hashString } from '@/lib/demo-trend-seed'
@@ -31,6 +33,9 @@ export function clearRuntimeFailedVideos(): void {
 
 function isAssignableVideo(url: string | undefined): boolean {
   if (!url?.trim() || isRuntimeFailedVideo(url)) return false
+  if (isQualityBlockedVideoUrl(url)) return false
+  const cached = getCachedVideoQualityProbe(url)
+  if (cached && !cached.ok) return false
   return isPlayableDemoVideoUrl(url)
 }
 

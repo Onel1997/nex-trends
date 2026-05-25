@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib'
 import { PlayIcon } from '@/components/ui/icons'
 import { useInViewport } from '@/hooks/useInViewport'
@@ -9,11 +9,13 @@ import {
   isTrustedDemoVideoUrl,
   posterForVideoUrl,
 } from '@/lib/demo-media'
+import { probePosterQuality, probeVideoPlaybackQuality } from '@/lib/demo-video-probe'
+import { getPlaybackStartOffset } from '@/lib/demo-video-quality'
 import { markDemoVideoFailed } from '@/lib/trend-media-assignment'
 import { isLocalDemoVideo, isValidVideoUrl, probeVideoUrl } from '@/lib/video-url'
 
 type VideoPreviewProps = {
-  thumbnailUrl: string
+  thumbnailUrl?: string
   videoUrl?: string
   alt: string
   duration?: string
@@ -33,6 +35,18 @@ const GRADIENT_PLACEHOLDER =
 
 /** Ratio at which autoplay is allowed (masonry-friendly) */
 const ACTIVE_RATIO = 0.08
+
+function resolvePosterSrc(
+  thumbnailUrl: string | undefined,
+  videoUrl: string | undefined,
+  rejected: boolean,
+): string {
+  if (rejected) return ''
+  const fromThumb = thumbnailUrl?.trim() ?? ''
+  if (fromThumb) return fromThumb
+  if (!videoUrl?.trim()) return ''
+  return posterForVideoUrl(videoUrl) ?? ''
+}
 
 export function VideoPreview({
   thumbnailUrl,
@@ -64,15 +78,25 @@ export function VideoPreview({
   const [videoReady, setVideoReady] = useState(false)
   const [videoFailed, setVideoFailed] = useState(false)
   const [autoplayBlocked, setAutoplayBlocked] = useState(false)
+  const [posterRejected, setPosterRejected] = useState(false)
   const [isNearViewport, setIsNearViewport] = useState(priority)
   const [isActiveViewport, setIsActiveViewport] = useState(priority)
+  const qualityProbeRef = useRef(false)
+
+  const posterSrc = useMemo(
+    () => resolvePosterSrc(thumbnailUrl, videoUrl, posterRejected),
+    [thumbnailUrl, videoUrl, posterRejected],
+  )
+  const displayPosterSrc = posterSrc.trim() || undefined
+
+  const [posterGateReady, setPosterGateReady] = useState(
+    () => !resolvePosterSrc(thumbnailUrl, videoUrl, false),
+  )
 
   const formatValid = isValidVideoUrl(videoUrl) && isPlayableDemoVideoUrl(videoUrl)
   const trustedVideo = isTrustedDemoVideoUrl(videoUrl)
-  const posterSrc =
-    thumbnailUrl?.trim() ||
-    (videoUrl ? (posterForVideoUrl(videoUrl) ?? '') : '')
-  const shouldAttachVideo = formatValid && !videoFailed && (priority || isNearViewport)
+  const shouldAttachVideo =
+    formatValid && !videoFailed && posterGateReady && !posterRejected && (priority || isNearViewport)
   const canPlay = shouldAttachVideo
   const videoVisible = canPlay && isPlaying && videoReady && !videoFailed
 
@@ -163,9 +187,42 @@ export function VideoPreview({
     setVideoReady(false)
     setIsPlaying(false)
     setAutoplayBlocked(false)
+    setPosterRejected(false)
+    setPosterGateReady(!displayPosterSrc)
     setThumbLoaded(false)
     setThumbFailed(false)
-  }, [videoUrl, posterSrc])
+    qualityProbeRef.current = false
+  }, [videoUrl, displayPosterSrc])
+
+  useEffect(() => {
+    if (!displayPosterSrc) {
+      setPosterGateReady(true)
+      setPosterRejected(false)
+      return
+    }
+
+    let cancelled = false
+    setPosterGateReady(false)
+
+    const timeout = window.setTimeout(() => {
+      if (!cancelled) setPosterGateReady(true)
+    }, 2800)
+
+    void probePosterQuality(displayPosterSrc).then((result) => {
+      if (cancelled) return
+      if (!result.ok) {
+        setPosterRejected(true)
+        setThumbFailed(true)
+        if (onVideoUnavailable) onVideoUnavailable()
+      }
+      setPosterGateReady(true)
+    })
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeout)
+    }
+  }, [displayPosterSrc, onVideoUnavailable])
 
   const { ref: containerRef } = useInViewport({
     observe: !priority,
@@ -213,9 +270,42 @@ export function VideoPreview({
     return () => controller.abort()
   }, [videoUrl, formatValid, shouldAttachVideo, onVideoUnavailable, trustedVideo])
 
-  const preloadMode = priority || isActiveViewport ? 'auto' : isNearViewport ? 'metadata' : 'none'
+  const preloadMode =
+    priority || isActiveViewport ? 'auto' : isNearViewport ? 'metadata' : 'none'
+
+  const applyPlaybackStartOffset = useCallback((video: HTMLVideoElement) => {
+    const offset = getPlaybackStartOffset(videoUrl)
+    if (offset <= 0 || !Number.isFinite(video.duration)) return
+    const target = Math.min(offset, Math.max(0, video.duration - 0.25))
+    if (Math.abs(video.currentTime - target) > 0.05) {
+      video.currentTime = target
+    }
+  }, [videoUrl])
+
+  const runQualityProbe = useCallback(async () => {
+    const video = videoRef.current
+    if (!video || !videoUrl || qualityProbeRef.current) return
+    qualityProbeRef.current = true
+
+    const result = await probeVideoPlaybackQuality(video, videoUrl)
+    if (!result.ok) {
+      markDemoVideoFailed(videoUrl)
+      if (onVideoUnavailable) {
+        onVideoUnavailable()
+        return
+      }
+      setVideoFailed(true)
+      setVideoReady(false)
+      setIsPlaying(false)
+      pauseVideoRef.current()
+    }
+  }, [videoUrl, onVideoUnavailable])
   const showThumbnail = !videoVisible || autoplayBlocked || videoFailed
-  const showPlaceholder = (!thumbLoaded && !thumbFailed) || (videoFailed && !thumbLoaded)
+  const showPlaceholder =
+    !displayPosterSrc ||
+    (!thumbLoaded && !thumbFailed) ||
+    (videoFailed && !thumbLoaded)
+  const showMediaFallback = !displayPosterSrc && (thumbFailed || !formatValid)
 
   function handleMouseEnter() {
     if (isTouch) return
@@ -318,28 +408,28 @@ export function VideoPreview({
         <div className="absolute inset-0 animate-shimmer bg-zinc-900/60" aria-hidden />
       )}
 
-      {posterSrc ? (
-      <img
-        src={posterSrc}
-        alt={alt}
-        loading={priority ? 'eager' : 'lazy'}
-        decoding="async"
-        onLoad={() => {
-          setThumbLoaded(true)
-          setThumbFailed(false)
-        }}
-        onError={() => {
-          setThumbFailed(true)
-          setThumbLoaded(false)
-        }}
-        className={cn(
-          'absolute inset-0 size-full object-cover transition-opacity duration-500 ease-out',
-          showThumbnail || thumbFailed ? 'opacity-100' : 'opacity-0',
-        )}
-      />
+      {displayPosterSrc ? (
+        <img
+          src={displayPosterSrc}
+          alt={alt}
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          onLoad={() => {
+            setThumbLoaded(true)
+            setThumbFailed(false)
+          }}
+          onError={() => {
+            setThumbFailed(true)
+            setThumbLoaded(false)
+          }}
+          className={cn(
+            'absolute inset-0 size-full object-cover transition-opacity duration-500 ease-out',
+            showThumbnail || thumbFailed ? 'opacity-100' : 'opacity-0',
+          )}
+        />
       ) : null}
 
-      {thumbFailed && !posterSrc && (
+      {showMediaFallback && (
         <div
           className="absolute inset-0 flex items-center justify-center bg-zinc-900/80"
           aria-hidden
@@ -360,7 +450,7 @@ export function VideoPreview({
             }
           }}
           src={videoUrl}
-          poster={thumbnailUrl}
+          poster={displayPosterSrc ?? undefined}
           muted
           loop
           playsInline
@@ -369,13 +459,20 @@ export function VideoPreview({
           controls={false}
           controlsList="nodownload noplaybackrate"
           disablePictureInPicture
+          onLoadedMetadata={(e) => {
+            applyPlaybackStartOffset(e.currentTarget)
+          }}
           onLoadedData={() => {
             setVideoReady(true)
-            tryPlay()
+            void runQualityProbe().then(() => tryPlay())
           }}
           onCanPlay={() => {
             setVideoReady(true)
-            tryPlay()
+            if (!qualityProbeRef.current) {
+              void runQualityProbe().then(() => tryPlay())
+            } else {
+              tryPlay()
+            }
           }}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}

@@ -6,7 +6,12 @@ import {
   NICHE_MIXKIT_IDS,
 } from '@/lib/demo-media-niches'
 import type { DemoCatalogNiche } from '@/lib/demo-catalog-niches'
-import { BLOCKED_MIXKIT_IDS } from '@/lib/verified-mixkit-ids'
+import {
+  isBlockedMixkitId,
+  isQualityBlockedVideoUrl,
+  mixkitPosterUrl,
+  mixkitVideoUrl,
+} from '@/lib/demo-video-quality'
 
 export type DemoMediaAsset = {
   video: string
@@ -36,8 +41,8 @@ const MIXKIT_DURATIONS = [
 function mixkitClip(id: number, durationIndex: number): DemoMediaAsset {
   const duration = MIXKIT_DURATIONS[durationIndex % MIXKIT_DURATIONS.length]
   return {
-    video: `https://assets.mixkit.co/videos/${id}/${id}-720.mp4`,
-    poster: `https://assets.mixkit.co/videos/${id}/${id}-thumb-720-0.jpg`,
+    video: mixkitVideoUrl(id),
+    poster: mixkitPosterUrl(id),
     duration,
     mixkitId: id,
   }
@@ -88,7 +93,7 @@ for (const niche of Object.keys(NICHE_MIXKIT_IDS) as DemoCatalogNiche[]) {
   }
 }
 
-const UNIQUE_MIXKIT_IDS = getAllNicheMixkitIds().filter((id) => !BLOCKED_MIXKIT_IDS.has(id))
+const UNIQUE_MIXKIT_IDS = getAllNicheMixkitIds().filter((id) => !isBlockedMixkitId(id))
 
 const MIXKIT_REMOTE_ASSETS: DemoMediaAsset[] = UNIQUE_MIXKIT_IDS.map((id, index) => {
   const asset = mixkitClip(id, index + 2)
@@ -107,14 +112,9 @@ const ASSET_BY_VIDEO = new Map(DEMO_MEDIA_ASSETS.map((a) => [a.video, a]))
 /** Playable assets only — deduped by video URL */
 export const PLAYABLE_DEMO_MEDIA_ASSETS: readonly DemoMediaAsset[] = DEMO_MEDIA_ASSETS
 
-export { BLOCKED_MIXKIT_IDS }
+export { isBlockedMixkitId, isQualityBlockedVideoUrl } from '@/lib/demo-video-quality'
 
-const MIXKIT_ID_PATTERN = /mixkit\.co\/videos\/(\d+)/
-
-export function mixkitIdFromVideoUrl(url: string): number | null {
-  const match = url.match(MIXKIT_ID_PATTERN)
-  return match ? Number(match[1]) : null
-}
+export { mixkitIdFromVideoUrl } from '@/lib/demo-video-quality'
 
 export function isLocalDemoMediaUrl(url: string | undefined): boolean {
   return Boolean(url?.trim().startsWith('/demo-videos/'))
@@ -123,7 +123,9 @@ export function isLocalDemoMediaUrl(url: string | undefined): boolean {
 /** True when URL is in the verified playable demo pool. */
 export function isPlayableDemoVideoUrl(url: string | undefined): boolean {
   if (!url?.trim()) return false
-  return PLAYABLE_VIDEO_URLS.has(url.trim())
+  const trimmed = url.trim()
+  if (isQualityBlockedVideoUrl(trimmed)) return false
+  return PLAYABLE_VIDEO_URLS.has(trimmed)
 }
 
 export function isPlayableDemoPosterUrl(url: string | undefined): boolean {
@@ -144,8 +146,8 @@ export function getAssetsForNiche(niche: DemoCatalogNiche): DemoMediaAsset[] {
   const localPath = LOCAL_MEDIA_BY_NICHE[niche]
   const local = localPath ? LOCAL_DEMO_MEDIA.filter((a) => a.video === localPath) : []
   const remote = NICHE_MIXKIT_IDS[niche]
-    .filter((id) => !BLOCKED_MIXKIT_IDS.has(id))
-    .map((id) => ASSET_BY_VIDEO.get(`https://assets.mixkit.co/videos/${id}/${id}-720.mp4`))
+    .filter((id) => !isBlockedMixkitId(id))
+    .map((id) => ASSET_BY_VIDEO.get(mixkitVideoUrl(id)))
     .filter((a): a is DemoMediaAsset => Boolean(a))
   return [...local, ...remote]
 }

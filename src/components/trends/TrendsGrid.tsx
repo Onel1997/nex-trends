@@ -76,8 +76,12 @@ export function TrendsGrid({
   const [selectedTrend, setSelectedTrend] = useState<DisplayTrend | null>(null)
 
   const displayTrends = useMemo(
-    () => ensureFeedMediaDiversity(trends, searchShuffleSeed('__feed__', getDemoUserSeed())),
-    [trends],
+    () =>
+      ensureFeedMediaDiversity(
+        trends,
+        searchShuffleSeed(searchQuery.trim() || '__browse__', getDemoUserSeed()),
+      ),
+    [trends, searchQuery],
   )
 
   const feedVideoUrls = useMemo(

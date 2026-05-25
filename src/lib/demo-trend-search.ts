@@ -7,10 +7,10 @@ import {
   countUniqueVideos,
   pickUniqueTrends,
 } from '@/lib/demo-trend-uniqueness'
+import { queryMatchesNicheAlias, resolveCatalogNiche } from '@/lib/demo-media-niches'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 const DEFAULT_LIMIT = 10
-const MIN_POOL_TARGET = 32
 const MIN_UNIQUE_VIDEOS = 8
 const MIN_UNIQUE_CREATORS = 6
 
@@ -27,30 +27,20 @@ const NICHE_ALIASES: Record<DemoCatalogNiche, string[]> = {
   Fashion: ['fashion', 'style', 'outfit', 'ootd', 'wardrobe', 'thrift', 'haul'],
 }
 
-/** Related niches mixed in when primary category has too few unique assets */
-const RELATED_NICHES: Record<DemoCatalogNiche, DemoCatalogNiche[]> = {
-  Productivity: ['Motivation', 'Business', 'AI'],
-  Fitness: ['Motivation', 'Food', 'Productivity'],
-  Beauty: ['Fashion', 'Luxury'],
-  'Side Hustle': ['Business', 'AI', 'Motivation'],
-  Food: ['Fitness', 'Luxury', 'Fashion'],
-  Luxury: ['Fashion', 'Beauty'],
-  Motivation: ['Fitness', 'Productivity', 'Business'],
-  AI: ['Business', 'Side Hustle', 'Productivity'],
-  Business: ['Side Hustle', 'Motivation', 'AI'],
-  Fashion: ['Beauty', 'Luxury', 'Fitness'],
-}
-
 function normalizeQuery(query: string): string {
   return query.trim().toLowerCase()
 }
 
-function slugifyNiche(niche: string): string {
-  return niche.toLowerCase().replace(/\s+/g, '-')
-}
-
 function matchesNiche(trend: TrendIntelligence, niche: DemoCatalogNiche): boolean {
   return trend.niche?.toLowerCase() === niche.toLowerCase()
+}
+
+/** Strict category filter — trend.niche must equal the selected catalog niche */
+export function filterTrendsByNiche(
+  trends: TrendIntelligence[],
+  niche: DemoCatalogNiche,
+): TrendIntelligence[] {
+  return trends.filter((t) => matchesNiche(t, niche))
 }
 
 function scoreTrendForQuery(trend: TrendIntelligence, query: string): number {
@@ -67,7 +57,7 @@ function scoreTrendForQuery(trend: TrendIntelligence, query: string): number {
   if (trend.hookAnalysis.hookText.toLowerCase().includes(q)) score += 3
 
   for (const [cat, aliases] of Object.entries(NICHE_ALIASES) as [DemoCatalogNiche, string[]][]) {
-    if (aliases.some((a) => q.includes(a) || a.includes(q))) {
+    if (aliases.some((a) => queryMatchesNicheAlias(q, a))) {
       if (matchesNiche(trend, cat)) score += 15
     }
   }
@@ -86,19 +76,23 @@ function shuffleSeeded<T>(items: T[], seed: number): T[] {
 }
 
 function resolvePrimaryNiches(query: string): DemoCatalogNiche[] {
+  const resolved = resolveCatalogNiche(query)
+  if (resolved) return [resolved]
+
   const q = normalizeQuery(query)
   if (!q) return []
 
-  const exact = DEMO_CATALOG_NICHES.filter((niche) => {
-    const label = niche.toLowerCase()
-    const slug = slugifyNiche(niche)
-    return q === label || q === slug || q.includes(label) || label.includes(q)
-  })
-  if (exact.length > 0) return exact
+  const aliasMatches = (Object.entries(NICHE_ALIASES) as [DemoCatalogNiche, string[]][])
+    .map(([niche, aliases]) => ({
+      niche,
+      score: aliases.filter((alias) => queryMatchesNicheAlias(q, alias)).length,
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
 
-  return (Object.entries(NICHE_ALIASES) as [DemoCatalogNiche, string[]][])
-    .filter(([, aliases]) => aliases.some((a) => q.includes(a) || a.includes(q)))
-    .map(([niche]) => niche)
+  if (aliasMatches.length > 0) return [aliasMatches[0].niche]
+
+  return []
 }
 
 function appendUniqueById(target: TrendIntelligence[], source: TrendIntelligence[]): void {
@@ -110,47 +104,12 @@ function appendUniqueById(target: TrendIntelligence[], source: TrendIntelligence
   }
 }
 
-/** Primary niche trends + related categories + scored extras until pool is large enough */
+/** Only trends whose niche matches the resolved category — no related-niche mixing */
 function buildCategorySearchPool(
   catalog: TrendIntelligence[],
   primaryNiches: DemoCatalogNiche[],
-  query: string,
 ): TrendIntelligence[] {
-  const pool: TrendIntelligence[] = []
-
-  const primary = catalog.filter((t) => primaryNiches.some((n) => matchesNiche(t, n)))
-  appendUniqueById(pool, primary)
-
-  const relatedSet = new Set<DemoCatalogNiche>()
-  for (const niche of primaryNiches) {
-    for (const related of RELATED_NICHES[niche]) {
-      relatedSet.add(related)
-    }
-  }
-
-  for (const related of relatedSet) {
-    if (pool.length >= MIN_POOL_TARGET) break
-    const relatedTrends = catalog.filter((t) => matchesNiche(t, related))
-    appendUniqueById(pool, relatedTrends)
-  }
-
-  if (pool.length < MIN_POOL_TARGET) {
-    const scored = catalog
-      .map((trend) => ({ trend, score: scoreTrendForQuery(trend, query) }))
-      .filter((entry) => entry.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .map((entry) => entry.trend)
-    appendUniqueById(pool, scored)
-  }
-
-  if (pool.length < MIN_POOL_TARGET) {
-    appendUniqueById(
-      pool,
-      catalog.filter((t) => !pool.some((p) => p.id === t.id)),
-    )
-  }
-
-  return pool
+  return catalog.filter((t) => primaryNiches.some((n) => matchesNiche(t, n)))
 }
 
 function reorderNoAdjacentDuplicates(trends: TrendIntelligence[]): TrendIntelligence[] {
@@ -191,7 +150,6 @@ function reorderNoAdjacentDuplicates(trends: TrendIntelligence[]): TrendIntellig
 
 function finalizeSearchResults(
   shuffledPool: TrendIntelligence[],
-  catalog: TrendIntelligence[],
   limit: number,
   seed: number,
 ): TrendIntelligence[] {
@@ -205,7 +163,7 @@ function finalizeSearchResults(
     countUniqueVideos(picked) < minVideos ||
     countUniqueCreators(picked) < minCreators
   ) {
-    const supplement = shuffleSeeded(catalog, seed + 17)
+    const supplement = shuffleSeeded(shuffledPool, seed + 17)
     picked = pickUniqueTrends([...picked, ...supplement], limit)
   }
 
@@ -226,7 +184,7 @@ export function searchDemoTrendCatalog(
   let pool: TrendIntelligence[]
 
   if (primaryNiches.length > 0) {
-    pool = buildCategorySearchPool(catalog, primaryNiches, q)
+    pool = buildCategorySearchPool(catalog, primaryNiches)
   } else {
     const scored = catalog
       .map((trend) => ({ trend, score: scoreTrendForQuery(trend, q) }))
@@ -234,14 +192,16 @@ export function searchDemoTrendCatalog(
       .sort((a, b) => b.score - a.score)
       .map((entry) => entry.trend)
 
-    pool = scored.length > 0 ? scored : [...catalog]
-    if (pool.length < MIN_POOL_TARGET) {
-      appendUniqueById(pool, catalog)
+    const dominantNiche = scored.find((t) => t.niche && resolveCatalogNiche(t.niche))?.niche
+    if (dominantNiche && resolveCatalogNiche(dominantNiche)) {
+      pool = filterTrendsByNiche(scored, dominantNiche as DemoCatalogNiche)
+    } else {
+      pool = scored
     }
   }
 
   const shuffled = shuffleSeeded(pool, seed)
-  const results = finalizeSearchResults(shuffled, catalog, limit, seed)
+  const results = finalizeSearchResults(shuffled, limit, seed)
 
   assertUniqueTrendSet(results, `search:"${query}"`)
   return results
@@ -261,10 +221,8 @@ export function pickDemoBrowsePack(
     appendUniqueById(pool, shuffleSeeded(nicheTrends, seed + hashNiche(niche)))
   }
 
-  appendUniqueById(pool, shuffleSeeded(catalog, seed + 99))
-
   const shuffled = shuffleSeeded(pool, seed + 3)
-  const results = finalizeSearchResults(shuffled, catalog, limit, seed)
+  const results = finalizeSearchResults(shuffled, limit, seed)
 
   assertUniqueTrendSet(results, 'browse pack')
   return results

@@ -1,5 +1,10 @@
 import { getDemoUserSeed, searchShuffleSeed } from '@/lib/demo-trend-seed'
-import { pickDemoBrowsePack, searchDemoTrendCatalog } from '@/lib/demo-trend-search'
+import {
+  filterTrendsByNiche,
+  pickDemoBrowsePack,
+  searchDemoTrendCatalog,
+} from '@/lib/demo-trend-search'
+import { resolveCatalogNiche } from '@/lib/demo-media-niches'
 import { ensureFeedMediaDiversity, sanitizeTrendMedia } from '@/lib/trend-media-assignment'
 import { enrichTrendIntelligence } from '@/lib/trend-intelligence'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
@@ -53,13 +58,20 @@ export async function fetchTrendsByNiche(
 
   if (delay > 0) await simulateLatency(delay)
 
-  const raw = searchDemoTrendCatalog(niche, { limit, userSeed })
+  let raw = searchDemoTrendCatalog(niche, { limit, userSeed })
+  const category = resolveCatalogNiche(niche)
+  if (category) {
+    raw = filterTrendsByNiche(raw, category)
+  }
+
+  const resolvedCategory = category ?? resolveCatalogNiche(niche)
+
   return raw.map((trend, index) =>
     enrichTrendIntelligence(
       sanitizeTrendMedia(
         {
           ...trend,
-          niche: trend.niche ?? niche,
+          niche: trend.niche ?? resolvedCategory ?? niche,
           isDemo: true,
         },
         index,
