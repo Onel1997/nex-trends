@@ -6,6 +6,8 @@ import { TrendsEmptyState } from '@/components/trends/TrendsEmptyState'
 import { TrendsGridSkeleton } from '@/components/ui/Skeleton'
 import { SparklesIcon } from '@/components/ui/icons'
 import { cn } from '@/lib'
+import { getDemoUserSeed, searchShuffleSeed } from '@/lib/demo-trend-seed'
+import { ensureFeedMediaDiversity } from '@/lib/trend-media-assignment'
 import { DEMO_TREND_INTELLIGENCE } from '@/lib/trend-intelligence'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
@@ -34,11 +36,13 @@ const TrendFeedItem = memo(function TrendFeedItem({
   index,
   onSelect,
   isSaved,
+  feedVideoUrls,
 }: {
   trend: DisplayTrend
   index: number
   onSelect: (t: DisplayTrend) => void
   isSaved?: (id: string) => boolean
+  feedVideoUrls: readonly string[]
 }) {
   return (
     <div
@@ -50,6 +54,7 @@ const TrendFeedItem = memo(function TrendFeedItem({
         onClick={() => onSelect(trend)}
         priority={index < 2}
         isSaved={isSaved?.(trend.id)}
+        feedVideoUrls={feedVideoUrls}
       />
     </div>
   )
@@ -69,6 +74,19 @@ export function TrendsGrid({
   onToggleSave,
 }: TrendsGridProps) {
   const [selectedTrend, setSelectedTrend] = useState<DisplayTrend | null>(null)
+
+  const displayTrends = useMemo(
+    () => ensureFeedMediaDiversity(trends, searchShuffleSeed('__feed__', getDemoUserSeed())),
+    [trends],
+  )
+
+  const feedVideoUrls = useMemo(
+    () =>
+      displayTrends
+        .map((t) => t.videoUrl)
+        .filter((url): url is string => Boolean(url)),
+    [displayTrends],
+  )
 
   const showInitialEmpty = !hasSearched && trends.length === 0 && !isSearching
   const showNoResults = hasSearched && trends.length === 0 && !isSearching
@@ -209,13 +227,14 @@ export function TrendsGrid({
           )}
           aria-busy={isSearching}
         >
-          {trends.map((trend, index) => (
+          {displayTrends.map((trend, index) => (
             <TrendFeedItem
               key={trend.id}
               trend={trend}
               index={index}
               onSelect={setSelectedTrend}
               isSaved={isSaved}
+              feedVideoUrls={feedVideoUrls}
             />
           ))}
         </div>

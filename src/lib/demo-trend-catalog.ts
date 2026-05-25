@@ -1,5 +1,5 @@
 import { assignCreatorForCatalogSlot, formatCreatorInspiration } from '@/lib/demo-creators'
-import { resolveUniqueCatalogMedia } from '@/lib/demo-media'
+import { resolveUniqueCatalogMedia } from '@/lib/trend-media-assignment'
 import { assertUniqueTrendCatalog } from '@/lib/demo-trend-uniqueness'
 import type { TrendIntelligence, TrendVelocity } from '@/types/trend-intelligence'
 
@@ -1169,10 +1169,13 @@ function clampScore(score: number): number {
   return Math.min(99, Math.max(42, Math.round(score)))
 }
 
+const CATALOG_MEDIA_VERSION = 2
+
 let catalogCache: TrendIntelligence[] | null = null
+let catalogMediaVersion: number | null = null
 
 export function getDemoTrendCatalog(): TrendIntelligence[] {
-  if (catalogCache) return catalogCache
+  if (catalogCache && catalogMediaVersion === CATALOG_MEDIA_VERSION) return catalogCache
 
   const trends: TrendIntelligence[] = []
   const usedVideos = new Set<string>()
@@ -1202,6 +1205,7 @@ export function getDemoTrendCatalog(): TrendIntelligence[] {
   }
 
   catalogCache = trends
+  catalogMediaVersion = CATALOG_MEDIA_VERSION
   assertUniqueTrendCatalog(catalogCache)
   return catalogCache
 }

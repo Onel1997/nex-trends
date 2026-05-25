@@ -1,5 +1,6 @@
 import { getDemoTrendCatalog, type DemoCatalogNiche, DEMO_CATALOG_NICHES } from '@/lib/demo-trend-catalog'
 import { createSeededRandom, searchShuffleSeed } from '@/lib/demo-trend-seed'
+import { ensureFeedMediaDiversity } from '@/lib/trend-media-assignment'
 import {
   assertUniqueTrendSet,
   countUniqueCreators,
@@ -10,8 +11,8 @@ import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 const DEFAULT_LIMIT = 10
 const MIN_POOL_TARGET = 32
-const MIN_UNIQUE_VIDEOS = 4
-const MIN_UNIQUE_CREATORS = 4
+const MIN_UNIQUE_VIDEOS = 8
+const MIN_UNIQUE_CREATORS = 6
 
 const NICHE_ALIASES: Record<DemoCatalogNiche, string[]> = {
   Productivity: ['productivity', 'productive', 'morning', 'routine', 'notion', 'focus', 'deep work', 'study'],
@@ -196,16 +197,20 @@ function finalizeSearchResults(
 ): TrendIntelligence[] {
   let picked = pickUniqueTrends(shuffledPool, limit)
 
+  const minVideos = Math.min(limit, MIN_UNIQUE_VIDEOS)
+  const minCreators = Math.min(limit, MIN_UNIQUE_CREATORS)
+
   if (
     picked.length < limit ||
-    countUniqueVideos(picked) < MIN_UNIQUE_VIDEOS ||
-    countUniqueCreators(picked) < MIN_UNIQUE_CREATORS
+    countUniqueVideos(picked) < minVideos ||
+    countUniqueCreators(picked) < minCreators
   ) {
     const supplement = shuffleSeeded(catalog, seed + 17)
     picked = pickUniqueTrends([...picked, ...supplement], limit)
   }
 
-  return reorderNoAdjacentDuplicates(picked).map((t) => ({ ...t, isDemo: true }))
+  const ordered = reorderNoAdjacentDuplicates(picked).map((t) => ({ ...t, isDemo: true }))
+  return ensureFeedMediaDiversity(ordered, seed)
 }
 
 export function searchDemoTrendCatalog(

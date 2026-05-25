@@ -8,7 +8,9 @@ import type {
   TrendVelocity,
 } from '@/types/trend-intelligence'
 import { assignCreatorForTrend, formatCreatorInspiration } from '@/lib/demo-creators'
-import { getDemoMedia } from '@/lib/demo-media'
+import { buildCatalogMediaSlot } from '@/lib/trend-media-assignment'
+import { hashString } from '@/lib/demo-trend-seed'
+import { isValidVideoUrl } from '@/lib/video-url'
 
 export { DEMO_TREND_INTELLIGENCE } from '@/lib/trend-demo-data'
 
@@ -19,10 +21,11 @@ const CARD_GRADIENTS = [
   { from: 'from-rose-500', to: 'to-orange-600' },
 ] as const
 
-const MEDIA_FALLBACKS = [0, 1, 2, 3].map((i) => {
-  const media = getDemoMedia(i)
+function stableMediaForTrendId(trendId: string, index: number) {
+  const slot = hashString(`${trendId}:${index}`) % 997
+  const media = buildCatalogMediaSlot(slot)
   return { thumbnail: media.poster, video: media.video, duration: media.duration }
-})
+}
 
 
 const DEMO_STORAGE_KEY = 'nextrends_demo_seen'
@@ -124,11 +127,17 @@ export function enrichTrendWithMedia(
   trend: TrendIntelligence,
   index: number,
 ): TrendIntelligence {
-  if (trend.thumbnailUrl && trend.creator?.handle && trend.creator.avatarUrl) {
+  const hasValidVideo = isValidVideoUrl(trend.videoUrl)
+  if (
+    trend.thumbnailUrl &&
+    hasValidVideo &&
+    trend.creator?.handle &&
+    trend.creator.avatarUrl
+  ) {
     return trend
   }
 
-  const media = MEDIA_FALLBACKS[index % MEDIA_FALLBACKS.length]
+  const media = stableMediaForTrendId(trend.id, index)
   const hookText = trend.hookSuggestions[0] ?? trend.title
   const { creator, creatorInspiration } = enrichCreatorFields(trend)
 

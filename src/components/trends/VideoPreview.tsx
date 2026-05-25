@@ -18,6 +18,8 @@ type VideoPreviewProps = {
   playbackId?: string
   /** card: taps pass through to TrendCard; detail: in-place playback */
   variant?: 'card' | 'detail'
+  /** Swap to another MP4 when the current URL cannot play */
+  onVideoUnavailable?: () => void
 }
 
 const GRADIENT_PLACEHOLDER =
@@ -36,6 +38,7 @@ export function VideoPreview({
   priority = false,
   playbackId: playbackIdProp,
   variant = 'detail',
+  onVideoUnavailable,
 }: VideoPreviewProps) {
   const isCard = variant === 'card'
   const reactId = useId()
@@ -44,6 +47,7 @@ export function VideoPreview({
   const isTouch = useIsTouchDevice()
   const canPlayRef = useRef(false)
   const isActiveRef = useRef(priority)
+  const viewportPriorityRef = useRef(priority ? 2 : 0)
   const playVideoRef = useRef<() => Promise<void>>(async () => {})
   const pauseVideoRef = useRef<() => void>(() => {})
 
@@ -80,7 +84,20 @@ export function VideoPreview({
     video.setAttribute('playsinline', '')
     video.setAttribute('webkit-playsinline', 'true')
 
-    videoPlaybackManager.requestPlay(playbackId)
+    const playPriority = priority ? 2 : viewportPriorityRef.current
+    videoPlaybackManager.requestPlay(playbackId, playPriority, isTouch)
+
+    if (!videoPlaybackManager.isAllowed(playbackId, isTouch)) return
+
+    const staggerMs = videoPlaybackManager.getStaggerDelay(playbackId, isTouch)
+    if (staggerMs > 0) {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, staggerMs)
+      })
+    }
+
+    if (!canPlayRef.current || !isActiveRef.current) return
+    if (!videoPlaybackManager.isAllowed(playbackId, isTouch)) return
 
     try {
       if (video.readyState < 2) {
@@ -97,7 +114,7 @@ export function VideoPreview({
       setAutoplayBlocked(true)
       videoPlaybackManager.release(playbackId)
     }
-  }, [playbackId, videoUrl])
+  }, [playbackId, videoUrl, isTouch, priority])
 
   const tryPlay = useCallback(() => {
     if (!canPlayRef.current || !isActiveRef.current) return
@@ -145,8 +162,13 @@ export function VideoPreview({
     onIntersecting: (visible, ratio) => {
       const near = visible && ratio > 0
       const active = visible && ratio >= ACTIVE_RATIO
+      const playPriority = priority ? 2 : ratio
+      viewportPriorityRef.current = playPriority
       setIsNearViewport(priority || near)
       setIsActiveViewport(priority || active)
+      if (active && canPlayRef.current) {
+        videoPlaybackManager.requestPlay(playbackId, playPriority, isTouch)
+      }
     },
   })
 
@@ -201,6 +223,14 @@ export function VideoPreview({
   }, [isTouch, isHovered, videoReady, canPlay, isCard])
 
   function handleVideoError() {
+    if (onVideoUnavailable) {
+      pauseVideo()
+      setVideoReady(false)
+      setIsPlaying(false)
+      setAutoplayBlocked(false)
+      onVideoUnavailable()
+      return
+    }
     setVideoFailed(true)
     setVideoReady(false)
     setIsPlaying(false)

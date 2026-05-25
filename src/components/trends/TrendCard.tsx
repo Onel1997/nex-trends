@@ -1,6 +1,7 @@
-import { memo } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib'
 import { VideoPreview } from '@/components/trends/VideoPreview'
+import { pickNextFallbackMedia } from '@/lib/trend-media-assignment'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
 import { ViralScoreRing } from '@/components/trends/ViralScoreRing'
 import {
@@ -19,12 +20,50 @@ type TrendCardProps = {
   onClick?: () => void
   priority?: boolean
   isSaved?: boolean
+  /** Other cards' video URLs — avoids failover picking a duplicate in the feed */
+  feedVideoUrls?: readonly string[]
 }
 
-function TrendCardComponent({ trend, onClick, priority = false, isSaved }: TrendCardProps) {
+function TrendCardComponent({
+  trend,
+  onClick,
+  priority = false,
+  isSaved,
+  feedVideoUrls = [],
+}: TrendCardProps) {
   const isTikTok = trend.platform.toLowerCase().includes('tiktok')
   const velocity = VELOCITY_META[trend.trendVelocity]
   const scoreTone = getViralScoreTone(trend.viralScore)
+  const failedVideosRef = useRef(new Set<string>())
+  const [media, setMedia] = useState({
+    videoUrl: trend.videoUrl,
+    thumbnailUrl: trend.thumbnailUrl,
+    videoDuration: trend.videoDuration,
+  })
+
+  useEffect(() => {
+    failedVideosRef.current.clear()
+    setMedia({
+      videoUrl: trend.videoUrl,
+      thumbnailUrl: trend.thumbnailUrl,
+      videoDuration: trend.videoDuration,
+    })
+  }, [trend.id, trend.videoUrl, trend.thumbnailUrl, trend.videoDuration])
+
+  const handleVideoUnavailable = useCallback(() => {
+    if (media.videoUrl) failedVideosRef.current.add(media.videoUrl)
+    const exclude = new Set(failedVideosRef.current)
+    for (const url of feedVideoUrls) {
+      if (url && url !== media.videoUrl) exclude.add(url)
+    }
+    const next = pickNextFallbackMedia(trend.id, media.videoUrl, exclude)
+    if (!next) return
+    setMedia({
+      videoUrl: next.video,
+      thumbnailUrl: next.poster,
+      videoDuration: next.duration,
+    })
+  }, [trend.id, media.videoUrl, feedVideoUrls])
 
   return (
     <article
@@ -56,12 +95,13 @@ function TrendCardComponent({ trend, onClick, priority = false, isSaved }: Trend
         <VideoPreview
           playbackId={trend.id}
           variant="card"
-          thumbnailUrl={trend.thumbnailUrl}
-          videoUrl={trend.videoUrl}
+          thumbnailUrl={media.thumbnailUrl}
+          videoUrl={media.videoUrl}
           alt={trend.title}
-          duration={trend.videoDuration}
+          duration={media.videoDuration}
           aspectClass="aspect-[9/16] w-full sm:aspect-[9/15]"
           priority={priority}
+          onVideoUnavailable={handleVideoUnavailable}
         />
 
         {onClick && (
