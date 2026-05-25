@@ -26,7 +26,7 @@ const corsHeaders = {
 
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
-type Action = "create" | "poll" | "history" | "retry" | "health";
+type Action = "create" | "poll" | "history" | "retry" | "health" | "library" | "delete";
 
 const SYNTHETIC_CLIPS = [
   "/demo-videos/demo-1.mp4",
@@ -223,6 +223,142 @@ serve(async (req) => {
       if (error) throw error;
 
       return new Response(JSON.stringify({ ok: true, items: data ?? [] }), {
+        headers: jsonHeaders,
+      });
+    }
+
+    if (action === "library") {
+      const limit = Math.min(Number(body.limit) || 50, 100);
+      const platformFilter = typeof body.platform === "string"
+        ? body.platform.trim()
+        : "";
+      const statusFilter = typeof body.status === "string"
+        ? body.status.trim()
+        : "";
+
+      let genQuery = supabaseAdmin
+        .from("ai_generations")
+        .select(
+          "id, tool_used, niche, platform, prompt, credits_used, status, output_url, created_at, updated_at, generated_videos ( id, status, video_url, poster_url, hook_text, captions, voiceover_url, music_url, duration, trend_id, provider, error_message )",
+        )
+        .eq("user_id", user.id)
+        .eq("generation_type", "video")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+
+      if (platformFilter) {
+        genQuery = genQuery.ilike("platform", platformFilter);
+      }
+      if (statusFilter) {
+        genQuery = genQuery.eq("status", statusFilter);
+      }
+
+      const { data: generations, error: genErr } = await genQuery;
+      if (genErr) throw genErr;
+
+      const items = (generations ?? []).map((row) =>
+        formatLibraryRow(row as Record<string, unknown>, appOrigin)
+      );
+
+      const seenJobIds = new Set(
+        items.map((i) => i.jobId).filter(Boolean) as string[],
+      );
+
+      const { data: orphanJobs } = await supabaseAdmin
+        .from("generated_videos")
+        .select(
+          "id, trend_id, status, video_url, poster_url, hook_text, captions, voiceover_url, music_url, duration, provider, created_at, error_message, metadata",
+        )
+        .eq("user_id", user.id)
+        .is("generation_id", null)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      for (const job of orphanJobs ?? []) {
+        if (seenJobIds.has(job.id)) continue;
+        const meta = (job.metadata ?? {}) as Record<string, string>;
+        if (
+          platformFilter &&
+          !String(meta.platform ?? "").toLowerCase().includes(
+            platformFilter.toLowerCase(),
+          )
+        ) {
+          continue;
+        }
+        if (statusFilter && job.status !== statusFilter) continue;
+        items.push(formatOrphanJobRow(job, appOrigin));
+      }
+
+      items.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+      return new Response(JSON.stringify({ ok: true, items }), {
+        headers: jsonHeaders,
+      });
+    }
+
+    if (action === "delete") {
+      const generationId = typeof body.generation_id === "string"
+        ? body.generation_id
+        : "";
+      const jobId = typeof body.job_id === "string" ? body.job_id : "";
+
+      if (!generationId && !jobId) {
+        return new Response(JSON.stringify({ error: "generation_id oder job_id fehlt" }), {
+          status: 400,
+          headers: jsonHeaders,
+        });
+      }
+
+      const urlsToRemove: string[] = [];
+
+      if (jobId) {
+        const { data: job } = await supabaseAdmin
+          .from("generated_videos")
+          .select("id, video_url, poster_url, voiceover_url, user_id")
+          .eq("id", jobId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (job) {
+          if (job.video_url) urlsToRemove.push(job.video_url);
+          if (job.poster_url) urlsToRemove.push(job.poster_url);
+          if (job.voiceover_url) urlsToRemove.push(job.voiceover_url);
+          await supabaseAdmin.from("generated_videos").delete().eq("id", jobId);
+        }
+      }
+
+      if (generationId) {
+        const { data: linkedJobs } = await supabaseAdmin
+          .from("generated_videos")
+          .select("id, video_url, poster_url, voiceover_url")
+          .eq("generation_id", generationId)
+          .eq("user_id", user.id);
+
+        for (const job of linkedJobs ?? []) {
+          if (job.video_url) urlsToRemove.push(job.video_url);
+          if (job.poster_url) urlsToRemove.push(job.poster_url);
+          if (job.voiceover_url) urlsToRemove.push(job.voiceover_url);
+          await supabaseAdmin.from("generated_videos").delete().eq("id", job.id);
+        }
+
+        await supabaseAdmin
+          .from("ai_generations")
+          .delete()
+          .eq("id", generationId)
+          .eq("user_id", user.id);
+      }
+
+      for (const url of [...new Set(urlsToRemove)]) {
+        const parsed = parseStorageObject(url);
+        if (parsed) {
+          await supabaseAdmin.storage.from(parsed.bucket).remove([parsed.path]);
+        }
+      }
+
+      return new Response(JSON.stringify({ ok: true }), {
         headers: jsonHeaders,
       });
     }
@@ -444,6 +580,10 @@ serve(async (req) => {
           pacing: brief.pacing,
           motionStyle: brief.motionStyle,
           visualMood: brief.visualMood,
+          studio_style: body.studio_style,
+          studio_duration: body.studio_duration,
+          enable_voiceover: body.enable_voiceover !== false,
+          enable_captions: body.enable_captions !== false,
         },
       })
       .select("*")
@@ -576,6 +716,99 @@ serve(async (req) => {
     });
   }
 });
+
+function parseStorageObject(
+  url: string,
+): { bucket: string; path: string } | null {
+  try {
+    const parsed = new URL(url);
+    const match = parsed.pathname.match(
+      /\/storage\/v1\/object\/public\/([^/]+)\/(.+)/,
+    );
+    if (!match) return null;
+    return { bucket: match[1], path: decodeURIComponent(match[2]) };
+  } catch {
+    return null;
+  }
+}
+
+function formatLibraryRow(
+  row: Record<string, unknown>,
+  appOrigin: string,
+) {
+  const jobs = Array.isArray(row.generated_videos)
+    ? row.generated_videos
+    : row.generated_videos
+    ? [row.generated_videos]
+    : [];
+  const job = (jobs[0] ?? {}) as Record<string, unknown>;
+  const jobFormatted = Object.keys(job).length
+    ? formatJobRow(job, appOrigin)
+    : null;
+
+  let videoUrl = (jobFormatted?.videoUrl ?? row.output_url) as string | undefined;
+  let posterUrl = jobFormatted?.posterUrl as string | undefined;
+  if (videoUrl?.startsWith("/") && appOrigin) {
+    videoUrl = `${appOrigin.replace(/\/$/, "")}${videoUrl}`;
+  }
+  if (posterUrl?.startsWith("/") && appOrigin) {
+    posterUrl = `${appOrigin.replace(/\/$/, "")}${posterUrl}`;
+  }
+
+  const prompt = String(row.prompt ?? "");
+  const hookText = (jobFormatted?.hookText ?? prompt) as string;
+
+  return {
+    id: row.id,
+    generationId: row.id,
+    jobId: jobFormatted?.id ?? null,
+    title: hookText.slice(0, 80) || prompt.slice(0, 80) || "AI Video",
+    hookText,
+    niche: String(row.niche ?? ""),
+    platform: String(row.platform ?? ""),
+    status: String(row.status ?? jobFormatted?.status ?? "queued"),
+    creditsUsed: Number(row.credits_used ?? 0),
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+    duration: jobFormatted?.duration ?? "0:15",
+    videoUrl: videoUrl ?? null,
+    posterUrl: posterUrl ?? null,
+    captions: jobFormatted?.captions ?? [],
+    voiceoverUrl: jobFormatted?.voiceoverUrl ?? null,
+    musicUrl: jobFormatted?.musicUrl ?? null,
+    provider: jobFormatted?.provider ?? null,
+    trendId: jobFormatted?.trendId ?? null,
+    errorMessage: jobFormatted?.errorMessage ?? row.error_message ?? null,
+  };
+}
+
+function formatOrphanJobRow(
+  row: Record<string, unknown>,
+  appOrigin: string,
+) {
+  const job = formatJobRow(row, appOrigin);
+  const meta = (row.metadata ?? {}) as Record<string, string>;
+  return {
+    id: `job-${row.id}`,
+    generationId: null,
+    jobId: job.id,
+    title: (job.hookText ?? "AI Video").slice(0, 80),
+    hookText: job.hookText,
+    niche: meta.niche ?? "",
+    platform: meta.platform ?? "",
+    status: job.status,
+    creditsUsed: 0,
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+    duration: job.duration,
+    videoUrl: job.videoUrl ?? null,
+    posterUrl: job.posterUrl ?? null,
+    captions: job.captions,
+    voiceoverUrl: job.voiceoverUrl,
+    musicUrl: job.musicUrl,
+    provider: job.provider,
+    trendId: job.trendId,
+    errorMessage: job.errorMessage,
+  };
+}
 
 function formatJobRow(
   row: Record<string, unknown>,

@@ -3,6 +3,8 @@ import { ToolPageHeader } from '@/components/layout/ToolPageHeader'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { TrendIntelligencePage } from '@/pages/trend-intelligence/TrendIntelligencePage'
 import { SavedTrendsPage } from '@/pages/SavedTrendsPage'
+import { MyAiVideosPage } from '@/pages/MyAiVideosPage'
+import { AiStudioPage } from '@/pages/AiStudioPage'
 import { HookGeneratorPage } from '@/pages/HookGeneratorPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { AdCopyGeneratorPage } from '@/pages/tools/AdCopyGeneratorPage'
@@ -21,6 +23,10 @@ function renderPage(activeTool: DashboardToolId, onSelectTool: (tool: DashboardT
       return <TrendIntelligencePage />
     case 'saved-trends':
       return <SavedTrendsPage />
+    case 'ai-studio':
+      return <AiStudioPage />
+    case 'my-videos':
+      return <MyAiVideosPage />
     case 'hook':
       return <HookGeneratorPage />
     case 'ad-copy':

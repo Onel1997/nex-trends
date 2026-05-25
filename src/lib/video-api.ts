@@ -1,6 +1,7 @@
 import { invokeEdgeFunction } from '@/lib/edgeFunctions'
 import { formatPipelineError, type PipelineErrorPayload } from '@/lib/video-pipeline-errors'
 import type { GeneratedVideoHistoryItem, GeneratedVideoJob } from '@/types/generated-video'
+import type { StudioCreateOptions } from '@/lib/ai-studio'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 const POLL_INTERVAL_MS = 2_500
@@ -40,6 +41,7 @@ type HistoryResponse = { ok?: boolean; items?: HistoryRow[]; error?: string }
 export async function createVideoJob(
   trend: TrendIntelligence,
   generationId?: string | null,
+  studio?: StudioCreateOptions,
 ): Promise<GeneratedVideoJob> {
   log('create', { trendId: trend.id })
 
@@ -53,6 +55,10 @@ export async function createVideoJob(
     hook_text: trend.hookAnalysis?.hookText ?? trend.title,
     generation_id: generationId ?? undefined,
     content_breakdown: trend.contentBreakdown,
+    studio_duration: studio?.duration ?? trend.videoDuration,
+    studio_style: studio?.style ?? trend.niche,
+    enable_voiceover: studio?.enableVoiceover ?? true,
+    enable_captions: studio?.enableCaptions ?? true,
   })
 
   if (!result?.job) {

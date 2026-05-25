@@ -5,6 +5,7 @@ import {
   type VideoJobStatus,
 } from '@/lib/video-generation-pipeline'
 import { trackGeneration, patchGeneration } from '@/lib/generation-tracking'
+import type { StudioCreateOptions } from '@/lib/ai-studio'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export function useVideoGeneration() {
@@ -51,7 +52,11 @@ export function useVideoGeneration() {
   const generate = useCallback(
     async (
       trend: TrendIntelligence,
-      options?: { consumeCredits?: boolean; retry?: boolean },
+      options?: {
+        consumeCredits?: boolean
+        retry?: boolean
+        studio?: StudioCreateOptions
+      },
     ): Promise<VideoGenerationResult | null> => {
       abortRef.current?.abort()
       const controller = new AbortController()
@@ -88,6 +93,7 @@ export function useVideoGeneration() {
           generationId,
           retryJobId: options?.retry ? jobId ?? undefined : undefined,
           signal: controller.signal,
+          studio: options?.studio,
         })
 
         if (controller.signal.aborted) return null

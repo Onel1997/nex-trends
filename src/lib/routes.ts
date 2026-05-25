@@ -8,12 +8,16 @@ import {
   SettingsIcon,
   SparklesIcon,
   TrendingUpIcon,
+  ClapperboardIcon,
+  FilmStripIcon,
 } from '@/components/ui/icons'
 
 export type DashboardRouteId =
   | 'dashboard'
   | 'trend-intelligence'
   | 'saved-trends'
+  | 'ai-studio'
+  | 'my-videos'
   | 'hook'
   | 'ad-copy'
   | 'seo'
@@ -24,6 +28,8 @@ export type DashboardRouteId =
 export const NAV_ROUTE_ORDER = [
   'dashboard',
   'trend-intelligence',
+  'ai-studio',
+  'my-videos',
   'hook',
   'ad-copy',
   'seo',
@@ -41,6 +47,7 @@ export type DashboardRouteConfig = {
   showInSidebar: boolean
   showOnDashboard: boolean
   immersive?: boolean
+  /** @deprecated Use SIDEBAR_PRO_BADGE_ROUTE — only ai-studio shows PRO in sidebar */
   isCoreFeature?: boolean
   legacyQuery?: string
 }
@@ -65,13 +72,28 @@ const ROUTE_DEFINITIONS: Record<DashboardRouteId, Omit<DashboardRouteConfig, 'id
     showInSidebar: true,
     showOnDashboard: true,
     immersive: true,
-    isCoreFeature: true,
   },
   'saved-trends': {
     path: `${DASHBOARD_BASE}/saved-trends`,
     label: 'Saved Trends',
     description: 'Deine gespeicherte Trend-Bibliothek',
     Icon: BookmarkIcon,
+    showInSidebar: true,
+    showOnDashboard: true,
+  },
+  'ai-studio': {
+    path: '/ai-studio',
+    label: 'AI Video Studio',
+    description: 'Generate viral AI shorts with hooks, captions and voiceovers',
+    Icon: ClapperboardIcon,
+    showInSidebar: true,
+    showOnDashboard: true,
+  },
+  'my-videos': {
+    path: '/my-videos',
+    label: 'My AI Videos',
+    description: 'Deine generierten AI-Videos',
+    Icon: FilmStripIcon,
     showInSidebar: true,
     showOnDashboard: true,
   },
@@ -139,7 +161,7 @@ export function getPathForTool(id: DashboardRouteId): string {
   return getRouteConfig(id).path
 }
 
-/** Sidebar + mobile drawer — exact NAV_ROUTE_ORDER */
+/** Flat list of all sidebar routes (legacy) */
 export function getSidebarRoutes(): DashboardRouteConfig[] {
   return NAV_ROUTE_ORDER.map((id) => getRouteConfig(id)).filter((r) => r.showInSidebar)
 }
@@ -151,7 +173,9 @@ export const DASHBOARD_TOOL_GRID_ORDER = [
   'ad-copy',
   'seo',
   'analyzer',
+  'ai-studio',
   'saved-trends',
+  'my-videos',
 ] as const satisfies readonly DashboardRouteId[]
 
 export function getDashboardToolGridRoutes(): DashboardRouteConfig[] {

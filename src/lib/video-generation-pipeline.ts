@@ -4,6 +4,7 @@ import {
   waitForVideoJob,
 } from '@/lib/video-api'
 import type { GeneratedVideoJob } from '@/types/generated-video'
+import type { StudioCreateOptions } from '@/lib/ai-studio'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export type VideoJobStatus =
@@ -73,6 +74,7 @@ export type RunVideoJobOptions = {
   generationId?: string | null
   retryJobId?: string
   signal?: AbortSignal
+  studio?: StudioCreateOptions
 }
 
 /**
@@ -97,9 +99,9 @@ export async function runVideoGenerationJob(
       if (options?.retryJobId && attempt === 0) {
         job = await retryVideoJob(options.retryJobId)
       } else if (attempt === 0 && !options?.retryJobId) {
-        job = await createVideoJob(trend, options?.generationId)
+        job = await createVideoJob(trend, options?.generationId, options?.studio)
       } else {
-        job = await createVideoJob(trend, options?.generationId)
+        job = await createVideoJob(trend, options?.generationId, options?.studio)
       }
 
       onStatus?.(mapStatus(job.status), 'Provider-Job gestartet …')

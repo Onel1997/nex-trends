@@ -17,6 +17,8 @@ const LEGACY_QUERY_MAP: Record<string, DashboardRouteId> = {
   analyzer: 'analyzer',
   'trend-intelligence': 'trend-intelligence',
   'saved-trends': 'saved-trends',
+  'ai-studio': 'ai-studio',
+  'my-videos': 'my-videos',
   settings: 'settings',
 }
 
@@ -105,7 +107,12 @@ export function ensureDashboardPath(): void {
   const path = window.location.pathname.replace(/\/$/, '') || '/'
   if (path === '/') {
     navigateToTool('dashboard', { replace: true })
-  } else if (path.startsWith(DASHBOARD_BASE) && !pathToToolId(path)) {
+  } else if (
+    (path.startsWith(DASHBOARD_BASE) ||
+      path === '/my-videos' ||
+      path === '/ai-studio') &&
+    !pathToToolId(path)
+  ) {
     navigateToTool('dashboard', { replace: true })
   }
 }
