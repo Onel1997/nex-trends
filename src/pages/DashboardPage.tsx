@@ -5,7 +5,6 @@ import {
   DashboardCreditsStrip,
   DashboardHero,
   DashboardLibrarySection,
-  DashboardQuickActions,
 } from '@/components/dashboard/os'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
@@ -31,11 +30,11 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
         <div className="nex-ambient__orb nex-ambient__orb--2" />
       </div>
 
-      <div className="dashboard-os__content relative flex flex-col gap-4 sm:gap-6 lg:gap-8">
+      <div className="dashboard-os__content relative flex flex-col gap-3 sm:gap-4">
         {error && (
           <div
             role="alert"
-            className="animate-fade-in rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-3 text-sm text-red-300"
+            className="animate-fade-in rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-sm text-red-300"
           >
             {error}
           </div>
@@ -43,17 +42,17 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
         <DashboardHero user={user} stats={stats} />
 
-        <DashboardQuickActions onNavigate={onNavigate} />
+        <div className="dashboard-os-workspace">
+          <DashboardCoreProducts onNavigate={onNavigate} />
 
-        <DashboardCoreProducts onNavigate={onNavigate} />
+          <DashboardLibrarySection
+            videos={videos}
+            videosLoading={loadingVideos}
+            onNavigate={onNavigate}
+          />
 
-        <DashboardLibrarySection
-          videos={videos}
-          videosLoading={loadingVideos}
-          onNavigate={onNavigate}
-        />
-
-        <DashboardActivityTimeline />
+          <DashboardActivityTimeline />
+        </div>
 
         <DashboardCreditsStrip />
       </div>

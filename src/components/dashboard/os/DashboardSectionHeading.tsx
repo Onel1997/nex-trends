@@ -6,6 +6,7 @@ type DashboardSectionHeadingProps = {
   description?: string
   action?: ReactNode
   className?: string
+  compact?: boolean
 }
 
 export function DashboardSectionHeading({
@@ -13,20 +14,34 @@ export function DashboardSectionHeading({
   description,
   action,
   className,
+  compact = false,
 }: DashboardSectionHeadingProps) {
   return (
     <div
       className={cn(
-        'mb-3 flex flex-wrap items-end justify-between gap-2 sm:mb-4 sm:gap-2.5',
+        'flex flex-wrap items-end justify-between gap-2',
+        compact ? 'mb-2' : 'mb-2.5 sm:mb-3',
         className,
       )}
     >
       <div className="min-w-0 flex-1">
-        <h2 className="text-[13px] font-semibold tracking-tight text-zinc-100 sm:text-base">
+        <h2
+          className={cn(
+            'font-semibold tracking-tight text-zinc-100',
+            compact ? 'text-xs uppercase tracking-wider text-zinc-400' : 'text-sm sm:text-[0.9375rem]',
+          )}
+        >
           {title}
         </h2>
         {description ? (
-          <p className="dashboard-os-muted mt-0.5 max-w-xl text-xs leading-snug sm:mt-1 sm:text-sm sm:leading-relaxed">
+          <p
+            className={cn(
+              'dashboard-os-muted max-w-xl leading-snug',
+              compact
+                ? 'mt-0.5 hidden text-[11px] sm:block'
+                : 'mt-0.5 text-[11px] sm:text-xs',
+            )}
+          >
             {description}
           </p>
         ) : null}

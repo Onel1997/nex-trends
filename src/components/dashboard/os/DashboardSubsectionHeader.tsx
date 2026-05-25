@@ -18,19 +18,24 @@ export function DashboardSubsectionHeader({
   icon: Icon,
   iconClassName,
   onViewAll,
-  viewAllLabel = 'View all →',
+  viewAllLabel = 'View all',
   action,
   className,
 }: DashboardSubsectionHeaderProps) {
   return (
-    <div className={cn('mb-3 flex items-center justify-between gap-2', className)}>
+    <div className={cn('mb-2 flex items-center justify-between gap-2', className)}>
       <div className="flex min-w-0 items-center gap-2">
         {Icon ? (
-          <Icon className={cn('size-4 shrink-0 text-violet-400/90', iconClassName)} aria-hidden />
+          <Icon
+            className={cn('size-3.5 shrink-0 text-violet-400/70', iconClassName)}
+            aria-hidden
+          />
         ) : null}
-        <h3 className="truncate text-sm font-semibold tracking-tight text-zinc-50">{title}</h3>
+        <h3 className="truncate text-[13px] font-semibold tracking-tight text-zinc-100">
+          {title}
+        </h3>
         {count !== undefined ? (
-          <span className="shrink-0 rounded-full border border-zinc-700/80 bg-zinc-800/60 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-400">
+          <span className="shrink-0 rounded-full border border-zinc-700/80 bg-zinc-800/60 px-1.5 py-px text-[10px] font-medium tabular-nums text-zinc-400">
             {count}
           </span>
         ) : null}
@@ -40,9 +45,9 @@ export function DashboardSubsectionHeader({
         <button
           type="button"
           onClick={onViewAll}
-          className="shrink-0 text-xs font-medium text-violet-400 transition-smooth hover:text-violet-300"
+          className="shrink-0 text-[11px] font-medium text-zinc-500 transition-smooth hover:text-violet-300"
         >
-          {viewAllLabel}
+          {viewAllLabel} →
         </button>
       ) : null}
     </div>

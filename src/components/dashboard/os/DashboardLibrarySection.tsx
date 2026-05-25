@@ -7,6 +7,7 @@ import {
   ClapperboardIcon,
   FilmStripIcon,
   PlayIcon,
+  SparklesIcon,
   TrendingUpIcon,
 } from '@/components/ui/icons'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -28,7 +29,9 @@ function formatTrendSavedAt(iso?: string): string {
   const d = new Date(iso)
   const diff = Date.now() - d.getTime()
   const days = Math.floor(diff / 86_400_000)
-  if (days < 1) return `Today · ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
+  if (days < 1) {
+    return `Today · ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
+  }
   if (days === 1) return 'Yesterday'
   if (days < 7) return `${days}d ago`
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -41,10 +44,10 @@ function getTrendTags(trend: TrendIntelligence): string[] {
     const clean = tag.replace(/^#/, '')
     if (clean && !tags.includes(clean)) tags.push(clean)
   }
-  return tags.slice(0, 4)
+  return tags.slice(0, 3)
 }
 
-function SavedTrendRowCard({
+function SavedTrendIntelCard({
   trend,
   onClick,
 }: {
@@ -57,32 +60,35 @@ function SavedTrendRowCard({
     <button
       type="button"
       onClick={onClick}
-      className="dashboard-os-trend-row dashboard-os-card group w-full max-w-full text-left"
+      className="dashboard-os-trend-card group w-full text-left"
     >
-      <div className="glass-premium flex w-full items-center gap-3 rounded-2xl border border-zinc-800/55 p-2.5 transition-smooth sm:gap-3.5 sm:p-3">
-        <div className="relative size-[4.25rem] shrink-0 overflow-hidden rounded-xl border border-zinc-700/60 sm:size-[4.75rem]">
+      <div className="dashboard-os-trend-card__inner flex items-center gap-2.5 rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-2 backdrop-blur-sm transition-smooth sm:gap-3">
+        <div className="relative size-[3.25rem] shrink-0 overflow-hidden rounded-lg border border-zinc-800/80 sm:size-14">
           <SafeMediaThumb
             src={trend.thumbnailUrl}
             variant="trend"
             fallbackClassName={cn('bg-gradient-to-br', trend.gradientFrom, trend.gradientTo)}
           />
-          <span className="absolute left-1 top-1 rounded-md border border-emerald-500/40 bg-emerald-500/25 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-emerald-100 backdrop-blur-sm">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <span className="absolute left-1 top-1 rounded border border-emerald-500/30 bg-emerald-500/15 px-1 py-px text-[9px] font-bold tabular-nums text-emerald-300 backdrop-blur-sm">
             {trend.viralScore}
           </span>
-          <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1 py-0.5 text-[8px] font-bold uppercase tracking-wide text-zinc-200 backdrop-blur-sm">
+          <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1 py-px text-[7px] font-bold uppercase tracking-wide text-zinc-300">
             {trend.platform}
           </span>
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-white">{trend.title}</p>
-          <p className="dashboard-os-muted mt-0.5 text-[11px]">{formatTrendSavedAt(trend.savedAt)}</p>
+          <p className="truncate text-[13px] font-semibold leading-tight text-zinc-50">
+            {trend.title}
+          </p>
+          <p className="mt-0.5 text-[10px] text-zinc-500">{formatTrendSavedAt(trend.savedAt)}</p>
           {tags.length > 0 ? (
-            <ul className="mt-2 flex flex-wrap gap-1">
+            <ul className="mt-1.5 flex flex-wrap gap-1">
               {tags.map((tag) => (
                 <li
                   key={tag}
-                  className="rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[9px] font-medium capitalize text-violet-200/90"
+                  className="rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-px text-[9px] font-medium capitalize text-violet-200/90"
                 >
                   {tag}
                 </li>
@@ -91,13 +97,13 @@ function SavedTrendRowCard({
           ) : null}
         </div>
 
-        <div className="flex shrink-0 flex-col items-center justify-center gap-2 self-stretch py-0.5">
+        <div className="flex shrink-0 flex-col items-center gap-2 self-stretch py-0.5">
           <BookmarkIcon
-            className="size-4 text-violet-400/70 transition-smooth group-hover:text-violet-300"
+            className="size-3.5 text-violet-500/50 transition-smooth group-hover:text-violet-300"
             aria-hidden
           />
           <span
-            className="text-zinc-600 transition-smooth group-hover:translate-x-0.5 group-hover:text-violet-400"
+            className="text-sm text-zinc-600 transition-smooth group-hover:translate-x-0.5 group-hover:text-zinc-400"
             aria-hidden
           >
             ›
@@ -108,7 +114,23 @@ function SavedTrendRowCard({
   )
 }
 
-function CinematicVideoCard({
+function statusVariant(
+  status: SavedAiVideo['status'],
+): 'success' | 'default' | 'warning' {
+  if (status === 'completed') return 'success'
+  if (status === 'generating' || status === 'processing') return 'warning'
+  return 'default'
+}
+
+function statusLabel(status: SavedAiVideo['status']): string {
+  if (status === 'completed') return 'Completed'
+  if (status === 'generating' || status === 'processing') return 'Rendering'
+  if (status === 'queued') return 'Queued'
+  if (status === 'failed') return 'Failed'
+  return status
+}
+
+function ReelVideoCard({
   video,
   onClick,
 }: {
@@ -121,39 +143,51 @@ function CinematicVideoCard({
     <button
       type="button"
       onClick={onClick}
-      className="dashboard-os-video-card dashboard-os-card group w-full max-w-full min-w-0 text-left"
+      className="dashboard-os-video-card group w-full min-w-0 text-left"
     >
-      <div className="overflow-hidden rounded-2xl border border-violet-500/25 bg-zinc-900/50 transition-smooth group-hover:border-violet-500/40">
-        <div className="dashboard-os-video-card__thumb relative aspect-[4/5] overflow-hidden sm:aspect-[9/14]">
-          <div className="size-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]">
+      <div className="dashboard-os-video-card__shell overflow-hidden rounded-xl border border-zinc-800/70 bg-zinc-900/50 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.65)] transition-smooth">
+        <div className="dashboard-os-video-card__thumb relative aspect-[4/5] overflow-hidden">
+          <div className="size-full transition-transform duration-300 ease-out group-hover:scale-[1.03]">
             <SafeMediaThumb src={video.posterUrl} variant="video" />
           </div>
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
-          <Badge
-            variant={video.status === 'completed' ? 'success' : 'default'}
-            className="absolute left-2 top-2 text-[9px] capitalize shadow-md"
-          >
-            {video.status}
-          </Badge>
-          {video.platform && (
-            <span className="absolute right-2 top-2 rounded-md border border-white/10 bg-black/60 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-zinc-100 backdrop-blur-md">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/10 to-zinc-950/30" />
+
+          <div className="absolute left-1.5 top-1.5 flex flex-col gap-1">
+            <Badge variant={statusVariant(video.status)} className="text-[8px] font-semibold uppercase">
+              {statusLabel(video.status)}
+            </Badge>
+            <span className="inline-flex w-fit items-center gap-0.5 rounded border border-violet-500/25 bg-violet-500/10 px-1 py-px text-[7px] font-semibold uppercase text-violet-200/90">
+              <SparklesIcon className="size-2.5" aria-hidden />
+              AI
+            </span>
+          </div>
+
+          {video.platform ? (
+            <span className="absolute right-1.5 top-1.5 rounded border border-white/10 bg-black/55 px-1.5 py-px text-[8px] font-bold uppercase text-zinc-200 backdrop-blur-sm">
               {video.platform}
             </span>
-          )}
+          ) : null}
+
+          <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/75 px-1.5 py-px text-[10px] font-semibold tabular-nums text-white backdrop-blur-sm">
+            {video.duration}
+          </span>
+
           {canPlay && (
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-              <span className="flex size-10 items-center justify-center rounded-full bg-violet-600/90 shadow-[0_0_20px_rgba(139,92,246,0.6)] ring-2 ring-violet-400/40">
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <span className="flex size-9 items-center justify-center rounded-full border border-white/20 bg-black/40 backdrop-blur-md">
                 <PlayIcon className="ml-0.5 size-4 text-white" />
               </span>
             </span>
           )}
-          <span className="absolute bottom-2 right-2 rounded-md border border-white/10 bg-black/75 px-2 py-0.5 text-[10px] font-bold tabular-nums text-white backdrop-blur-md">
-            {video.duration}
-          </span>
         </div>
-        <div className="border-t border-zinc-800/50 bg-zinc-950/40 px-3 py-2.5">
-          <p className="line-clamp-1 text-xs font-semibold text-white">{video.title}</p>
-          <p className="dashboard-os-muted mt-0.5 text-[10px]">{formatVideoDate(video.createdAt)}</p>
+
+        <div className="border-t border-zinc-800/60 px-2 py-2">
+          <p className="line-clamp-1 text-[11px] font-semibold leading-tight text-zinc-100">
+            {video.title}
+          </p>
+          <p className="mt-0.5 truncate text-[10px] text-zinc-500">
+            {formatVideoDate(video.createdAt)}
+          </p>
         </div>
       </div>
     </button>
@@ -163,9 +197,9 @@ function CinematicVideoCard({
 function VideoRowSkeleton() {
   return (
     <>
-      {Array.from({ length: 3 }).map((_, i) => (
+      {Array.from({ length: 4 }).map((_, i) => (
         <DashboardCarouselItem key={i} variant="media">
-          <Skeleton className="aspect-[4/5] w-full rounded-2xl sm:aspect-[9/14]" />
+          <Skeleton className="aspect-[4/5] w-full rounded-xl" />
         </DashboardCarouselItem>
       ))}
     </>
@@ -179,11 +213,11 @@ export function DashboardLibrarySection({
 }: DashboardLibrarySectionProps) {
   const { savedTrends } = useSavedTrends()
   const trendPreview = savedTrends.slice(0, 5)
-  const videoPreview = videos.slice(0, 8)
+  const videoPreview = videos.slice(0, 10)
 
   return (
-    <section className="dashboard-os-section dashboard-os-library animate-fade-in animation-delay-300 space-y-6 sm:space-y-7">
-      <div>
+    <section className="dashboard-os-section dashboard-os-section--embedded dashboard-os-library">
+      <div className="dashboard-os-feed-block">
         <DashboardSubsectionHeader
           title="Saved Trends"
           count={savedTrends.length}
@@ -194,51 +228,54 @@ export function DashboardLibrarySection({
           <button
             type="button"
             onClick={() => onNavigate('trend-intelligence')}
-            className="dashboard-os-empty-cta flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-700/60 bg-zinc-900/25 px-4 py-8 text-sm text-zinc-400 transition-smooth hover:border-violet-500/35 hover:text-zinc-200"
+            className="dashboard-os-empty-cta flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-800/70 bg-zinc-900/25 px-3 py-5 text-xs text-zinc-500 transition-smooth hover:border-violet-500/25 hover:text-zinc-300"
           >
-            <TrendingUpIcon className="size-5 text-violet-500/70" />
-            Save your first trend →
+            <TrendingUpIcon className="size-4 text-violet-500/60" />
+            Save your first trend
           </button>
         ) : (
-          <ul className="flex flex-col gap-2.5">
+          <ul className="flex flex-col gap-1.5">
             {trendPreview.map((trend) => (
               <li key={trend.id}>
-                <SavedTrendRowCard trend={trend} onClick={() => onNavigate('saved-trends')} />
+                <SavedTrendIntelCard trend={trend} onClick={() => onNavigate('saved-trends')} />
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      <div>
+      <div className="dashboard-os-feed-block dashboard-os-feed-block--videos">
         <DashboardSubsectionHeader
           title="My AI Videos"
           count={videos.length}
           icon={FilmStripIcon}
-          iconClassName="text-fuchsia-400/90"
           onViewAll={() => onNavigate('my-videos')}
         />
         {videosLoading ? (
-          <DashboardCarousel>
-            <VideoRowSkeleton />
-          </DashboardCarousel>
+          <div className="dashboard-os-carousel-fade">
+            <DashboardCarousel className="dashboard-os-video-carousel">
+              <VideoRowSkeleton />
+            </DashboardCarousel>
+          </div>
         ) : videoPreview.length === 0 ? (
           <button
             type="button"
             onClick={() => onNavigate('ai-studio')}
-            className="dashboard-os-empty-cta flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-700/60 bg-zinc-900/25 px-4 py-8 text-sm text-zinc-400 transition-smooth hover:border-fuchsia-500/35 hover:text-zinc-200"
+            className="dashboard-os-empty-cta flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-800/70 bg-zinc-900/25 px-3 py-5 text-xs text-zinc-500 transition-smooth hover:border-fuchsia-500/25 hover:text-zinc-300"
           >
-            <ClapperboardIcon className="size-5 text-fuchsia-500/70" />
-            Generate your first AI video →
+            <ClapperboardIcon className="size-4 text-fuchsia-500/60" />
+            Generate your first reel
           </button>
         ) : (
-          <DashboardCarousel>
-            {videoPreview.map((video) => (
-              <DashboardCarouselItem key={video.id} variant="media">
-                <CinematicVideoCard video={video} onClick={() => onNavigate('my-videos')} />
-              </DashboardCarouselItem>
-            ))}
-          </DashboardCarousel>
+          <div className="dashboard-os-carousel-fade">
+            <DashboardCarousel className="dashboard-os-video-carousel">
+              {videoPreview.map((video) => (
+                <DashboardCarouselItem key={video.id} variant="media">
+                  <ReelVideoCard video={video} onClick={() => onNavigate('my-videos')} />
+                </DashboardCarouselItem>
+              ))}
+            </DashboardCarousel>
+          </div>
         )}
       </div>
     </section>
