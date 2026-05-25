@@ -5,7 +5,7 @@ import { useDashboardData } from '@/hooks/useDashboardData'
 import { cn } from '@/lib'
 
 export function UserOverviewCard() {
-  const { user, hasProAccess, statusLabel, remainingLabel, planLabel } =
+  const { user, hasProAccess, isAdmin, statusLabel, remainingLabel, planLabel } =
     useDashboardData()
 
   if (!user) return null
@@ -21,8 +21,13 @@ export function UserOverviewCard() {
           <div className="flex items-center gap-4">
             <div className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl gradient-accent text-lg font-bold text-white shadow-lg shadow-violet-900/30 ring-1 ring-white/10">
               {user.avatarInitials}
-              {hasProAccess && (
-                <span className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full bg-fuchsia-500 ring-2 ring-zinc-900">
+              {(isAdmin || hasProAccess) && (
+                <span
+                  className={cn(
+                    'absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full ring-2 ring-zinc-900',
+                    isAdmin ? 'bg-amber-500' : 'bg-fuchsia-500',
+                  )}
+                >
                   <CrownIcon className="size-2.5 text-white" aria-hidden />
                 </span>
               )}
@@ -30,12 +35,14 @@ export function UserOverviewCard() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg font-semibold tracking-tight text-white">{user.name}</h2>
-                {hasProAccess && (
+                {isAdmin ? (
+                  <Badge variant="admin">ADMIN</Badge>
+                ) : hasProAccess ? (
                   <Badge variant="pro">
                     <CrownIcon className="mr-1 inline size-3" aria-hidden />
                     Pro
                   </Badge>
-                )}
+                ) : null}
               </div>
               <p className="mt-1 text-sm text-zinc-500">{user.email}</p>
             </div>
@@ -43,7 +50,7 @@ export function UserOverviewCard() {
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <StatPill label="Plan" value={planLabel} />
-            <StatPill label="Status" value={statusLabel} highlight={hasProAccess} />
+            <StatPill label="Status" value={statusLabel} highlight={isAdmin || hasProAccess} />
             <StatPill label="Credits" value={remainingLabel} className="col-span-2" />
           </div>
         </div>

@@ -9,10 +9,11 @@ import {
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { startStripeCheckoutFlow } from '@/lib/stripe'
+import { getAdminUsageResult, isAdminEmail } from '@/lib/admin'
 import {
   clearProfileCache,
   getDefaultProfile,
-  hasProAccess,
+  hasPremiumAccess,
   readProfileCache,
   writeProfileCache,
 } from '@/lib/subscription'
@@ -40,6 +41,7 @@ type SubscriptionContextValue = {
   isProfileLoading: boolean
   isReady: boolean
   hasProAccess: boolean
+  isAdmin: boolean
   usage: UsageLimitResult
   isUsageLimitReached: boolean
   isCreditsLow: boolean
@@ -101,6 +103,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const profileRef = useRef<UserProfile | null>(null)
   profileRef.current = profile
 
+  const userEmail = session?.user?.email ?? null
+  const isAdmin = isAdminEmail(userEmail)
+
   const fetchProfile = useCallback(async (userId: string): Promise<UserProfile> => {
     const { data, error } = await supabase
       .from('profiles')
@@ -141,6 +146,15 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   }, [])
 
   const syncUsageFromServer = useCallback(async () => {
+    if (isAdminEmail(session?.user?.email)) {
+      const adminUsage = getAdminUsageResult(
+        profileRef.current?.monthly_usage_count ?? 0,
+        profileRef.current?.usage_reset_date ?? null,
+      )
+      setUsage(adminUsage)
+      return adminUsage
+    }
+
     try {
       const serverUsage = await fetchUsageLimit(profileRef.current)
       setUsage(serverUsage)
@@ -153,11 +167,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       return serverUsage
     } catch (err) {
       console.error('Usage-Check fehlgeschlagen:', err)
-      const fallback = getUsageFromProfile(profileRef.current)
+      const fallback = getUsageFromProfile(profileRef.current, session?.user?.email)
       setUsage(fallback)
       return fallback
     }
-  }, [session?.user?.id])
+  }, [session?.user?.email, session?.user?.id])
 
   const refreshProfile = useCallback(async () => {
     const userId = session?.user?.id
@@ -178,7 +192,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const cached = readProfileCache(userId)
       if (cached) {
         setProfile(cached)
-        setUsage(getUsageFromProfile(cached))
+        setUsage(getUsageFromProfile(cached, session?.user?.email))
       }
 
       if (options?.showLoading !== false && !cached) {
@@ -188,13 +202,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       try {
         const next = await fetchProfile(userId)
         setProfile(next)
-        setUsage(getUsageFromProfile(next))
+        setUsage(getUsageFromProfile(next, session?.user?.email))
         await syncUsageFromServer()
       } finally {
         setIsProfileLoading(false)
       }
     },
-    [fetchProfile, syncUsageFromServer],
+    [fetchProfile, session?.user?.email, syncUsageFromServer],
   )
 
   useEffect(() => {
@@ -209,22 +223,30 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         void loadProfileForUser(initialSession.user.id)
       } else {
         setProfile(null)
-        setUsage(getUsageFromProfile(null))
+        setUsage(getUsageFromProfile(null, null))
         clearProfileCache()
       }
     })
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession)
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession((prev) => {
+        const sameUser = prev?.user?.id === nextSession?.user?.id
+        const sameToken = prev?.access_token === nextSession?.access_token
+        if (sameUser && sameToken) return prev
+        return nextSession
+      })
       setIsAuthLoading(false)
+
+      // Token refresh must not reload profile / re-render the whole app tree
+      if (event === 'TOKEN_REFRESHED') return
 
       if (nextSession?.user?.id) {
         void loadProfileForUser(nextSession.user.id)
       } else {
         setProfile(null)
-        setUsage(getUsageFromProfile(null))
+        setUsage(getUsageFromProfile(null, null))
         clearProfileCache()
       }
     })
@@ -253,18 +275,32 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
   }, [showToast])
 
-  const proAccess = hasProAccess(profile)
+  const premiumAccess = hasPremiumAccess(profile, userEmail)
 
   const consumeUsage = useCallback(
     async (activity?: ConsumeUsageOptions): Promise<UsageLimitResult> => {
-      if (proAccess) {
+      if (isAdmin) {
         if (activity) logActivity(activity.tool, activity.label)
-        const unlimited = getUsageFromProfile(profile)
+        const unlimited = getAdminUsageResult(
+          profileRef.current?.monthly_usage_count ?? 0,
+          profileRef.current?.usage_reset_date ?? null,
+        )
+        setUsage(unlimited)
+        return unlimited
+      }
+
+      if (premiumAccess) {
+        if (activity) logActivity(activity.tool, activity.label)
+        const unlimited = getUsageFromProfile(profile, userEmail)
         return { ...unlimited, allowed: true, unlimited: true }
       }
 
       try {
-        const result = await fetchIncrementUsage(profileRef.current, activity?.cost ?? 1)
+        const result = await fetchIncrementUsage(
+          profileRef.current,
+          activity?.cost ?? 1,
+          activity ? { tool: activity.tool, label: activity.label } : undefined,
+        )
         setUsage(result)
 
         if (result.allowed && activity) {
@@ -299,13 +335,19 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           durationMs: 7000,
         })
 
-        const fallback = getUsageFromProfile(profileRef.current)
+        const fallback = getUsageFromProfile(profileRef.current, userEmail)
         setUsage(fallback)
         return { ...fallback, allowed: false }
       }
     },
-    [proAccess, profile, session?.user?.id, showToast],
+    [isAdmin, premiumAccess, profile, userEmail, session?.user?.id, showToast],
   )
+
+  useEffect(() => {
+    if (isAdmin && isUpgradeModalOpen) {
+      setIsUpgradeModalOpen(false)
+    }
+  }, [isAdmin, isUpgradeModalOpen])
 
   const isReady =
     !isAuthLoading && (!session?.user?.id || profile !== null)
@@ -321,7 +363,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       isAuthLoading,
       isProfileLoading,
       isReady,
-      hasProAccess: proAccess,
+      hasProAccess: premiumAccess,
+      isAdmin,
       usage,
       isUsageLimitReached,
       isCreditsLow,
@@ -329,7 +372,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       refreshUsage: syncUsageFromServer,
       consumeUsage,
       isUpgradeModalOpen,
-      openUpgradeModal: () => setIsUpgradeModalOpen(true),
+      openUpgradeModal: () => {
+        if (isAdmin) return
+        setIsUpgradeModalOpen(true)
+      },
       closeUpgradeModal: () => setIsUpgradeModalOpen(false),
       openStripeCheckout: handleStripeCheckout,
     }),
@@ -339,7 +385,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       isAuthLoading,
       isProfileLoading,
       isReady,
-      proAccess,
+      premiumAccess,
+      isAdmin,
       usage,
       isUsageLimitReached,
       isCreditsLow,

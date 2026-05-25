@@ -23,7 +23,12 @@ import { getDemoUserSeed } from '@/lib/demo-trend-seed'
 
 export function HookGeneratorTool() {
   const { showToast } = useToast()
-  const { hasProAccess, isUsageLimitReached, consumeUsage } = useUsageLimit()
+  const {
+    hasProAccess,
+    isUsageLimitReached,
+    requireCredits,
+    consumeCreditAfterSuccess,
+  } = useUsageLimit()
 
   const sessionTrends = useMemo(() => loadTrendSession()?.trends ?? [], [])
   const sessionNiche = useMemo(
@@ -95,13 +100,7 @@ export function HookGeneratorTool() {
       setIsGenerating(true)
 
       try {
-        if (options.consumeCredit && !hasProAccess) {
-          const usageResult = await consumeUsage({
-            tool: 'Hook Generator',
-            label: `Hooks: ${(selectedTrend?.title ?? briefing).slice(0, 40)}`,
-          })
-          if (!usageResult.allowed) return
-        }
+        if (options.consumeCredit && !requireCredits()) return
 
         const input = await buildInput()
         if (!input) {
@@ -111,6 +110,13 @@ export function HookGeneratorTool() {
 
         const generated = await generateTrendHooks(input)
         setHooks(generated)
+
+        if (options.consumeCredit) {
+          await consumeCreditAfterSuccess({
+            tool: 'Hook Generator',
+            label: `Hooks: ${(selectedTrend?.title ?? briefing).slice(0, 40)}`,
+          })
+        }
       } catch (err) {
         setError(
           err instanceof Error
@@ -125,7 +131,8 @@ export function HookGeneratorTool() {
       briefing,
       buildInput,
       canGenerate,
-      consumeUsage,
+      consumeCreditAfterSuccess,
+      requireCredits,
       hasProAccess,
       selectedTrend,
     ],

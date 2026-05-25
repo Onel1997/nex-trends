@@ -13,7 +13,7 @@ type AiToolLayoutProps = {
 }
 
 export function AiToolLayout({ title, description, children, className }: AiToolLayoutProps) {
-  const { hasProAccess, isCreditsLow, usage } = useUsageLimit()
+  const { hasProAccess, isAdmin, isCreditsLow, usage } = useUsageLimit()
   const remaining = usage.remaining ?? 0
   const limit = usage.limit ?? MAX_FREE_CREDITS
 
@@ -31,7 +31,11 @@ export function AiToolLayout({ title, description, children, className }: AiTool
 
         <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-zinc-800/60 bg-zinc-950/60 px-3 py-1.5 text-xs">
           <CreditIcon className="size-3.5 text-violet-400/80" aria-hidden />
-          {hasProAccess ? (
+          {isAdmin ? (
+            <span className="text-zinc-400">
+              Admin · <span className="font-medium text-amber-300">unbegrenzt</span>
+            </span>
+          ) : hasProAccess ? (
             <span className="text-zinc-400">
               Pro · <span className="font-medium text-violet-300">unbegrenzt</span>
             </span>

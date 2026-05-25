@@ -16,11 +16,13 @@ import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { MAX_FREE_CREDITS } from '@/lib/constants'
 import { getDemoUserSeed } from '@/lib/demo-trend-seed'
 import { markDemoSeen, shouldShowDemoOnLoad } from '@/lib/trend-intelligence'
+import { trackAnalyticsEvent } from '@/lib/track-event'
 import { fetchDemoTrends, fetchTrendsByNiche } from '@/lib/trends-api'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export function TrendIntelligencePanel() {
-  const { hasProAccess, usage, isCreditsLow, consumeUsage } = useUsageLimit()
+  const { hasProAccess, usage, isCreditsLow, requireCredits, consumeCreditAfterSuccess } =
+    useUsageLimit()
   const { savedTrends, savedCount, isSaved, toggleSave, unsave } = useSavedTrends()
   const { history, logSearch, clear, removeEntry } = useTrendHistory()
   const { isRestoring, initial, persist, restoreScroll } = useTrendSessionRestore()
@@ -108,21 +110,24 @@ export function TrendIntelligencePanel() {
     setView('explore')
 
     try {
-      if (!hasProAccess) {
-        const usageResult = await consumeUsage({
-          tool: 'Trend-Scouting',
-          label: `Trend-Suche: ${query}`,
-        })
-        if (!usageResult.allowed) {
-          setIsSearching(false)
-          return
-        }
+      if (!requireCredits()) {
+        setIsSearching(false)
+        return
       }
 
       const results = await fetchTrendsByNiche(query, { userSeed: getDemoUserSeed() })
       setTrends(results)
       markDemoSeen()
       logSearch(query, platform === 'all' ? 'Alle Plattformen' : platform, results.length)
+      trackAnalyticsEvent('niche_search', {
+        niche: query,
+        platform: platform === 'all' ? 'Alle Plattformen' : platform,
+        results: results.length,
+      })
+      await consumeCreditAfterSuccess({
+        tool: 'Trend-Scouting',
+        label: `Trend-Suche: ${query}`,
+      })
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Unbekannter Fehler bei der Trend-Suche.',

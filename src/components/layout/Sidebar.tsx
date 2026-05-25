@@ -4,6 +4,7 @@ import { APP_NAME, type DashboardToolId } from '@/lib'
 import { cn } from '@/lib'
 import { navigateToHome } from '@/lib/navigation'
 import { getSidebarRoutes } from '@/lib/routes'
+import { navigateToAdmin } from '@/lib/admin-navigation'
 import { useSubscription } from '@/hooks/useSubscription'
 import { supabase } from '@/lib/supabase'
 
@@ -14,7 +15,7 @@ type SidebarProps = {
 }
 
 export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
-  const { hasProAccess, openStripeCheckout } = useSubscription()
+  const { hasProAccess, isAdmin, openStripeCheckout } = useSubscription()
   const navItems = getSidebarRoutes()
 
   return (
@@ -102,6 +103,16 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
 
       <div className="space-y-2.5 border-t border-zinc-800/50 p-4 lg:p-5">
         <CreditsCard compact />
+
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => navigateToAdmin()}
+            className="w-full rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm font-semibold text-amber-200 transition-smooth hover:bg-amber-500/15"
+          >
+            Admin Dashboard
+          </button>
+        )}
 
         {!hasProAccess && (
           <button

@@ -10,7 +10,7 @@ type UsageLimitBarProps = {
 }
 
 export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps) {
-  const { usage, hasProAccess } = useUsageLimit()
+  const { usage, hasProAccess, isAdmin } = useUsageLimit()
 
   if (hasProAccess || usage.unlimited) {
     return (
@@ -34,11 +34,15 @@ export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps
               Credits
             </span>
           </div>
-          <span className="text-sm font-bold text-white">∞ Pro</span>
+          <span className="text-sm font-bold text-white">
+            ∞ {isAdmin ? 'Admin' : 'Pro'}
+          </span>
         </div>
         {!compact && (
           <p className="relative mt-2 text-[11px] text-violet-300/90">
-            Unbegrenzte Credits — alle Tools freigeschaltet.
+            {isAdmin
+              ? 'Admin-Zugang — unbegrenzte Credits, alle Tools freigeschaltet.'
+              : 'Unbegrenzte Credits — alle Tools freigeschaltet.'}
           </p>
         )}
       </div>

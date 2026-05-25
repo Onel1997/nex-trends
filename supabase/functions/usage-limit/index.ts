@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
+import { isAdminEmail } from "../_shared/admin.ts";
 import {
   checkUsageLimit,
   ensureProfile,
@@ -83,6 +84,37 @@ serve(async (req) => {
       profile as ProfileUsageRow,
     );
 
+    if (currentProfile.is_banned) {
+      return new Response(
+        JSON.stringify({
+          allowed: false,
+          unlimited: false,
+          used: currentProfile.monthly_usage_count ?? 0,
+          remaining: currentProfile.credit_balance ?? 0,
+          limit: null,
+          usageResetDate: currentProfile.usage_reset_date ?? null,
+          error: "Account gesperrt",
+        }),
+        { status: 403, headers: jsonHeaders },
+      );
+    }
+
+    if (isAdminEmail(user.email)) {
+      const used = currentProfile.monthly_usage_count ?? 0;
+      const result = {
+        allowed: true,
+        unlimited: true,
+        used,
+        remaining: null,
+        limit: null,
+        usageResetDate: currentProfile.usage_reset_date ?? null,
+      };
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: jsonHeaders,
+      });
+    }
+
     const result =
       action === "increment"
         ? await incrementUsage(
@@ -92,6 +124,19 @@ serve(async (req) => {
             cost,
           )
         : checkUsageLimit(currentProfile);
+
+    if (action === "increment" && result.allowed) {
+      const label = typeof body.label === "string" ? body.label : "";
+      const tool = typeof body.tool === "string" ? body.tool : "generation";
+      const { error: logError } = await supabaseAdmin
+        .from("analytics_events")
+        .insert({
+          user_id: user.id,
+          event_type: "generation",
+          payload: { tool, label },
+        });
+      if (logError) console.warn("analytics log failed:", logError);
+    }
 
     return new Response(JSON.stringify(result), {
       status: 200,

@@ -32,7 +32,12 @@ export function AiGeneratorTool({
   onGenerate,
   toolActivityName,
 }: AiGeneratorToolProps) {
-  const { hasProAccess, isUsageLimitReached, consumeUsage } = useUsageLimit()
+  const {
+    hasProAccess,
+    isUsageLimitReached,
+    requireCredits,
+    consumeCreditAfterSuccess,
+  } = useUsageLimit()
   const [input, setInput] = useState('')
   const [result, setResult] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -45,14 +50,14 @@ export function AiGeneratorTool({
     setResult(null)
 
     try {
-      const usageResult = await consumeUsage({
-        tool: toolActivityName,
-        label: `${toolActivityName}: ${input.trim().slice(0, 40)}`,
-      })
-      if (!usageResult.allowed) return
+      if (!requireCredits()) return
 
       const generated = await onGenerate(input.trim())
       setResult(generated)
+      await consumeCreditAfterSuccess({
+        tool: toolActivityName,
+        label: `${toolActivityName}: ${input.trim().slice(0, 40)}`,
+      })
     } catch (err) {
       setResult(err instanceof Error ? err.message : 'Generierung fehlgeschlagen.')
     } finally {

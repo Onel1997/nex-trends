@@ -15,8 +15,10 @@ export {
 } from './constants'
 export { cn, generateId } from './utils'
 export { supabase } from './supabase'
+export { isAdminEmail, getAdminUsageResult } from './admin'
 export {
   hasProAccess,
+  hasPremiumAccess,
   isPremiumTool,
   PREMIUM_TOOL_IDS,
 } from './subscription'

@@ -423,6 +423,18 @@ verify_jwt = true
 import_map = "./functions/usage-limit/deno.json"
 entrypoint = "./functions/usage-limit/index.ts"
 
+[functions.track-event]
+enabled = true
+verify_jwt = true
+import_map = "./functions/track-event/deno.json"
+entrypoint = "./functions/track-event/index.ts"
+
+[functions.admin-api]
+enabled = true
+verify_jwt = true
+import_map = "./functions/admin-api/deno.json"
+entrypoint = "./functions/admin-api/index.ts"
+
 [functions.stripe-webhook]
 enabled = true
 verify_jwt = false

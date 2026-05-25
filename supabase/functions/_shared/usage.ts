@@ -16,6 +16,8 @@ export type ProfileUsageRow = {
   monthly_usage_count: number | null;
   last_weekly_refill_at: string | null;
   usage_reset_date: string | null;
+  is_banned?: boolean | null;
+  banned_at?: string | null;
 };
 
 export type UsageLimitResult = {
@@ -28,7 +30,7 @@ export type UsageLimitResult = {
 };
 
 const PROFILE_SELECT =
-  "id, is_pro, subscription_status, credit_balance, monthly_usage_count, last_weekly_refill_at, usage_reset_date";
+  "id, is_pro, subscription_status, credit_balance, monthly_usage_count, last_weekly_refill_at, usage_reset_date, is_banned, banned_at";
 
 export function hasProAccess(profile: ProfileUsageRow): boolean {
   return profile.is_pro === true && profile.subscription_status === "active";
@@ -176,6 +178,10 @@ export async function incrementUsage(
   let current = await ensureWeeklyRefill(supabaseAdmin, profile);
   const check = checkUsageLimit(current);
 
+  if (current.is_banned) {
+    return { ...check, allowed: false, remaining: current.credit_balance ?? 0 };
+  }
+
   if (check.unlimited) {
     console.log("Pro-User – unlimited usage:", userId);
     return check;
@@ -206,7 +212,7 @@ export async function incrementUsage(
     throw error ?? new Error("Profil nach Increment nicht gefunden");
   }
 
-  const result = checkUsageLimit(data as ProfileUsageRow);
-  console.log("Credits verbraucht:", { userId, cost: safeCost, result });
-  return result;
+  const snapshot = checkUsageLimit(data as ProfileUsageRow);
+  console.log("Credits verbraucht:", { userId, cost: safeCost, snapshot });
+  return { ...snapshot, allowed: true };
 }

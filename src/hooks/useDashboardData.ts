@@ -51,6 +51,7 @@ export function useDashboardData() {
     isReady,
     isProfileLoading,
     hasProAccess,
+    isAdmin,
     usage,
     refreshProfile,
     openUpgradeModal,
@@ -92,11 +93,16 @@ export function useDashboardData() {
     })
   }, [usage.used])
 
-  const planLabel = hasProAccess ? 'NexTrends Pro' : 'Free Plan'
-  const statusLabel = hasProAccess ? 'Aktiv' : 'Free'
-  const remainingLabel = hasProAccess
-    ? 'Unbegrenzt'
-    : `${usage.remaining ?? 0} / ${usage.limit ?? MAX_FREE_CREDITS}`
+  const planLabel = isAdmin
+    ? 'Admin Access'
+    : hasProAccess
+      ? 'NexTrends Pro'
+      : 'Free Plan'
+  const statusLabel = isAdmin ? 'ADMIN' : hasProAccess ? 'Aktiv' : 'Free'
+  const remainingLabel =
+    isAdmin || hasProAccess
+      ? 'Unbegrenzt'
+      : `${usage.remaining ?? 0} / ${usage.limit ?? MAX_FREE_CREDITS}`
 
   const loadActivities = useCallback(() => {
     setActivities(getRecentActivities())
@@ -135,6 +141,7 @@ export function useDashboardData() {
     isLoading: !isReady || isProfileLoading,
     error,
     hasProAccess,
+    isAdmin,
     usage,
     planLabel,
     statusLabel,

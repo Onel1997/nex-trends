@@ -1,0 +1,5 @@
+export { AdminLayout } from '@/components/admin/AdminLayout'
+export { AnalyticsOverviewPanel } from '@/components/admin/AnalyticsOverviewPanel'
+export { UserManagementPanel } from '@/components/admin/UserManagementPanel'
+export { TrendMonitoringPanel } from '@/components/admin/TrendMonitoringPanel'
+export { AdminControlsPanel } from '@/components/admin/AdminControlsPanel'

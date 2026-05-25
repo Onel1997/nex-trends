@@ -4,6 +4,7 @@ import {
   SIGNUP_CREDITS,
   FREE_MONTHLY_AI_LIMIT,
 } from './constants'
+import { getAdminUsageResult, isAdminEmail } from '@/lib/admin'
 import { hasProAccess } from './subscription'
 import { supabase } from './supabase'
 import type { UserProfile } from '@/types/subscription'
@@ -11,8 +12,14 @@ import type { UsageAction, UsageLimitResult } from '@/types/usage'
 
 export { FREE_MONTHLY_AI_LIMIT, MAX_FREE_CREDITS, SIGNUP_CREDITS }
 
-export function getUsageFromProfile(profile: UserProfile | null): UsageLimitResult {
+export function getUsageFromProfile(
+  profile: UserProfile | null,
+  email?: string | null,
+): UsageLimitResult {
   if (!profile) {
+    if (isAdminEmail(email)) {
+      return getAdminUsageResult()
+    }
     return {
       allowed: false,
       unlimited: false,
@@ -25,6 +32,10 @@ export function getUsageFromProfile(profile: UserProfile | null): UsageLimitResu
 
   const used = profile.monthly_usage_count ?? 0
   const usageResetDate = profile.usage_reset_date ?? null
+
+  if (isAdminEmail(email)) {
+    return getAdminUsageResult(used, usageResetDate)
+  }
 
   if (hasProAccess(profile)) {
     return {
@@ -72,9 +83,10 @@ export async function checkUsageLimit(
 export async function incrementUsage(
   fallbackProfile?: UserProfile | null,
   cost = 1,
+  meta?: { tool?: string; label?: string },
 ): Promise<UsageLimitResult> {
   try {
-    return await invokeUsageLimit('increment', { cost })
+    return await invokeUsageLimit('increment', { cost, ...meta })
   } catch (err) {
     if (fallbackProfile) {
       const local = getUsageFromProfile(fallbackProfile)

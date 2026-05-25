@@ -1,13 +1,24 @@
+import { useEffect, useState } from 'react'
 import { SubscriptionProvider } from '@/context/SubscriptionContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { Spinner } from '@/components/ui/Spinner'
 import { useSubscription } from '@/hooks/useSubscription'
 import { CheckoutHandler } from '@/components/app/CheckoutHandler'
+import { MaintenanceBanner } from '@/components/app/MaintenanceBanner'
+import { isAdminPath } from '@/lib/admin-navigation'
 import LandingPage from '@/pages/LandingPage'
 import { HomePage } from '@/pages/HomePage'
+import { AdminPage } from '@/pages/AdminPage'
 
 function AppContent() {
   const { session, isAuthLoading } = useSubscription()
+  const [onAdminRoute, setOnAdminRoute] = useState(() => isAdminPath())
+
+  useEffect(() => {
+    const syncRoute = () => setOnAdminRoute(isAdminPath())
+    window.addEventListener('popstate', syncRoute)
+    return () => window.removeEventListener('popstate', syncRoute)
+  }, [])
 
   if (isAuthLoading) {
     return (
@@ -17,9 +28,14 @@ function AppContent() {
     )
   }
 
+  if (onAdminRoute) {
+    return <AdminPage />
+  }
+
   return (
     <>
       {session && <CheckoutHandler />}
+      {session && <MaintenanceBanner />}
       {session ? <HomePage /> : <LandingPage />}
     </>
   )

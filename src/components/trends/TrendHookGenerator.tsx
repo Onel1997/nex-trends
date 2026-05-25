@@ -16,7 +16,7 @@ type TrendHookGeneratorProps = {
 
 export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps) {
   const { showToast } = useToast()
-  const { hasProAccess, consumeUsage } = useUsageLimit()
+  const { requireCredits, consumeCreditAfterSuccess } = useUsageLimit()
   const [style, setStyle] = useState<TrendHookStyle>('aggressive')
   const [hooks, setHooks] = useState<string[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
@@ -27,16 +27,17 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
     setIsGenerating(true)
 
     try {
-      if (consumeCredit && !hasProAccess) {
-        const result = await consumeUsage({
-          tool: 'Hook-Generator',
-          label: `Hooks: ${trend.title.slice(0, 30)}`,
-        })
-        if (!result.allowed) return
-      }
+      if (consumeCredit && !requireCredits()) return
 
       const generated = await generateTrendHooks(trendToHookInput(trend, style))
       setHooks(generated)
+
+      if (consumeCredit) {
+        await consumeCreditAfterSuccess({
+          tool: 'Hook-Generator',
+          label: `Hooks: ${trend.title.slice(0, 30)}`,
+        })
+      }
     } catch (err) {
       setError(
         err instanceof Error

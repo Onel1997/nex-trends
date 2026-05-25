@@ -9,6 +9,7 @@ export function SettingsPage() {
   const {
     user,
     hasProAccess,
+    isAdmin,
     planLabel,
     statusLabel,
     manageSubscription,
@@ -43,12 +44,14 @@ export function SettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-white">Subscription</h2>
-            {hasProAccess && (
+            {isAdmin ? (
+              <Badge variant="admin">ADMIN</Badge>
+            ) : hasProAccess ? (
               <Badge variant="pro">
                 <CrownIcon className="mr-1 inline size-3" aria-hidden />
                 Pro
               </Badge>
-            )}
+            ) : null}
           </div>
         </CardHeader>
         <CardBody className="space-y-4">
@@ -60,7 +63,7 @@ export function SettingsPage() {
             <span className="text-zinc-500">Status</span>
             <span className="font-medium text-zinc-200">{statusLabel}</span>
           </div>
-          {hasProAccess ? (
+          {isAdmin ? null : hasProAccess ? (
             <Button variant="secondary" fullWidth onClick={manageSubscription}>
               Abo verwalten
             </Button>

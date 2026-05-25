@@ -27,8 +27,14 @@ export function ToolGeneratorPanel({
   onGenerate,
   className,
 }: ToolGeneratorPanelProps) {
-  const { hasProAccess, isUsageLimitReached, isCreditsLow, usage, consumeUsage } =
-    useUsageLimit()
+  const {
+    hasProAccess,
+    isUsageLimitReached,
+    isCreditsLow,
+    usage,
+    requireCredits,
+    consumeCreditAfterSuccess,
+  } = useUsageLimit()
   const [briefing, setBriefing] = useState('')
   const [result, setResult] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -56,16 +62,14 @@ export function ToolGeneratorPanel({
     setResult(null)
 
     try {
-      const usageResult = await consumeUsage({
-        tool: title,
-        label: `${title}: Analyse gestartet`,
-      })
-      if (!usageResult.allowed) {
-        return
-      }
+      if (!requireCredits()) return
 
       const generated = await onGenerate(briefing.trim())
       setResult(generated)
+      await consumeCreditAfterSuccess({
+        tool: title,
+        label: `${title}: Analyse gestartet`,
+      })
     } catch (error) {
       const message =
         error instanceof Error

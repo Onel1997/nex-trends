@@ -9,6 +9,7 @@ import { MAX_FREE_CREDITS, PRO_PRICE_LABEL, SIGNUP_CREDITS, WEEKLY_REFILL_CREDIT
 export function SubscriptionSection() {
   const {
     hasProAccess,
+    isAdmin,
     planLabel,
     statusLabel,
     openUpgradeModal,
@@ -31,11 +32,13 @@ export function SubscriptionSection() {
               </p>
               <p className="mt-1.5 text-lg font-semibold tracking-tight text-white">{planLabel}</p>
             </div>
-            <Badge variant={hasProAccess ? 'pro' : 'muted'}>{statusLabel}</Badge>
+            <Badge variant={isAdmin ? 'admin' : hasProAccess ? 'pro' : 'muted'}>
+              {statusLabel}
+            </Badge>
           </div>
 
           <ul className="mt-5 space-y-2.5 text-sm text-zinc-400">
-            {hasProAccess ? (
+            {isAdmin || hasProAccess ? (
               <>
                 <FeatureItem>Unbegrenzte Credits</FeatureItem>
                 <FeatureItem>Alle Premium-Tools</FeatureItem>
@@ -55,19 +58,21 @@ export function SubscriptionSection() {
         </div>
 
         <div className="flex flex-col gap-2.5">
-          {!hasProAccess && (
+          {!isAdmin && !hasProAccess && (
             <Button variant="pro" fullWidth onClick={() => void openStripeCheckout()}>
               <CrownIcon className="size-4" />
               Upgrade · {PRO_PRICE_LABEL}
             </Button>
           )}
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={hasProAccess ? manageSubscription : openUpgradeModal}
-          >
-            {hasProAccess ? 'Abo verwalten' : 'Pläne vergleichen'}
-          </Button>
+          {!isAdmin && (
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={hasProAccess ? manageSubscription : openUpgradeModal}
+            >
+              {hasProAccess ? 'Abo verwalten' : 'Pläne vergleichen'}
+            </Button>
+          )}
         </div>
       </CardBody>
     </Card>

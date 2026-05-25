@@ -15,7 +15,12 @@ import { cn } from '@/lib'
 import { getViralScoreTone } from '@/lib/trend-intelligence'
 
 export function LandingPageAnalyzerPage() {
-  const { hasProAccess, isUsageLimitReached, consumeUsage } = useUsageLimit()
+  const {
+    hasProAccess,
+    isUsageLimitReached,
+    requireCredits,
+    consumeCreditAfterSuccess,
+  } = useUsageLimit()
   const [input, setInput] = useState('')
   const [result, setResult] = useState<LandingAuditResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -26,14 +31,14 @@ export function LandingPageAnalyzerPage() {
     setResult(null)
 
     try {
-      const usageResult = await consumeUsage({
-        tool: 'Landing Page Analyzer',
-        label: `LP-Analyse: ${input.trim().slice(0, 40)}`,
-      })
-      if (!usageResult.allowed) return
+      if (!requireCredits()) return
 
       const audit = await analyzeLandingPagePlaceholder(input.trim())
       setResult(audit)
+      await consumeCreditAfterSuccess({
+        tool: 'Landing Page Analyzer',
+        label: `LP-Analyse: ${input.trim().slice(0, 40)}`,
+      })
     } finally {
       setIsAnalyzing(false)
     }

@@ -28,16 +28,22 @@ function parseEdgeErrorMessage(
 
   if (detail) return detail
 
-  if (fallback?.includes('Failed to send a request')) {
-    return `Die ${functionName}-Funktion ist nicht erreichbar. Bitte Internetverbindung prüfen oder später erneut versuchen.`
+  const fb = fallback ?? ''
+
+  if (
+    fb.toLowerCase().includes('load failed') ||
+    fb.includes('Failed to fetch') ||
+    fb.includes('Failed to send a request')
+  ) {
+    return `Die Edge Function „${functionName}“ ist nicht erreichbar. Bitte deployen: supabase functions deploy ${functionName}`
   }
 
   if (status === 401) return 'Sitzung abgelaufen. Bitte melde dich erneut an.'
   if (status === 404) {
-    return `Die Edge Function „${functionName}“ wurde nicht gefunden. Bitte Deployment prüfen.`
+    return `Die Edge Function „${functionName}“ wurde nicht gefunden. Bitte Deployment prüfen: supabase functions deploy ${functionName}`
   }
 
-  return fallback ?? `Anfrage an ${functionName} fehlgeschlagen (HTTP ${status}).`
+  return fb || `Anfrage an ${functionName} fehlgeschlagen (HTTP ${status}).`
 }
 
 export async function invokeEdgeFunction<T>(
@@ -55,6 +61,10 @@ export async function invokeEdgeFunction<T>(
 
   const url = getSupabaseFunctionsUrl(functionName)
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!.trim()
+
+  if (import.meta.env.DEV || import.meta.env.VITE_ADMIN_DEBUG === 'true') {
+    console.debug(`[EdgeFunction] ${functionName} → POST`, { action: body.action })
+  }
 
   try {
     const response = await fetch(url, {
@@ -76,6 +86,7 @@ export async function invokeEdgeFunction<T>(
     }
 
     if (!response.ok) {
+      console.error(`[EdgeFunction] ${functionName} HTTP ${response.status}`, payload)
       throw new Error(parseEdgeErrorMessage(functionName, response.status, payload))
     }
 
@@ -88,6 +99,8 @@ export async function invokeEdgeFunction<T>(
     if (err instanceof Error && !err.message.includes('Failed to fetch')) {
       throw err
     }
+
+    console.warn(`[EdgeFunction] ${functionName} fetch failed, trying SDK invoke`, err)
 
     // Fallback: Supabase SDK invoke (manche Umgebungen blockieren direktes fetch)
     const { data, error } = await supabase.functions.invoke(functionName, {

@@ -1,3 +1,4 @@
+import { isAdminEmail } from '@/lib/admin'
 import { SIGNUP_CREDITS } from './constants'
 import type { DashboardRouteId } from './routes'
 
@@ -23,6 +24,15 @@ export function isPremiumTool(toolId: DashboardToolId): toolId is PremiumToolId 
 export function hasProAccess(profile: UserProfile | null): boolean {
   if (!profile) return false
   return profile.is_pro === true && profile.subscription_status === 'active'
+}
+
+/** Pro subscription or allowlisted admin email */
+export function hasPremiumAccess(
+  profile: UserProfile | null,
+  email?: string | null,
+): boolean {
+  if (isAdminEmail(email)) return true
+  return hasProAccess(profile)
 }
 
 export function getDefaultProfile(): UserProfile {
