@@ -10,6 +10,13 @@ import {
   pollVideoProviderJob,
   startVideoProviderJob,
 } from "../_shared/video-provider.ts";
+import {
+  checkPipelineEnv,
+  getStorageBucket,
+  logPipeline,
+  pipelineError,
+  type PipelineStep,
+} from "../_shared/video-pipeline.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +26,7 @@ const corsHeaders = {
 
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
-type Action = "create" | "poll" | "history" | "retry";
+type Action = "create" | "poll" | "history" | "retry" | "health";
 
 const SYNTHETIC_CLIPS = [
   "/demo-videos/demo-1.mp4",
@@ -41,25 +48,59 @@ function hashPick<T>(arr: readonly T[], seed: string): T {
   return arr[h % arr.length];
 }
 
+function jsonError(
+  step: PipelineStep,
+  message: string,
+  status = 500,
+  details?: Record<string, unknown>,
+): Response {
+  logPipeline(step, "error", { message, ...details })
+  return new Response(
+    JSON.stringify(pipelineError(step, message, details)),
+    { status, headers: jsonHeaders },
+  )
+}
+
 async function uploadBytes(
   supabaseAdmin: ReturnType<typeof createClient>,
   path: string,
   bytes: Uint8Array,
   contentType: string,
-): Promise<string | null> {
-  const { error } = await supabaseAdmin.storage
-    .from("generated-videos")
-    .upload(path, bytes, { contentType, upsert: true });
+): Promise<{ url: string | null; error?: string; bucket: string }> {
+  const bucket = getStorageBucket()
+  const bucketsToTry = bucket === "generated-videos"
+    ? [bucket]
+    : [bucket, "generated-videos", "ai-videos"]
 
-  if (error) {
-    console.warn("[generate-video] upload failed", error.message);
-    return null;
+  for (const tryBucket of [...new Set(bucketsToTry)]) {
+    const { error } = await supabaseAdmin.storage
+      .from(tryBucket)
+      .upload(path, bytes, { contentType, upsert: true })
+
+    if (error) {
+      logPipeline("upload", "bucket failed", {
+        bucket: tryBucket,
+        message: error.message,
+        path,
+      })
+      continue
+    }
+
+    const { data } = supabaseAdmin.storage.from(tryBucket).getPublicUrl(path)
+    logPipeline("storage", "upload ok", {
+      bucket: tryBucket,
+      path,
+      bytes: bytes.byteLength,
+      contentType,
+    })
+    return { url: data.publicUrl ?? null, bucket: tryBucket }
   }
 
-  const { data } = supabaseAdmin.storage.from("generated-videos").getPublicUrl(
-    path,
-  );
-  return data.publicUrl ?? null;
+  return {
+    url: null,
+    error: `Storage upload failed for buckets: ${bucketsToTry.join(", ")}`,
+    bucket,
+  }
 }
 
 async function persistRemoteVideo(
@@ -67,8 +108,9 @@ async function persistRemoteVideo(
   userId: string,
   jobId: string,
   remoteUrl: string,
-): Promise<string> {
+): Promise<{ url: string; storageError?: string }> {
   try {
+    logPipeline("compose", "download remote video", { jobId, remoteUrl })
     const bytes = await downloadToBytes(remoteUrl);
     const storagePath = `${userId}/${jobId}.mp4`;
     const stored = await uploadBytes(
@@ -77,11 +119,16 @@ async function persistRemoteVideo(
       bytes,
       "video/mp4",
     );
-    if (stored) return stored;
+    if (stored.url) return { url: stored.url };
+    return {
+      url: remoteUrl,
+      storageError: stored.error ?? "Upload returned no URL",
+    };
   } catch (err) {
-    console.warn("[generate-video] persist remote failed", err);
+    const message = err instanceof Error ? err.message : String(err)
+    logPipeline("compose", "persist remote failed", { jobId, message })
+    return { url: remoteUrl, storageError: message };
   }
-  return remoteUrl;
 }
 
 serve(async (req) => {
@@ -105,8 +152,25 @@ serve(async (req) => {
     const appOrigin = Deno.env.get("APP_ORIGIN")?.trim() ||
       Deno.env.get("VITE_APP_URL")?.trim() || "";
 
+    const envCheck = checkPipelineEnv();
+    logPipeline("env", "check", {
+      ...envCheck,
+      replicateApiToken: envCheck.replicateApiToken ? "[set]" : "[missing]",
+      openaiApiKey: envCheck.openaiApiKey ? "[set]" : "[missing]",
+      lumaApiKey: envCheck.lumaApiKey ? "[set]" : "[missing]",
+    });
+
+    if (envCheck.missingRequired.length > 0) {
+      return jsonError(
+        "env",
+        `Supabase-Umgebungsvariablen fehlen: ${envCheck.missingRequired.join(", ")}`,
+        500,
+        { missing: envCheck.missingRequired },
+      );
+    }
+
     if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-      throw new Error("Supabase-Umgebungsvariablen fehlen");
+      return jsonError("env", "Supabase-Umgebungsvariablen fehlen", 500);
     }
 
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
@@ -129,6 +193,21 @@ serve(async (req) => {
     const action = String(body.action ?? "create") as Action;
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    if (action === "health") {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          env: {
+            ...envCheck,
+            replicateApiToken: envCheck.replicateApiToken,
+            openaiApiKey: envCheck.openaiApiKey,
+            lumaApiKey: envCheck.lumaApiKey,
+          },
+        }),
+        { headers: jsonHeaders },
+      );
+    }
 
     if (action === "history") {
       const limit = Math.min(Number(body.limit) || 20, 50);
@@ -230,12 +309,19 @@ serve(async (req) => {
       });
 
       if (polled.status === "succeeded" && polled.outputUrl) {
-        const videoUrl = await persistRemoteVideo(
+        logPipeline("poll", "provider succeeded", {
+          jobId,
+          provider: row.provider,
+          outputUrl: polled.outputUrl,
+        })
+
+        const persisted = await persistRemoteVideo(
           supabaseAdmin,
           user.id,
           jobId,
           polled.outputUrl,
         );
+        const videoUrl = persisted.url
 
         const voiceBytes = await synthesizeVoiceover(
           row.hook_text ?? "",
@@ -243,12 +329,18 @@ serve(async (req) => {
         );
         let voiceoverUrl: string | null = null;
         if (voiceBytes) {
-          voiceoverUrl = await uploadBytes(
+          const voiceUpload = await uploadBytes(
             supabaseAdmin,
             `${user.id}/${jobId}-voice.mp3`,
             voiceBytes,
             "audio/mpeg",
           );
+          voiceoverUrl = voiceUpload.url
+          if (!voiceoverUrl) {
+            logPipeline("audio_generation", "voice upload skipped", {
+              error: voiceUpload.error,
+            })
+          }
         }
 
         const musicUrl = row.music_url ?? pickBackgroundMusic(
@@ -275,9 +367,14 @@ serve(async (req) => {
       }
 
       if (polled.status === "failed") {
+        const providerErr = polled.error ?? "Provider-Fehler"
+        logPipeline("video_generation", "provider failed", {
+          jobId,
+          error: providerErr,
+        })
         await supabaseAdmin.from("generated_videos").update({
           status: "failed",
-          error_message: polled.error ?? "Provider-Fehler",
+          error_message: `[video_generation] ${providerErr}`,
           updated_at: new Date().toISOString(),
         }).eq("id", jobId);
       } else {
@@ -303,16 +400,28 @@ serve(async (req) => {
       ? body.generation_id
       : null;
 
-    const brief = await resolveVideoBrief({
-      trendId: trendId || crypto.randomUUID(),
-      title,
-      niche: body.niche,
-      platform: body.platform,
-      description: body.description,
-      hookText: body.hook_text,
-      contentBreakdown: body.content_breakdown,
-      generationNonce: crypto.randomUUID(),
-    });
+    logPipeline("queue", "create job", { trendId, userId: user.id })
+
+    let brief
+    try {
+      brief = await resolveVideoBrief({
+        trendId: trendId || crypto.randomUUID(),
+        title,
+        niche: body.niche,
+        platform: body.platform,
+        description: body.description,
+        hookText: body.hook_text,
+        contentBreakdown: body.content_breakdown,
+        generationNonce: crypto.randomUUID(),
+      })
+      logPipeline("prompt", "brief ready", {
+        hookText: brief.hookText.slice(0, 80),
+        pacing: brief.pacing,
+      })
+    } catch (briefErr) {
+      const message = briefErr instanceof Error ? briefErr.message : String(briefErr)
+      return jsonError("prompt", `Prompt-Erstellung fehlgeschlagen: ${message}`, 500)
+    }
 
     const musicUrl = pickBackgroundMusic(brief.visualMood, trendId || title);
 
@@ -341,10 +450,28 @@ serve(async (req) => {
       .single();
 
     if (insertErr || !inserted) {
-      throw insertErr ?? new Error("Insert fehlgeschlagen");
+      return jsonError(
+        "queue",
+        insertErr?.message ?? "Datenbank-Insert fehlgeschlagen",
+        500,
+        { code: insertErr?.code },
+      )
     }
 
+    logPipeline("video_generation", "start provider", {
+      jobId: inserted.id,
+      mode: envCheck.providerMode,
+    })
+
     const providerJob = await startVideoProviderJob(brief.scenePrompt, "9:16");
+
+    logPipeline("video_generation", "provider job", {
+      jobId: inserted.id,
+      provider: providerJob.provider,
+      status: providerJob.status,
+      externalId: providerJob.id,
+      error: providerJob.error,
+    })
 
     if (providerJob.provider === "synthetic") {
       const clip = hashPick(SYNTHETIC_CLIPS, `${user.id}:${inserted.id}`);
@@ -355,13 +482,21 @@ serve(async (req) => {
       const voiceBytes = await synthesizeVoiceover(brief.hookText, inserted.id);
       let voiceoverUrl: string | null = null;
       if (voiceBytes) {
-        voiceoverUrl = await uploadBytes(
+        const voiceUpload = await uploadBytes(
           supabaseAdmin,
           `${user.id}/${inserted.id}-voice.mp3`,
           voiceBytes,
           "audio/mpeg",
         );
+        voiceoverUrl = voiceUpload.url
       }
+
+      logPipeline("compose", "synthetic complete", {
+        jobId: inserted.id,
+        videoUrl,
+        voiceoverUrl,
+        appOrigin: base || "(relative)",
+      })
 
       await supabaseAdmin.from("generated_videos").update({
         status: "completed",
@@ -374,7 +509,10 @@ serve(async (req) => {
         metadata: {
           ...inserted.metadata,
           synthetic: true,
-          note: "Set REPLICATE_API_TOKEN or LUMA_API_KEY for true AI video",
+          storage_bucket: getStorageBucket(),
+          note: envCheck.replicateApiToken
+            ? "Synthetic fallback"
+            : "Set REPLICATE_API_TOKEN or LUMA_API_KEY for true AI video",
         },
         updated_at: new Date().toISOString(),
       }).eq("id", inserted.id);
@@ -396,7 +534,7 @@ serve(async (req) => {
     }).eq("id", inserted.id);
 
     if (providerJob.status === "succeeded" && providerJob.outputUrl) {
-      const videoUrl = await persistRemoteVideo(
+      const persisted = await persistRemoteVideo(
         supabaseAdmin,
         user.id,
         inserted.id,
@@ -405,10 +543,22 @@ serve(async (req) => {
 
       await supabaseAdmin.from("generated_videos").update({
         status: "completed",
-        video_url: videoUrl,
+        video_url: persisted.url,
         has_audio: true,
+        error_message: persisted.storageError
+          ? `[storage] ${persisted.storageError}`
+          : null,
         updated_at: new Date().toISOString(),
       }).eq("id", inserted.id);
+    }
+
+    if (providerJob.status === "failed") {
+      return jsonError(
+        "video_generation",
+        providerJob.error ?? "Video-Provider hat den Job abgelehnt",
+        502,
+        { provider: providerJob.provider, externalJobId: providerJob.id },
+      )
     }
 
     const { data: finalRow } = await supabaseAdmin.from("generated_videos")
@@ -419,11 +569,10 @@ serve(async (req) => {
       job: formatJobRow(finalRow ?? inserted, appOrigin),
     }), { headers: jsonHeaders });
   } catch (err) {
-    console.error("[generate-video]", err);
     const message = err instanceof Error ? err.message : "Interner Fehler";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: jsonHeaders,
+    console.error("[generate-video][unknown]", err);
+    return jsonError("compose", message, 500, {
+      type: err instanceof Error ? err.name : "unknown",
     });
   }
 });

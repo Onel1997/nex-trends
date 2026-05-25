@@ -41,7 +41,11 @@ async function startReplicate(
 
   if (!res.ok) {
     const err = await res.text()
-    console.warn("[video-provider] Replicate start failed", res.status, err)
+    console.error("[video-provider][video_generation] Replicate start failed", {
+      status: res.status,
+      body: err.slice(0, 2000),
+      model: REPLICATE_MODEL,
+    })
     return null
   }
 
@@ -53,6 +57,13 @@ async function startReplicate(
   }
 
   const output = Array.isArray(data.output) ? data.output[0] : data.output
+
+  console.log("[video-provider][video_generation] Replicate response", {
+    id: data.id,
+    status: data.status,
+    hasOutput: Boolean(output),
+    error: data.error,
+  })
 
   return {
     id: data.id ?? crypto.randomUUID(),
@@ -74,6 +85,21 @@ async function pollReplicate(predictionId: string): Promise<ProviderJob> {
     { headers: { Authorization: `Bearer ${token}` } },
   )
 
+  if (!res.ok) {
+    const err = await res.text()
+    console.error("[video-provider][poll] Replicate poll failed", {
+      status: res.status,
+      body: err.slice(0, 1500),
+      predictionId,
+    })
+    return {
+      id: predictionId,
+      provider: "replicate",
+      status: "failed",
+      error: `Replicate poll HTTP ${res.status}`,
+    }
+  }
+
   const data = await res.json() as {
     id?: string
     status?: string
@@ -82,6 +108,13 @@ async function pollReplicate(predictionId: string): Promise<ProviderJob> {
   }
 
   const output = Array.isArray(data.output) ? data.output[0] : data.output
+
+  console.log("[video-provider][poll] Replicate status", {
+    predictionId,
+    status: data.status,
+    hasOutput: Boolean(output),
+    error: data.error,
+  })
 
   return {
     id: predictionId,

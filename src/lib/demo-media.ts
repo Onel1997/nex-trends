@@ -124,7 +124,12 @@ export function isLocalDemoMediaUrl(url: string | undefined): boolean {
 export function isGeneratedVideoUrl(url: string | undefined): boolean {
   if (!url?.trim()) return false
   const trimmed = url.trim()
-  if (trimmed.includes('/storage/v1/object/public/generated-videos')) return true
+  if (
+    trimmed.includes('/storage/v1/object/public/generated-videos') ||
+    trimmed.includes('/storage/v1/object/public/ai-videos')
+  ) {
+    return true
+  }
   if (trimmed.includes('replicate.delivery')) return true
   try {
     const host = new URL(trimmed).hostname

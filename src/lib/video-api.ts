@@ -1,4 +1,5 @@
 import { invokeEdgeFunction } from '@/lib/edgeFunctions'
+import { formatPipelineError, type PipelineErrorPayload } from '@/lib/video-pipeline-errors'
 import type { GeneratedVideoHistoryItem, GeneratedVideoJob } from '@/types/generated-video'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
@@ -6,13 +7,22 @@ const POLL_INTERVAL_MS = 2_500
 const MAX_POLL_MS = 180_000
 
 function log(scope: string, detail?: unknown) {
-  if (import.meta.env.DEV || import.meta.env.VITE_ADMIN_DEBUG === 'true') {
+  if (
+    import.meta.env.DEV ||
+    import.meta.env.VITE_ADMIN_DEBUG === 'true' ||
+    import.meta.env.VITE_VIDEO_DEBUG === 'true'
+  ) {
     console.debug(`[VideoAPI] ${scope}`, detail ?? '')
   }
 }
 
-type CreateResponse = { ok?: boolean; job?: GeneratedVideoJob; error?: string }
-type PollResponse = { ok?: boolean; job?: GeneratedVideoJob; error?: string }
+type VideoEdgeResponse = PipelineErrorPayload & {
+  ok?: boolean
+  job?: GeneratedVideoJob
+}
+
+type CreateResponse = VideoEdgeResponse
+type PollResponse = VideoEdgeResponse
 type HistoryRow = GeneratedVideoHistoryItem & {
   video_url?: string
   poster_url?: string
@@ -46,8 +56,16 @@ export async function createVideoJob(
   })
 
   if (!result?.job) {
-    throw new Error(result?.error ?? 'Video-Job konnte nicht erstellt werden')
+    throw new Error(
+      formatPipelineError(result, 'Video-Job konnte nicht erstellt werden'),
+    )
   }
+
+  log('create ok', {
+    jobId: result.job.id,
+    status: result.job.status,
+    provider: result.job.provider,
+  })
 
   return result.job
 }
@@ -59,9 +77,10 @@ export async function pollVideoJob(jobId: string): Promise<GeneratedVideoJob> {
   })
 
   if (!result?.job) {
-    throw new Error(result?.error ?? 'Poll fehlgeschlagen')
+    throw new Error(formatPipelineError(result, 'Poll fehlgeschlagen'))
   }
 
+  log('poll', { jobId, status: result.job.status, error: result.job.errorMessage })
   return result.job
 }
 
@@ -72,7 +91,7 @@ export async function retryVideoJob(jobId: string): Promise<GeneratedVideoJob> {
   })
 
   if (!result?.job) {
-    throw new Error(result?.error ?? 'Retry fehlgeschlagen')
+    throw new Error(formatPipelineError(result, 'Retry fehlgeschlagen'))
   }
 
   return result.job
@@ -126,7 +145,9 @@ export async function waitForVideoJob(
     }
 
     if (job.status === 'failed') {
-      throw new Error(job.errorMessage ?? 'Video-Generierung fehlgeschlagen')
+      throw new Error(
+        job.errorMessage ?? 'Video-Generierung fehlgeschlagen (Provider oder Storage)',
+      )
     }
 
     await new Promise<void>((resolve, reject) => {

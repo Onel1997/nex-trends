@@ -135,7 +135,11 @@ scenePrompt must describe a never-before-used visual scene (no stock clichés). 
   })
 
   if (!res.ok) {
-    console.warn("[video-prompt] OpenAI failed", res.status)
+    const err = await res.text()
+    console.error("[video-prompt][prompt] OpenAI brief failed", {
+      status: res.status,
+      body: err.slice(0, 1500),
+    })
     return null
   }
 
@@ -151,8 +155,13 @@ scenePrompt must describe a never-before-used visual scene (no stock clichés). 
     parsed.captions = Array.isArray(parsed.captions)
       ? parsed.captions.filter((c) => typeof c === "string").slice(0, 6)
       : []
+    console.log("[video-prompt][prompt] OpenAI brief ok", {
+      hookLen: parsed.hookText.length,
+      captionCount: parsed.captions.length,
+    })
     return parsed
-  } catch {
+  } catch (parseErr) {
+    console.error("[video-prompt][prompt] OpenAI JSON parse failed", parseErr)
     return null
   }
 }

@@ -32,7 +32,11 @@ export type VideoGenerationResult = {
 const MAX_RETRIES = 2
 
 function log(scope: string, detail?: unknown) {
-  if (import.meta.env.DEV || import.meta.env.VITE_ADMIN_DEBUG === 'true') {
+  if (
+    import.meta.env.DEV ||
+    import.meta.env.VITE_ADMIN_DEBUG === 'true' ||
+    import.meta.env.VITE_VIDEO_DEBUG === 'true'
+  ) {
     console.debug(`[VideoPipeline] ${scope}`, detail ?? '')
   }
 }

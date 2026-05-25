@@ -82,10 +82,12 @@ function VideoCardComponent({
     videoReady,
     showStallHint,
     showTapForSound,
+    playbackDebug,
     toggleMute,
     handleCardTap,
     handleVideoReady,
     handleCanPlay,
+    handleLoadedMetadata,
     handleVideoError,
     handlePlay,
     handlePause,
@@ -150,7 +152,7 @@ function VideoCardComponent({
           src={playbackUrl}
           poster={resolvedPoster || undefined}
           loop
-          muted
+          muted={isMuted}
           playsInline
           preload={preload}
           disablePictureInPicture
@@ -158,12 +160,12 @@ function VideoCardComponent({
           controlsList="nodownload noplaybackrate"
           onLoadedData={handleVideoReady}
           onCanPlay={handleCanPlay}
-          onLoadedMetadata={handleCanPlay}
+          onLoadedMetadata={handleLoadedMetadata}
           onPlay={handlePlay}
           onPause={handlePause}
           onError={handleVideoError}
           className={cn(
-            'video-card__video absolute inset-0 size-full object-cover',
+            'video-card__video absolute inset-0 z-[1] size-full object-cover',
             videoVisible && 'video-card__video--visible',
           )}
         />
@@ -225,7 +227,7 @@ function VideoCardComponent({
           aria-label={isMuted ? 'Ton einschalten' : 'Ton stummschalten'}
           aria-pressed={!isMuted}
         >
-          {hasSound ? (
+          {hasSound && !isMuted ? (
             <VolumePulseIcon active />
           ) : (
             <VolumeOffIcon className="size-5" aria-hidden />
@@ -251,6 +253,21 @@ function VideoCardComponent({
       {duration && (
         <span className="pointer-events-none absolute bottom-2.5 left-2.5 z-[15] rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-white">
           {duration}
+        </span>
+      )}
+
+      {formatValid && playbackUrl && (
+        <span
+          className={cn(
+            'pointer-events-none absolute bottom-10 left-2 z-[70] rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wide',
+            playbackDebug === 'PLAYING' && 'bg-emerald-600/90 text-white',
+            playbackDebug === 'PAUSED' && 'bg-amber-600/90 text-white',
+            playbackDebug === 'LOADING' && 'bg-zinc-700/90 text-zinc-200',
+            playbackDebug === 'ERROR' && 'bg-red-600/90 text-white',
+          )}
+          aria-hidden
+        >
+          {playbackDebug}
         </span>
       )}
     </div>

@@ -67,10 +67,19 @@ export async function synthesizeVoiceover(
   })
 
   if (!res.ok) {
-    console.warn("[video-audio] TTS failed", res.status)
+    const err = await res.text()
+    console.error("[video-audio][audio_generation] OpenAI TTS failed", {
+      status: res.status,
+      body: err.slice(0, 1500),
+      voice,
+    })
     return null
   }
 
   const buf = await res.arrayBuffer()
+  console.log("[video-audio][audio_generation] OpenAI TTS ok", {
+    bytes: buf.byteLength,
+    voice,
+  })
   return new Uint8Array(buf)
 }

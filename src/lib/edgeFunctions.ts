@@ -1,9 +1,10 @@
 import { supabase } from './supabase'
+import {
+  formatPipelineError,
+  type PipelineErrorPayload,
+} from '@/lib/video-pipeline-errors'
 
-type EdgeFunctionErrorBody = {
-  error?: string
-  message?: string
-}
+type EdgeFunctionErrorBody = PipelineErrorPayload
 
 function getSupabaseFunctionsUrl(functionName: string): string {
   const baseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
@@ -24,26 +25,19 @@ function parseEdgeErrorMessage(
   body: EdgeFunctionErrorBody | null,
   fallback?: string,
 ): string {
-  const detail = body?.error ?? body?.message
-
-  if (detail) return detail
+  if (body?.error || body?.message) {
+    return formatPipelineError(body, fallback)
+  }
 
   const fb = fallback ?? ''
 
-  if (
-    fb.toLowerCase().includes('load failed') ||
-    fb.includes('Failed to fetch') ||
-    fb.includes('Failed to send a request')
-  ) {
-    return `Die Edge Function „${functionName}“ ist nicht erreichbar. Bitte deployen: supabase functions deploy ${functionName}`
-  }
-
   if (status === 401) return 'Sitzung abgelaufen. Bitte melde dich erneut an.'
   if (status === 404) {
-    return `Die Edge Function „${functionName}“ wurde nicht gefunden. Bitte Deployment prüfen: supabase functions deploy ${functionName}`
+    return `Die Edge Function „${functionName}“ wurde nicht gefunden. Bitte deployen: supabase functions deploy ${functionName}`
   }
 
-  return fb || `Anfrage an ${functionName} fehlgeschlagen (HTTP ${status}).`
+  return formatPipelineError({ error: fb }, fb) ||
+    `Anfrage an ${functionName} fehlgeschlagen (HTTP ${status}).`
 }
 
 export async function invokeEdgeFunction<T>(
@@ -62,7 +56,12 @@ export async function invokeEdgeFunction<T>(
   const url = getSupabaseFunctionsUrl(functionName)
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!.trim()
 
-  if (import.meta.env.DEV || import.meta.env.VITE_ADMIN_DEBUG === 'true') {
+  const debug =
+    import.meta.env.DEV ||
+    import.meta.env.VITE_ADMIN_DEBUG === 'true' ||
+    import.meta.env.VITE_VIDEO_DEBUG === 'true'
+
+  if (debug) {
     console.debug(`[EdgeFunction] ${functionName} → POST`, { action: body.action })
   }
 
@@ -91,7 +90,7 @@ export async function invokeEdgeFunction<T>(
     }
 
     if (payload && typeof payload === 'object' && payload.error) {
-      throw new Error(payload.error)
+      throw new Error(formatPipelineError(payload))
     }
 
     return payload as T
@@ -118,7 +117,7 @@ export async function invokeEdgeFunction<T>(
     const result = data as T & EdgeFunctionErrorBody
 
     if (result && typeof result === 'object' && result.error) {
-      throw new Error(result.error)
+      throw new Error(formatPipelineError(result))
     }
 
     return result as T

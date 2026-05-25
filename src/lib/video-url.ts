@@ -13,6 +13,7 @@ export function isValidVideoUrl(url: string | undefined): url is string {
       /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(path) ||
       path.includes('/video') ||
       path.includes('/storage/v1/object/public/generated-videos') ||
+      path.includes('/storage/v1/object/public/ai-videos') ||
       parsed.hostname.includes('pexels.com') ||
       parsed.hostname.includes('cloudfront.net') ||
       parsed.hostname.includes('mixkit.co') ||

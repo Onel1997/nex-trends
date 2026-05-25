@@ -46,7 +46,7 @@ export function warmVideoUrl(
   const url = resolveAdaptiveVideoUrl(rawUrl) ?? rawUrl.trim()
   if (warmedUrls.has(url)) return
 
-  schedulePreloadWork(() => {
+  const runWarm = () => {
     if (warmedUrls.has(url)) return
     warmedUrls.add(url)
 
@@ -65,7 +65,15 @@ export function warmVideoUrl(
         el.currentTime = 0
       }).catch(() => {})
     }
-  })
+  }
+
+  /* Hot tier: run immediately so the first visible card is warm before IO fires */
+  if (tier === 'hot') {
+    runWarm()
+    return
+  }
+
+  schedulePreloadWork(runWarm)
 }
 
 export function preloadPosterUrl(posterUrl: string | undefined): void {

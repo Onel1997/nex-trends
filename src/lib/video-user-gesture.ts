@@ -36,9 +36,16 @@ function applyInlineVideoAttrs(video: HTMLVideoElement): void {
 
 import { logVideoPlayback } from '@/lib/video-playback-log'
 
+const HAVE_METADATA = 1
 const HAVE_CURRENT_DATA = 2
 const MEDIA_WAIT_MS = 4_000
+const FAST_START_WAIT_MS = 1_800
 const PLAY_PROMISE_MS = 800
+
+export type PlayVideoMutedFastOptions = {
+  /** Resolve on canplay — do not wait for full buffer */
+  fastStart?: boolean
+}
 
 /** Muted play — safe before user gesture. */
 export async function playVideoMuted(video: HTMLVideoElement): Promise<boolean> {
@@ -48,8 +55,10 @@ export async function playVideoMuted(video: HTMLVideoElement): Promise<boolean> 
 function waitForPlaybackData(
   video: HTMLVideoElement,
   tag: string,
+  fastStart = false,
 ): Promise<boolean> {
-  if (video.readyState >= HAVE_CURRENT_DATA) return Promise.resolve(true)
+  const minReady = fastStart ? HAVE_METADATA : HAVE_CURRENT_DATA
+  if (video.readyState >= minReady) return Promise.resolve(true)
 
   return new Promise((resolve) => {
     let settled = false
@@ -58,7 +67,7 @@ function waitForPlaybackData(
       settled = true
       window.clearTimeout(timer)
       video.removeEventListener('loadeddata', onReady)
-      video.removeEventListener('canplay', onReady)
+      video.removeEventListener('canplay', onCanPlay)
       video.removeEventListener('loadedmetadata', onReady)
       resolve(ok)
     }
@@ -66,20 +75,35 @@ function waitForPlaybackData(
     const onReady = () => {
       logVideoPlayback('video loaded', {
         tag,
+        src: video.currentSrc || video.src,
         readyState: video.readyState,
+        fastStart,
       })
       finish(true)
     }
 
+    const onCanPlay = () => {
+      logVideoPlayback('canplay (wait)', {
+        tag,
+        src: video.currentSrc || video.src,
+        readyState: video.readyState,
+      })
+      if (fastStart || video.readyState >= HAVE_CURRENT_DATA) {
+        finish(true)
+      }
+    }
+
     const timer = window.setTimeout(() => {
       logVideoPlayback('video load timeout', { tag, readyState: video.readyState })
-      finish(false)
-    }, MEDIA_WAIT_MS)
+      finish(video.readyState >= minReady)
+    }, fastStart ? FAST_START_WAIT_MS : MEDIA_WAIT_MS)
 
-    video.addEventListener('loadeddata', onReady, { once: true })
-    video.addEventListener('canplay', onReady, { once: true })
-    video.addEventListener('loadedmetadata', onReady, { once: true })
-    if (video.readyState < HAVE_CURRENT_DATA) video.load()
+    video.addEventListener('canplay', onCanPlay, { once: true })
+    if (!fastStart) {
+      video.addEventListener('loadeddata', onReady, { once: true })
+      video.addEventListener('loadedmetadata', onReady, { once: true })
+    }
+    if (video.readyState < minReady) video.load()
   })
 }
 
@@ -91,6 +115,11 @@ async function attemptMutedPlay(
   video.muted = true
   video.setAttribute('muted', '')
   video.volume = 0
+  video.autoplay = true
+  video.setAttribute('autoplay', '')
+
+  const src = video.currentSrc || video.src
+  logVideoPlayback('play() call', { tag, src, paused: video.paused, readyState: video.readyState })
 
   try {
     const playPromise = video.play()
@@ -122,8 +151,27 @@ async function attemptMutedPlay(
 export async function playVideoMutedFast(
   video: HTMLVideoElement,
   tag = 'feed',
+  options: PlayVideoMutedFastOptions = {},
 ): Promise<boolean> {
-  const hasData = await waitForPlaybackData(video, tag)
+  const { fastStart = false } = options
+  const src = video.currentSrc || video.src
+  logVideoPlayback('playVideoMutedFast start', {
+    tag,
+    src,
+    readyState: video.readyState,
+    fastStart,
+  })
+
+  if (!video.currentSrc && !video.src && src) {
+    video.src = src
+  }
+  video.preload = 'auto'
+  if (video.readyState < (fastStart ? HAVE_METADATA : HAVE_CURRENT_DATA)) {
+    video.load()
+    logVideoPlayback('video.load()', { tag, src: video.currentSrc || video.src })
+  }
+
+  const hasData = await waitForPlaybackData(video, tag, fastStart)
   if (!hasData) return false
   return attemptMutedPlay(video, tag)
 }
@@ -140,10 +188,17 @@ export async function playVideoWithSound(video: HTMLVideoElement): Promise<boole
   video.removeAttribute('muted')
   video.volume = 1
 
+  const src = video.currentSrc || video.src
+  logVideoPlayback('playVideoWithSound', { src, paused: video.paused, readyState: video.readyState })
+
   try {
     if (video.paused) {
-      if (video.readyState < 2) video.load()
+      if (video.readyState < 2) {
+        video.load()
+        logVideoPlayback('video.load() (sound)', { src: video.currentSrc || video.src })
+      }
       await video.play()
+      logVideoPlayback('play() resolved (sound)', { src, paused: video.paused, muted: video.muted })
     }
     if (!video.paused && !video.muted) return true
   } catch {
