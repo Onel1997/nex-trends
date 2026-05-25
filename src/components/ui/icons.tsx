@@ -277,6 +277,27 @@ export function SettingsIcon(props: IconProps) {
   )
 }
 
+/** Lucide-style volume-x (muted) */
+export function VolumeOffIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11 4.702a.705.705 0 00-1.203-.498L6.413 7.587A1.4 1.4 0 005 8.934H3a1 1 0 00-1 1v4a1 1 0 001 1h2a1.4 1.4 0 001.413 1.346l3.384 3.383A.705.705 0 0011 19.298V4.702z" />
+      <line x1="22" x2="16" y1="9" y2="15" strokeLinecap="round" />
+      <line x1="16" x2="22" y1="9" y2="15" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/** Lucide-style volume-2 (active sound) */
+export function VolumeOnIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11 4.702a.705.705 0 00-1.203-.498L6.413 7.587A1.4 1.4 0 005 8.934H3a1 1 0 00-1 1v4a1 1 0 001 1h2a1.4 1.4 0 001.413 1.346l3.384 3.383A.705.705 0 0011 19.298V4.702z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9" />
+    </svg>
+  )
+}
+
 const TOOL_ICONS = {
   dashboard: HomeIcon,
   'trend-intelligence': TrendingUpIcon,

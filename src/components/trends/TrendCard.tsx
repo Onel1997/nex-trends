@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib'
-import { VideoPreview } from '@/components/trends/VideoPreview'
+import { VideoCard } from '@/components/trends/VideoCard'
 import { pickNextFallbackMedia } from '@/lib/trend-media-assignment'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
 import { ViralScoreRing } from '@/components/trends/ViralScoreRing'
@@ -90,31 +90,19 @@ function TrendCardComponent({
       tabIndex={onClick ? 0 : undefined}
       aria-label={onClick ? `${trend.title} — Details anzeigen` : undefined}
     >
-      <div className="relative min-h-[280px] sm:min-h-[300px]">
-        <VideoPreview
+      <div className="relative w-full overflow-hidden">
+        <VideoCard
           playbackId={trend.id}
-          variant="card"
-          thumbnailUrl={media.thumbnailUrl}
+          posterUrl={media.thumbnailUrl}
           videoUrl={media.videoUrl}
           alt={trend.title}
           duration={media.videoDuration}
-          aspectClass="aspect-[9/16] w-full sm:aspect-[9/15]"
+          aspectClass="relative z-[40] aspect-[9/16] w-full"
           priority={priority}
           onVideoUnavailable={handleVideoUnavailable}
         />
 
-        {onClick && (
-          <div
-            aria-hidden
-            className="absolute inset-0 z-[5] cursor-pointer sm:hidden"
-            onClick={(e) => {
-              e.stopPropagation()
-              onClick()
-            }}
-          />
-        )}
-
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between p-3">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[20] flex items-start p-3 pr-14">
           <div className="flex flex-wrap items-center gap-1.5">
             <span
               className={cn(
@@ -126,46 +114,46 @@ function TrendCardComponent({
             >
               {trend.platform}
             </span>
-            {trend.isDemo && (
-              <span className="rounded-full bg-black/40 px-1.5 py-0.5 text-[9px] font-medium text-zinc-400 backdrop-blur-sm">
-                Demo
-              </span>
-            )}
             {isSaved && (
               <span className="rounded-full bg-violet-500/30 px-1.5 py-0.5 text-[9px] font-medium text-violet-200 backdrop-blur-sm">
                 ★
               </span>
             )}
           </div>
-          <ViralScoreRing score={trend.viralScore} size="sm" animate={priority} />
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 pt-8">
-          <div className="flex items-center gap-2">
-            <img
-              src={trend.creator.avatarUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="size-7 rounded-full object-cover ring-2 ring-white/15"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-0.5 truncate text-xs font-semibold text-white">
-                {trend.creator.handle}
-                {trend.creator.verified && (
-                  <VerifiedIcon className="size-3 shrink-0 text-sky-300" aria-hidden />
-                )}
-              </p>
-              <p className="text-[10px] text-white/60">{trend.creator.followers}</p>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[20] bg-gradient-to-t from-black/85 via-black/35 to-transparent p-3 pt-12">
+          <div className="flex items-end justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <img
+                src={trend.creator.avatarUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="size-7 shrink-0 rounded-full object-cover ring-2 ring-white/15"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-0.5 truncate text-xs font-semibold text-white">
+                  {trend.creator.handle}
+                  {trend.creator.verified && (
+                    <VerifiedIcon className="size-3 shrink-0 text-sky-300" aria-hidden />
+                  )}
+                </p>
+                <p className="text-[10px] text-white/60">{trend.creator.followers}</p>
+              </div>
             </div>
-            <span
-              className={cn(
-                'shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold ring-1 ring-inset backdrop-blur-sm',
-                velocity.className,
-              )}
-            >
-              {velocity.icon} {velocity.label}
-            </span>
+
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              <ViralScoreRing score={trend.viralScore} size="sm" animate={priority} />
+              <span
+                className={cn(
+                  'rounded-full px-2 py-0.5 text-[9px] font-bold ring-1 ring-inset backdrop-blur-sm',
+                  velocity.className,
+                )}
+              >
+                {velocity.icon} {velocity.label}
+              </span>
+            </div>
           </div>
         </div>
       </div>

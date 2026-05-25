@@ -12,9 +12,13 @@ export function isValidVideoUrl(url: string | undefined): url is string {
     return (
       /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(path) ||
       path.includes('/video') ||
+      path.includes('/storage/v1/object/public/generated-videos') ||
       parsed.hostname.includes('pexels.com') ||
       parsed.hostname.includes('cloudfront.net') ||
-      parsed.hostname.includes('mixkit.co')
+      parsed.hostname.includes('mixkit.co') ||
+      parsed.hostname.includes('replicate.delivery') ||
+      parsed.hostname.includes('lumalabs.ai') ||
+      parsed.hostname.includes('cdn.pixabay.com')
     )
   } catch {
     return false

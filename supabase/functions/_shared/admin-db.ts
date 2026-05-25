@@ -23,7 +23,10 @@ export function isSchemaError(error: PostgrestError | null | undefined): boolean
     msg.includes("does not exist") ||
     msg.includes("could not find") ||
     msg.includes("schema cache") ||
-    msg.includes("column") && msg.includes("profiles")
+    msg.includes("relation") && msg.includes("does not exist") ||
+    (msg.includes("column") &&
+      (msg.includes("profiles") || msg.includes("ai_generations") ||
+        msg.includes("analytics_daily")))
   );
 }
 

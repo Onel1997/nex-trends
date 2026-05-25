@@ -46,7 +46,7 @@ export async function safeAiGenerationsInPeriod(
   if (isSchemaError(error)) {
     logAdminWarning("ai_generations list", error);
     warnings.push(
-      "ai_generations Tabelle fehlt — Migration 20250526100000_analytics_tracking ausführen.",
+      "ai_generations Tabelle fehlt — Migration 20250526140000_analytics_repair ausführen (supabase db push).",
     );
     return { data: [], warnings };
   }

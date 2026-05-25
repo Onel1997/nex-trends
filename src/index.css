@@ -118,6 +118,27 @@ body {
   animation: sheet-up 0.45s var(--ease-out-expo) both;
 }
 
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.animate-progress-indeterminate {
+  animation: progress-indeterminate 1.4s ease-in-out infinite;
+}
+
+.detail-sheet {
+  will-change: transform, opacity;
+}
+
+.video-preview-modal {
+  contain: layout style paint;
+}
+
 .animate-shimmer {
   background: linear-gradient(
     90deg,
@@ -233,7 +254,7 @@ body {
 .trend-feed-item {
   width: 100%;
   content-visibility: auto;
-  contain-intrinsic-size: auto 420px;
+  contain-intrinsic-size: auto 520px;
 }
 
 @media (min-width: 640px) {
@@ -395,6 +416,127 @@ body {
   transition: transform 0.4s var(--ease-out-expo);
 }
 
+/* ── VideoCard (TikTok-style feed) ── */
+
+.video-card {
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+.video-card__video {
+  opacity: 0;
+  transition: opacity 0.45s var(--ease-out-expo);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+.video-card__video--visible {
+  opacity: 1;
+  animation: video-preview-fade-in 0.5s var(--ease-out-expo) both;
+}
+
+.video-card__ken-burns {
+  animation: video-card-ken-burns 14s ease-in-out infinite alternate;
+}
+
+@keyframes video-card-ken-burns {
+  from {
+    transform: scale(1.05) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(-2%, -1%, 0);
+  }
+}
+
+@keyframes audio-bar {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.animate-audio-bar {
+  animation: audio-bar 0.65s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+.video-card__mute {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  pointer-events: auto;
+}
+
+.video-card__mute--active {
+  animation: volume-button-glow 1.2s ease-in-out infinite;
+}
+
+@keyframes volume-button-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(139 92 246 / 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(139 92 246 / 0);
+  }
+}
+
+@keyframes volume-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes volume-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.animate-volume-pulse {
+  animation: volume-pulse 1.4s ease-out infinite;
+}
+
+.animate-volume-icon {
+  animation: volume-icon-pulse 0.85s ease-in-out infinite;
+}
+
+.video-card__tap-sound {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.video-card__sound-toast {
+  animation: fade-in 0.25s var(--ease-out-expo) both;
+}
+
+/* Reserve top-right for audio control — TrendCard badges stay clear */
+.trend-card .video-card {
+  z-index: 0;
+}
+
+.video-card__live {
+  animation: fade-in 0.35s var(--ease-out-expo) both;
+}
+
+.trend-card .video-card {
+  transition: transform 0.35s var(--ease-out-expo);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .trend-card:hover .video-preview {
     transform: scale(1.015);
@@ -423,7 +565,11 @@ body {
   .animate-sheet-up,
   .animate-shimmer,
   .animate-pulse-soft,
-  .video-preview__video--visible {
+  .video-preview__video--visible,
+  .video-card__video--visible,
+  .video-card__ken-burns,
+  .animate-audio-bar,
+  .video-card__live {
     animation: none;
   }
 

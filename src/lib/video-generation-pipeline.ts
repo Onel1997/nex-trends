@@ -1,25 +1,35 @@
 import {
-  getMediaFallbackChain,
-  getStableTrendMedia,
-  pickNextFallbackMedia,
-} from '@/lib/trend-media-assignment'
-import { isLocalDemoVideo } from '@/lib/video-url'
-import { probeVideoUrl } from '@/lib/video-url'
+  createVideoJob,
+  retryVideoJob,
+  waitForVideoJob,
+} from '@/lib/video-api'
+import type { GeneratedVideoJob } from '@/types/generated-video'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
-export type VideoJobStatus = 'idle' | 'queued' | 'generating' | 'completed' | 'failed'
+export type VideoJobStatus =
+  | 'idle'
+  | 'queued'
+  | 'generating'
+  | 'processing'
+  | 'completed'
+  | 'failed'
 
 export type VideoGenerationResult = {
   status: VideoJobStatus
+  jobId?: string
   videoUrl: string
   posterUrl: string
   duration: string
   hasAudio: boolean
+  hookText?: string
+  captions?: string[]
+  voiceoverUrl?: string
+  musicUrl?: string
+  provider?: string
   message?: string
 }
 
-const JOB_TIMEOUT_MS = 25_000
-const PROBE_TIMEOUT_MS = 8_000
+const MAX_RETRIES = 2
 
 function log(scope: string, detail?: unknown) {
   if (import.meta.env.DEV || import.meta.env.VITE_ADMIN_DEBUG === 'true') {
@@ -27,97 +37,115 @@ function log(scope: string, detail?: unknown) {
   }
 }
 
-async function probeWithTimeout(url: string): Promise<boolean> {
-  const controller = new AbortController()
-  const timer = window.setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS)
-  try {
-    return await probeVideoUrl(url, controller.signal)
-  } catch {
-    return false
-  } finally {
-    window.clearTimeout(timer)
+function mapStatus(s: GeneratedVideoJob['status']): VideoJobStatus {
+  if (s === 'processing') return 'processing'
+  if (s === 'generating' || s === 'queued') return s === 'queued' ? 'queued' : 'generating'
+  if (s === 'completed') return 'completed'
+  if (s === 'failed') return 'failed'
+  return 'generating'
+}
+
+function toResult(job: GeneratedVideoJob): VideoGenerationResult {
+  return {
+    status: mapStatus(job.status),
+    jobId: job.id,
+    videoUrl: job.videoUrl ?? '',
+    posterUrl: job.posterUrl ?? '',
+    duration: job.duration ?? '0:15',
+    hasAudio: job.hasAudio ?? Boolean(job.voiceoverUrl || job.musicUrl),
+    hookText: job.hookText,
+    captions: job.captions,
+    voiceoverUrl: job.voiceoverUrl,
+    musicUrl: job.musicUrl,
+    provider: job.provider,
+    message:
+      job.provider === 'synthetic'
+        ? 'Premium-Kurzvideo mit KI-Hook, Captions & Voiceover. Für echte KI-Clips: REPLICATE_API_TOKEN setzen.'
+        : 'Einzigartiges KI-Video — tippe für Wiedergabe mit Audio.',
   }
 }
 
+export type RunVideoJobOptions = {
+  generationId?: string | null
+  retryJobId?: string
+  signal?: AbortSignal
+}
+
 /**
- * Resolves a playable MP4 for the trend (prefers local demo clips with audio tracks).
- * Does not fall back to poster-only — returns failed state with user-facing message.
+ * Runs real AI video generation via Supabase edge function (Replicate / Luma).
+ * Falls back to synthetic unique composition when no provider keys are configured.
  */
 export async function runVideoGenerationJob(
   trend: TrendIntelligence,
   onStatus?: (status: VideoJobStatus, detail?: string) => void,
+  options?: RunVideoJobOptions,
 ): Promise<VideoGenerationResult> {
-  onStatus?.('queued', 'Video wird vorbereitet …')
-  log('start', { trendId: trend.id, niche: trend.niche })
+  onStatus?.('queued', 'Video-Job wird erstellt …')
+  log('start', { trendId: trend.id, retry: options?.retryJobId })
 
-  const deadline = Date.now() + JOB_TIMEOUT_MS
-  onStatus?.('generating', 'Suche optimales Video mit Audio …')
+  let attempt = 0
+  let lastError: string | undefined
 
-  const candidates: { video: string; poster: string; duration: string }[] = []
+  while (attempt <= MAX_RETRIES) {
+    try {
+      let job: GeneratedVideoJob
 
-  const primary = getStableTrendMedia(trend.id, trend.niche)
-  candidates.push(primary)
+      if (options?.retryJobId && attempt === 0) {
+        job = await retryVideoJob(options.retryJobId)
+      } else if (attempt === 0 && !options?.retryJobId) {
+        job = await createVideoJob(trend, options?.generationId)
+      } else {
+        job = await createVideoJob(trend, options?.generationId)
+      }
 
-  const chain = getMediaFallbackChain(trend.id, trend.niche)
-  for (const asset of chain) {
-    if (!candidates.some((c) => c.video === asset.video)) {
-      candidates.push(asset)
-    }
-  }
+      onStatus?.(mapStatus(job.status), 'Provider-Job gestartet …')
 
-  // Prefer local files — reliable autoplay + embedded audio
-  candidates.sort((a, b) => {
-    const aLocal = isLocalDemoVideo(a.video) ? 0 : 1
-    const bLocal = isLocalDemoVideo(b.video) ? 0 : 1
-    return aLocal - bLocal
-  })
+      if (job.status === 'completed' && job.videoUrl) {
+        onStatus?.('completed', 'Video bereit')
+        return toResult(job)
+      }
 
-  for (const asset of candidates) {
-    if (Date.now() > deadline) {
-      log('timeout')
-      onStatus?.('failed', 'Zeitüberschreitung bei der Video-Verarbeitung.')
-      return {
-        status: 'failed',
-        videoUrl: '',
-        posterUrl: trend.thumbnailUrl ?? '',
-        duration: trend.videoDuration ?? '0:15',
-        hasAudio: false,
-        message:
-          'Video-Provider antwortet nicht rechtzeitig. Bitte erneut versuchen oder Verbindung prüfen.',
+      const final = await waitForVideoJob(
+        job.id,
+        (updated, detail) => {
+          onStatus?.(mapStatus(updated.status), detail)
+        },
+        options?.signal,
+      )
+
+      onStatus?.('completed', 'Video bereit')
+      log('ok', { jobId: final.id, provider: final.provider })
+      return toResult(final)
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : 'Unbekannter Fehler'
+      log('attempt failed', { attempt, lastError })
+
+      if (options?.signal?.aborted) {
+        onStatus?.('failed', 'Abgebrochen')
+        return {
+          status: 'failed',
+          videoUrl: '',
+          posterUrl: trend.thumbnailUrl ?? '',
+          duration: trend.videoDuration ?? '0:15',
+          hasAudio: false,
+          message: 'Abgebrochen',
+        }
+      }
+
+      attempt += 1
+      if (attempt <= MAX_RETRIES) {
+        onStatus?.('generating', `Erneuter Versuch (${attempt}/${MAX_RETRIES}) …`)
       }
     }
-
-    log('probe', asset.video)
-    onStatus?.('generating', `Prüfe Clip …`)
-
-    const ok = isLocalDemoVideo(asset.video) || (await probeWithTimeout(asset.video))
-    if (!ok) continue
-
-    onStatus?.('completed', 'Video bereit')
-    log('ok', asset.video)
-
-    return {
-      status: 'completed',
-      videoUrl: asset.video,
-      posterUrl: asset.poster,
-      duration: asset.duration,
-      hasAudio: true,
-      message: isLocalDemoVideo(asset.video)
-        ? 'Lokales Demo-Video mit Tonspur — Tippe zum Abspielen mit Audio.'
-        : 'Stream-Video bereit — Ton beim Abspielen aktivieren.',
-    }
   }
 
-  const fallback = pickNextFallbackMedia(trend.id, trend.niche, undefined, new Set())
-  onStatus?.('failed', 'Kein stabiles Video gefunden')
-
+  onStatus?.('failed', lastError)
   return {
     status: 'failed',
-    videoUrl: fallback.video,
-    posterUrl: fallback.poster,
-    duration: fallback.duration,
+    videoUrl: '',
+    posterUrl: trend.thumbnailUrl ?? '',
+    duration: trend.videoDuration ?? '0:15',
     hasAudio: false,
-    message:
-      'Video konnte nicht geladen werden — nur Vorschaubild verfügbar. Bitte später erneut versuchen.',
+    message: lastError ?? 'Video-Generierung fehlgeschlagen.',
   }
 }

@@ -2,6 +2,7 @@ export { TrendIntelligencePanel } from '@/components/trends/TrendIntelligencePan
 export { TrendScoutSearch, type ScoutPlatform } from '@/components/trends/TrendScoutSearch'
 export { TrendsGrid } from '@/components/trends/TrendsGrid'
 export { TrendCard, type DisplayTrend } from '@/components/trends/TrendCard'
+export { VideoCard } from '@/components/trends/VideoCard'
 export { VideoPreview } from '@/components/trends/VideoPreview'
 export { TrendHistoryTimeline } from '@/components/trends/TrendHistoryTimeline'
 export { SavedTrendsPanel } from '@/components/trends/SavedTrendsPanel'

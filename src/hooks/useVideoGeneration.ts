@@ -1,5 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
-import { runVideoGenerationJob, type VideoJobStatus } from '@/lib/video-generation-pipeline'
+import {
+  runVideoGenerationJob,
+  type VideoGenerationResult,
+  type VideoJobStatus,
+} from '@/lib/video-generation-pipeline'
 import { trackGeneration, patchGeneration } from '@/lib/generation-tracking'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
@@ -10,21 +14,49 @@ export function useVideoGeneration() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [posterUrl, setPosterUrl] = useState<string | null>(null)
   const [hasAudio, setHasAudio] = useState(false)
-  const abortRef = useRef(false)
+  const [captions, setCaptions] = useState<string[]>([])
+  const [voiceoverUrl, setVoiceoverUrl] = useState<string | null>(null)
+  const [musicUrl, setMusicUrl] = useState<string | null>(null)
+  const [hookText, setHookText] = useState<string | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [provider, setProvider] = useState<string | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const reset = useCallback(() => {
-    abortRef.current = false
+    abortRef.current?.abort()
+    abortRef.current = null
     setStatus('idle')
     setDetail(null)
     setError(null)
     setVideoUrl(null)
     setPosterUrl(null)
     setHasAudio(false)
+    setCaptions([])
+    setVoiceoverUrl(null)
+    setMusicUrl(null)
+    setHookText(null)
+    setJobId(null)
+    setProvider(null)
+  }, [])
+
+  const applyResult = useCallback((result: VideoGenerationResult) => {
+    setJobId(result.jobId ?? null)
+    setProvider(result.provider ?? null)
+    setCaptions(result.captions ?? [])
+    setVoiceoverUrl(result.voiceoverUrl ?? null)
+    setMusicUrl(result.musicUrl ?? null)
+    setHookText(result.hookText ?? null)
   }, [])
 
   const generate = useCallback(
-    async (trend: TrendIntelligence, options?: { consumeCredits?: boolean }) => {
-      abortRef.current = false
+    async (
+      trend: TrendIntelligence,
+      options?: { consumeCredits?: boolean; retry?: boolean },
+    ): Promise<VideoGenerationResult | null> => {
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+
       setError(null)
       setDetail(null)
 
@@ -36,24 +68,31 @@ export function useVideoGeneration() {
         niche: trend.niche,
         platform: trend.platform,
         prompt: trend.hookAnalysis?.hookText ?? trend.title,
-        credits_used: options?.consumeCredits ? 1 : 0,
+        credits_used: options?.consumeCredits ? 2 : 0,
       })
 
       const onStatus = (s: VideoJobStatus, msg?: string) => {
-        if (abortRef.current) return
+        if (controller.signal.aborted) return
         setStatus(s)
         if (msg) setDetail(msg)
-        if (generationId && (s === 'generating' || s === 'completed' || s === 'failed')) {
+        if (generationId && (s === 'generating' || s === 'processing' || s === 'completed' || s === 'failed')) {
           void patchGeneration(generationId, {
-            status: s,
+            status: s === 'processing' ? 'generating' : s,
             error_message: s === 'failed' ? msg : undefined,
           })
         }
       }
 
       try {
-        const result = await runVideoGenerationJob(trend, onStatus)
-        if (abortRef.current) return null
+        const result = await runVideoGenerationJob(trend, onStatus, {
+          generationId,
+          retryJobId: options?.retry ? jobId ?? undefined : undefined,
+          signal: controller.signal,
+        })
+
+        if (controller.signal.aborted) return null
+
+        applyResult(result)
 
         if (result.status === 'completed') {
           setVideoUrl(result.videoUrl)
@@ -87,16 +126,28 @@ export function useVideoGeneration() {
         return null
       }
     },
-    [],
+    [applyResult, jobId],
+  )
+
+  const retry = useCallback(
+    async (trend: TrendIntelligence) => {
+      if (!jobId) {
+        return generate(trend, { retry: false })
+      }
+      return generate(trend, { retry: true })
+    },
+    [generate, jobId],
   )
 
   const cancel = useCallback(() => {
-    abortRef.current = true
+    abortRef.current?.abort()
+    abortRef.current = null
     setStatus('idle')
     setDetail('Abgebrochen')
   }, [])
 
-  const isLoading = status === 'queued' || status === 'generating'
+  const isLoading =
+    status === 'queued' || status === 'generating' || status === 'processing'
 
   return {
     status,
@@ -105,8 +156,15 @@ export function useVideoGeneration() {
     videoUrl,
     posterUrl,
     hasAudio,
+    captions,
+    voiceoverUrl,
+    musicUrl,
+    hookText,
+    jobId,
+    provider,
     isLoading,
     generate,
+    retry,
     reset,
     cancel,
   }

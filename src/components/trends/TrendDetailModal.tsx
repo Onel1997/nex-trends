@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { VideoGenerationHistory } from '@/components/trends/VideoGenerationHistory'
 import { VideoGenerationProgress } from '@/components/trends/VideoGenerationProgress'
 import { VideoPreview } from '@/components/trends/VideoPreview'
 import { useVideoGeneration } from '@/hooks/useVideoGeneration'
@@ -196,6 +197,10 @@ export function TrendDetailModal({
               duration={media.videoDuration}
               aspectClass="aspect-[9/16] max-h-[42vh] sm:max-h-[50vh] lg:max-h-none lg:min-h-[420px]"
               priority
+              isBuffering={videoGen.isLoading}
+              captions={videoGen.captions}
+              voiceoverUrl={videoGen.voiceoverUrl ?? undefined}
+              musicUrl={videoGen.musicUrl ?? undefined}
               onVideoUnavailable={handleVideoUnavailable}
             />
           </div>
@@ -218,7 +223,7 @@ export function TrendDetailModal({
                 loading={videoGen.isLoading}
                 disabled={videoGen.isLoading}
                 onClick={() => {
-                  void videoGen.generate(trend).then((result) => {
+                  void videoGen.generate(trend, { consumeCredits: true }).then((result) => {
                     if (result?.status === 'completed') {
                       setMedia({
                         videoUrl: result.videoUrl,
@@ -227,9 +232,9 @@ export function TrendDetailModal({
                       })
                       showToast({
                         type: 'success',
-                        title: 'Video bereit',
+                        title: 'AI Video bereit',
                         message: result.hasAudio
-                          ? 'Tippe auf das Video für Wiedergabe mit Ton.'
+                          ? 'Tippe auf das Video für Wiedergabe mit Voiceover & Musik.'
                           : result.message,
                       })
                     } else if (videoGen.error) {
@@ -249,7 +254,22 @@ export function TrendDetailModal({
                 status={videoGen.status}
                 detail={videoGen.detail}
                 error={videoGen.error}
+                provider={videoGen.provider}
                 onCancel={videoGen.cancel}
+                onRetry={() => void videoGen.retry(trend)}
+              />
+              <VideoGenerationHistory
+                onSelect={(url, poster) => {
+                  setMedia({
+                    videoUrl: url,
+                    thumbnailUrl: poster ?? media.thumbnailUrl,
+                    videoDuration: media.videoDuration,
+                  })
+                  showToast({
+                    type: 'success',
+                    title: 'Video aus Verlauf geladen',
+                  })
+                }}
               />
             </div>
 

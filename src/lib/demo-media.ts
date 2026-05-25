@@ -120,10 +120,25 @@ export function isLocalDemoMediaUrl(url: string | undefined): boolean {
   return Boolean(url?.trim().startsWith('/demo-videos/'))
 }
 
-/** True when URL is in the verified playable demo pool. */
+/** Supabase Storage or other AI-generated persisted URLs */
+export function isGeneratedVideoUrl(url: string | undefined): boolean {
+  if (!url?.trim()) return false
+  const trimmed = url.trim()
+  if (trimmed.includes('/storage/v1/object/public/generated-videos')) return true
+  if (trimmed.includes('replicate.delivery')) return true
+  try {
+    const host = new URL(trimmed).hostname
+    return host.includes('supabase.co') && trimmed.includes('.mp4')
+  } catch {
+    return false
+  }
+}
+
+/** True when URL is in the verified playable demo pool or a generated video URL. */
 export function isPlayableDemoVideoUrl(url: string | undefined): boolean {
   if (!url?.trim()) return false
   const trimmed = url.trim()
+  if (isGeneratedVideoUrl(trimmed)) return true
   if (isQualityBlockedVideoUrl(trimmed)) return false
   return PLAYABLE_VIDEO_URLS.has(trimmed)
 }
@@ -135,7 +150,8 @@ export function isPlayableDemoPosterUrl(url: string | undefined): boolean {
 
 /** Trusted pool URLs — skip network metadata probes (avoids false failures). */
 export function isTrustedDemoVideoUrl(url: string | undefined): boolean {
-  return isPlayableDemoVideoUrl(url)
+  if (isGeneratedVideoUrl(url)) return true
+  return PLAYABLE_VIDEO_URLS.has(url?.trim() ?? '')
 }
 
 export function posterForVideoUrl(videoUrl: string): string | null {

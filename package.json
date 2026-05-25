@@ -12,7 +12,8 @@
     "validate-demo-media": "node scripts/validate-demo-media.mjs",
     "deploy:admin-api": "supabase functions deploy admin-api",
     "deploy:admin": "supabase db push && supabase functions deploy admin-api track-event usage-limit",
-    "deploy:functions": "supabase functions deploy admin-api usage-limit track-event"
+    "deploy:functions": "supabase functions deploy admin-api usage-limit track-event generate-video",
+    "deploy:video": "supabase functions deploy generate-video"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",

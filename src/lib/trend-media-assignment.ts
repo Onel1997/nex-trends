@@ -1,5 +1,6 @@
 import {
   getAssetsForNiche,
+  mixkitIdFromVideoUrl,
   type DemoMediaAsset,
   isPlayableDemoPosterUrl,
   isPlayableDemoVideoUrl,
@@ -14,7 +15,8 @@ import { hashString } from '@/lib/demo-trend-seed'
 import { isLocalDemoVideo } from '@/lib/video-url'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
-const VIDEO_STEP = 13
+const VIDEO_STEP = 23
+const SEQUENTIAL_PRIME = 31
 
 /** URLs that failed at runtime in this session — skip when assigning fallbacks */
 const runtimeFailedVideos = new Set<string>()
@@ -253,6 +255,56 @@ export function sanitizeTrendMedia(
   }
 }
 
+function clipVisualKey(videoUrl: string | undefined): string {
+  const url = videoUrl?.trim() ?? ''
+  if (!url) return ''
+  if (isLocalDemoVideo(url)) return `local:${url}`
+  const mixkitId = mixkitIdFromVideoUrl(url)
+  if (mixkitId != null) return `mixkit:${mixkitId}`
+  return url
+}
+
+/** Avoid back-to-back clips with the same subject / lighting bucket / location feel. */
+function ensureSequentialClipVariety(
+  trends: TrendIntelligence[],
+  seed: number,
+): TrendIntelligence[] {
+  const used = createUsedMedia()
+  const result: TrendIntelligence[] = []
+  let prevKey = ''
+
+  const mixkitFromKey = (k: string): number | null => {
+    if (!k.startsWith('mixkit:')) return null
+    const n = Number.parseInt(k.slice(7), 10)
+    return Number.isFinite(n) ? n : null
+  }
+
+  for (let index = 0; index < trends.length; index += 1) {
+    let trend = trends[index]
+    let key = clipVisualKey(trend.videoUrl)
+
+    const prevMixkit = mixkitFromKey(prevKey)
+    const curMixkit = mixkitIdFromVideoUrl(trend.videoUrl ?? '')
+    const tooSimilar =
+      key === prevKey ||
+      (curMixkit != null &&
+        prevMixkit != null &&
+        Math.abs(curMixkit - prevMixkit) < 120)
+
+    if (tooSimilar || used.videos.has(trend.videoUrl ?? '')) {
+      const slot = index * SEQUENTIAL_PRIME + seed
+      trend = remapTrendMedia(trend, slot, seed + index * 11, used)
+      key = clipVisualKey(trend.videoUrl)
+    }
+
+    registerTrendMedia(trend, used)
+    result.push(trend)
+    prevKey = key
+  }
+
+  return result
+}
+
 /** Guarantees unique video/thumbnail/creator within a feed batch (stable for same seed). */
 export function ensureFeedMediaDiversity(
   trends: TrendIntelligence[],
@@ -260,17 +312,19 @@ export function ensureFeedMediaDiversity(
 ): TrendIntelligence[] {
   const used = createUsedMedia()
 
-  return trends.map((trend, index) => {
+  const diversified = trends.map((trend, index) => {
     const sanitized = sanitizeTrendMedia(trend, index)
     if (isTrendMediaUnique(sanitized, used)) {
       registerTrendMedia(sanitized, used)
       return sanitized
     }
 
-    const remapped = remapTrendMedia(sanitized, index, seed, used)
+    const remapped = remapTrendMedia(sanitized, index * SEQUENTIAL_PRIME, seed, used)
     registerTrendMedia(remapped, used)
     return remapped
   })
+
+  return ensureSequentialClipVariety(diversified, seed)
 }
 
 export { isTrustedDemoVideoUrl }

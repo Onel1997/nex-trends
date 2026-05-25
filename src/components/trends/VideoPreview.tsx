@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { VideoCaptionsOverlay } from '@/components/trends/VideoCaptionsOverlay'
+import { SpinnerInline } from '@/components/ui/Spinner'
 import { cn } from '@/lib'
 import { PlayIcon } from '@/components/ui/icons'
 import { useInViewport } from '@/hooks/useInViewport'
@@ -30,6 +32,12 @@ type VideoPreviewProps = {
   enableAudio?: boolean
   /** Swap to another MP4 when the current URL cannot play */
   onVideoUnavailable?: () => void
+  /** Dynamic on-screen captions for AI-generated videos */
+  captions?: string[]
+  voiceoverUrl?: string
+  musicUrl?: string
+  /** Show centered loading spinner while source buffers */
+  isBuffering?: boolean
 }
 
 const GRADIENT_PLACEHOLDER =
@@ -62,11 +70,17 @@ export function VideoPreview({
   variant = 'detail',
   enableAudio = false,
   onVideoUnavailable,
+  captions = [],
+  voiceoverUrl,
+  musicUrl,
+  isBuffering = false,
 }: VideoPreviewProps) {
   const isCard = variant === 'card'
   const reactId = useId()
   const playbackId = playbackIdProp ?? reactId
   const videoRef = useRef<HTMLVideoElement>(null)
+  const voiceRef = useRef<HTMLAudioElement>(null)
+  const musicRef = useRef<HTMLAudioElement>(null)
   const isTouch = useIsTouchDevice()
   const canPlayRef = useRef(false)
   const isActiveRef = useRef(priority)
@@ -88,6 +102,7 @@ export function VideoPreview({
   const [userWantsAudio, setUserWantsAudio] = useState(false)
   const qualityProbeRef = useRef(false)
   const useAudio = enableAudio && userWantsAudio && !isCard
+  const useExternalAudio = useAudio && Boolean(voiceoverUrl || musicUrl)
 
   const posterSrc = useMemo(
     () => resolvePosterSrc(thumbnailUrl, videoUrl, posterRejected),
@@ -110,6 +125,8 @@ export function VideoPreview({
     const video = videoRef.current
     if (!video) return
     video.pause()
+    voiceRef.current?.pause()
+    musicRef.current?.pause()
     setIsPlaying(false)
     videoPlaybackManager.release(playbackId)
   }, [playbackId])
@@ -118,8 +135,8 @@ export function VideoPreview({
     const video = videoRef.current
     if (!video || !canPlayRef.current) return
 
-    video.muted = !useAudio
-    video.defaultMuted = !useAudio
+    video.muted = !useAudio || useExternalAudio
+    video.defaultMuted = !useAudio || useExternalAudio
     video.playsInline = true
     video.setAttribute('playsinline', '')
     video.setAttribute('webkit-playsinline', 'true')
@@ -146,6 +163,20 @@ export function VideoPreview({
       await video.play()
       setIsPlaying(true)
       setAutoplayBlocked(false)
+
+      if (useExternalAudio) {
+        const voice = voiceRef.current
+        const music = musicRef.current
+        if (voice && voiceoverUrl) {
+          voice.currentTime = 0
+          void voice.play().catch(() => undefined)
+        }
+        if (music && musicUrl) {
+          music.volume = 0.35
+          music.currentTime = 0
+          void music.play().catch(() => undefined)
+        }
+      }
     } catch (err) {
       if (import.meta.env.DEV) {
         console.warn('[VideoPreview] Playback blocked or failed:', videoUrl, err)
@@ -154,7 +185,7 @@ export function VideoPreview({
       setAutoplayBlocked(true)
       videoPlaybackManager.release(playbackId)
     }
-  }, [playbackId, videoUrl, isTouch, priority, useAudio])
+  }, [playbackId, videoUrl, isTouch, priority, useAudio, useExternalAudio, voiceoverUrl, musicUrl])
 
   const tryPlay = useCallback(() => {
     if (!canPlayRef.current || !isActiveRef.current) return
@@ -185,7 +216,19 @@ export function VideoPreview({
   }, [isActiveViewport, tryPlay])
 
   useEffect(() => {
-    return videoPlaybackManager.register(playbackId, () => pauseVideoRef.current())
+    return videoPlaybackManager.register(
+      playbackId,
+      () => pauseVideoRef.current(),
+      () => {
+        const video = videoRef.current
+        if (video) {
+          video.muted = true
+          video.defaultMuted = true
+        }
+        setUserWantsAudio(false)
+        videoPlaybackManager.releaseAudio(playbackId)
+      },
+    )
   }, [playbackId])
 
   useEffect(() => {
@@ -200,6 +243,8 @@ export function VideoPreview({
     qualityProbeRef.current = false
     setLoadTimedOut(false)
     setUserWantsAudio(false)
+    voiceRef.current?.pause()
+    musicRef.current?.pause()
   }, [videoUrl, displayPosterSrc])
 
   useEffect(() => {
@@ -470,6 +515,19 @@ export function VideoPreview({
         </div>
       )}
 
+      {(isBuffering || (shouldAttachVideo && !videoReady && !videoFailed)) && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/25 backdrop-blur-[1px]">
+          <SpinnerInline size="md" className="opacity-90" />
+        </div>
+      )}
+
+      {voiceoverUrl ? (
+        <audio ref={voiceRef} src={voiceoverUrl} preload="none" className="hidden" />
+      ) : null}
+      {musicUrl ? (
+        <audio ref={musicRef} src={musicUrl} preload="none" loop className="hidden" />
+      ) : null}
+
       {shouldAttachVideo && (
         <video
           ref={(node) => {
@@ -483,7 +541,7 @@ export function VideoPreview({
           }}
           src={videoUrl}
           poster={displayPosterSrc ?? undefined}
-          muted={!useAudio}
+          muted={!useAudio || useExternalAudio}
           loop
           playsInline
           autoPlay={isActiveViewport && canPlay}
@@ -547,9 +605,13 @@ export function VideoPreview({
         </p>
       )}
 
+      {captions.length > 0 && (
+        <VideoCaptionsOverlay captions={captions} isPlaying={isPlaying || isCard} />
+      )}
+
       {useAudio && isPlaying && (
         <span className="pointer-events-none absolute left-2.5 top-2.5 z-10 rounded-md bg-violet-600/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-          Audio an
+          {useExternalAudio ? 'Voiceover + Musik' : 'Audio an'}
         </span>
       )}
 
