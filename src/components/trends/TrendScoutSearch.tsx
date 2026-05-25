@@ -50,7 +50,7 @@ export function TrendScoutSearch({
   return (
     <section
       aria-labelledby="trend-scout-heading"
-      className="glass-card p-5 sm:p-6 lg:p-7"
+      className="rounded-2xl border border-zinc-800/50 bg-zinc-900/30 p-5 shadow-[0_12px_40px_-16px_rgba(0,0,0,0.45)] sm:p-6"
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>

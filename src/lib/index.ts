@@ -5,7 +5,11 @@ export {
   NAV_TOOLS,
   PRO_PRICE_LABEL,
   SIDEBAR_ITEMS,
+  DASHBOARD_BASE,
+  DASHBOARD_ROUTES,
   STRIPE_CHECKOUT_URL,
+  isImmersiveTool,
+  getPathForTool,
   type DashboardToolId,
   type NavToolId,
 } from './constants'

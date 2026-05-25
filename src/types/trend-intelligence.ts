@@ -1,5 +1,11 @@
 export type TrendVelocity = 'rising' | 'peak' | 'stable' | 'cooling'
 
+export type HeatLevel = 'cold' | 'warm' | 'hot' | 'viral'
+
+export type HookStyle = 'aggressive' | 'luxury' | 'storytelling' | 'faceless' | 'ugc'
+
+export type GrowthIndicator = 'up' | 'stable' | 'down'
+
 export type CreatorInfo = {
   handle: string
   displayName: string
@@ -52,6 +58,27 @@ export type TrendIntelligence = {
   externalUrl?: string
   niche?: string
   isDemo?: boolean
+  targetAudience?: string
+  whyViral?: string
+  aiRecommendations?: string[]
+  heatLevel?: HeatLevel
+  growthIndicator?: GrowthIndicator
+  engagementScore?: number
+  savedAt?: string
+}
+
+export type TrendSearchHistoryEntry = {
+  id: string
+  query: string
+  platform: string
+  resultCount: number
+  timestamp: string
+}
+
+export type SavedTrendRecord = {
+  trend: TrendIntelligence
+  savedAt: string
+  userId?: string
 }
 
 export type ScoutedTrendRaw = {

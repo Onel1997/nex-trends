@@ -3,15 +3,29 @@ import { DashboardLayout } from '@/components'
 import { DashboardMain } from '@/components/dashboard/DashboardMain'
 import { UpgradeModal } from '@/components/subscription'
 import type { DashboardToolId } from '@/lib'
-import { readToolFromUrl, writeToolToUrl } from '@/lib/navigation'
+import {
+  ensureDashboardPath,
+  navigateToTool,
+  readToolFromUrl,
+  syncLegacyToolQueryToPath,
+} from '@/lib/navigation'
 
 export function HomePage() {
-  const [activeTool, setActiveTool] = useState<DashboardToolId>(() => readToolFromUrl())
+  const [activeTool, setActiveTool] = useState<DashboardToolId>(() => {
+    syncLegacyToolQueryToPath()
+    return readToolFromUrl()
+  })
 
   const handleSelectTool = useCallback((tool: DashboardToolId) => {
     setActiveTool(tool)
-    writeToolToUrl(tool)
+    navigateToTool(tool)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
+
+  useEffect(() => {
+    ensureDashboardPath()
+    syncLegacyToolQueryToPath()
+    setActiveTool(readToolFromUrl())
   }, [])
 
   useEffect(() => {
@@ -23,17 +37,10 @@ export function HomePage() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
-  useEffect(() => {
-    writeToolToUrl(activeTool)
-  }, [activeTool])
-
   return (
     <>
       <DashboardLayout activeTool={activeTool} onSelectTool={handleSelectTool}>
-        <DashboardMain
-          activeTool={activeTool}
-          onNavigateHome={() => handleSelectTool('trends')}
-        />
+        <DashboardMain activeTool={activeTool} onSelectTool={handleSelectTool} />
       </DashboardLayout>
       <UpgradeModal />
     </>

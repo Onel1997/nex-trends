@@ -1,9 +1,12 @@
-import { type DashboardToolId, SIGNUP_CREDITS } from './constants'
+import { SIGNUP_CREDITS } from './constants'
+import type { DashboardRouteId } from './routes'
+
+type DashboardToolId = DashboardRouteId
 import type { SubscriptionStatus, UserProfile } from '@/types/subscription'
 
 export const PREMIUM_TOOL_IDS = [
-  'ad-copy',
   'hook',
+  'ad-copy',
   'seo',
   'analyzer',
 ] as const satisfies readonly DashboardToolId[]

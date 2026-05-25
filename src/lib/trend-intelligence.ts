@@ -1,6 +1,8 @@
 import type {
   ContentBreakdown,
   CreatorInfo,
+  GrowthIndicator,
+  HeatLevel,
   HookAnalysis,
   ScoutedTrendRaw,
   TrendIntelligence,
@@ -231,7 +233,7 @@ export function mapRawToTrendIntelligence(
     isDemo: false,
   }
 
-  return enrichTrendWithMedia(base, index)
+  return enrichTrendIntelligence(enrichTrendWithMedia(base, index), index)
 }
 
 export const VELOCITY_META: Record<
@@ -258,6 +260,89 @@ export const VELOCITY_META: Record<
     className: 'text-amber-300 bg-amber-500/10 ring-amber-500/25',
     icon: '↓',
   },
+}
+
+export function parseEngagementPercent(value: string): number {
+  const num = parseFloat(value.replace('%', '').replace(',', '.').trim())
+  return Number.isFinite(num) ? num : 8
+}
+
+export function deriveEngagementScore(trend: TrendIntelligence): number {
+  if (trend.engagementScore != null) return trend.engagementScore
+  const eng = parseEngagementPercent(trend.engagementRate || trend.engagement)
+  return Math.min(100, Math.round(eng * 10))
+}
+
+export function deriveHeatLevel(trend: TrendIntelligence): HeatLevel {
+  if (trend.heatLevel) return trend.heatLevel
+  const score = trend.viralScore
+  if (score >= 88 && trend.trendVelocity !== 'cooling') return 'viral'
+  if (score >= 75) return 'hot'
+  if (score >= 60) return 'warm'
+  return 'cold'
+}
+
+export function deriveGrowthIndicator(trend: TrendIntelligence): GrowthIndicator {
+  if (trend.growthIndicator) return trend.growthIndicator
+  const map: Record<TrendVelocity, GrowthIndicator> = {
+    rising: 'up',
+    peak: 'up',
+    stable: 'stable',
+    cooling: 'down',
+  }
+  return map[trend.trendVelocity]
+}
+
+export const HEAT_META: Record<
+  HeatLevel,
+  { label: string; className: string; dots: number }
+> = {
+  cold: { label: 'Kalt', className: 'text-zinc-400 bg-zinc-500/10 ring-zinc-500/20', dots: 1 },
+  warm: { label: 'Warm', className: 'text-amber-300 bg-amber-500/10 ring-amber-500/20', dots: 2 },
+  hot: { label: 'Hot', className: 'text-orange-300 bg-orange-500/10 ring-orange-500/20', dots: 3 },
+  viral: { label: 'Viral', className: 'text-rose-300 bg-rose-500/10 ring-rose-500/20', dots: 4 },
+}
+
+function buildIntelligenceExtras(
+  trend: TrendIntelligence,
+  index: number,
+): Pick<
+  TrendIntelligence,
+  'targetAudience' | 'whyViral' | 'aiRecommendations' | 'heatLevel' | 'growthIndicator' | 'engagementScore'
+> {
+  const engagementScore = deriveEngagementScore(trend)
+  const heatLevel = deriveHeatLevel(trend)
+  const growthIndicator = deriveGrowthIndicator(trend)
+  const niche = trend.niche || 'deine Nische'
+
+  return {
+    engagementScore,
+    heatLevel,
+    growthIndicator,
+    targetAudience:
+      trend.targetAudience ||
+      `18–34 · ${niche}-Interessierte · DACH · hohe Mobile-Nutzung · ${trend.platform}-aktiv`,
+    whyViral:
+      trend.whyViral ||
+      `${trend.hookAnalysis.hookType} trifft den Algorithmus-Moment: ${trend.trendVelocity === 'rising' ? 'steigende' : 'stabile'} Velocity bei ${trend.engagementRate} Engagement. Das Format passt perfekt zu ${trend.platform}-Consumption Patterns.`,
+    aiRecommendations:
+      trend.aiRecommendations || [
+        `Adaptiere den Hook „${trend.hookAnalysis.hookText.slice(0, 50)}…" für deine Brand Voice.`,
+        `Poste innerhalb von 24h — ${trend.contentBreakdown.bestPostTime}.`,
+        `Teste ${trend.hashtags.slice(0, 2).join(' ')} in Kombination mit einem eigenen Branded Hashtag.`,
+        index % 2 === 0
+          ? 'A/B-Teste zwei Thumbnail-Frames in den ersten 2 Sekunden.'
+          : 'Nutze einen Duet/Stitch mit einem Top-Creator in der Nische.',
+      ],
+  }
+}
+
+export function enrichTrendIntelligence(
+  trend: TrendIntelligence,
+  index: number,
+): TrendIntelligence {
+  const withMedia = enrichTrendWithMedia(trend, index)
+  return { ...withMedia, ...buildIntelligenceExtras(withMedia, index) }
 }
 
 export function getViralScoreTone(score: number): {

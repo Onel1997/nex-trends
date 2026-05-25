@@ -1,20 +1,18 @@
 export const APP_NAME = 'NexTrends'
 
-export const SIDEBAR_ITEMS = [
-  { id: 'trends', label: 'Dashboard' },
-  { id: 'ad-copy', label: 'AI Ad Copy Generator' },
-  { id: 'hook', label: 'Hook Generator' },
-  { id: 'seo', label: 'SEO Title Generator' },
-  { id: 'analyzer', label: 'Landing Page Analyzer' },
-] as const
+export {
+  SIDEBAR_ITEMS,
+  DASHBOARD_ROUTES,
+  DASHBOARD_BASE,
+  isImmersiveTool,
+  getRouteConfig,
+  getPathForTool,
+  getDashboardMarketingTools,
+  type DashboardToolId,
+  type DashboardRouteId,
+} from './routes'
 
-export type DashboardToolId = (typeof SIDEBAR_ITEMS)[number]['id']
-
-/** @deprecated Use SIDEBAR_ITEMS / DashboardToolId */
-export const NAV_TOOLS = SIDEBAR_ITEMS.filter((item) => item.id !== 'trends')
-
-/** @deprecated Use DashboardToolId */
-export type NavToolId = DashboardToolId
+import { SIDEBAR_ITEMS, type DashboardToolId } from './routes'
 
 export const SIGNUP_CREDITS = 10
 export const WEEKLY_REFILL_CREDITS = 5
@@ -29,3 +27,9 @@ export const PRO_PRICE_LABEL = '9,99 € / Monat'
 
 export const STRIPE_CHECKOUT_URL =
   'https://buy.stripe.com/test_dRm4gzgrM72Bfak8Anfbq00'
+
+/** @deprecated Use SIDEBAR_ITEMS */
+export const NAV_TOOLS = SIDEBAR_ITEMS.filter((item) => item.id !== 'dashboard')
+
+/** @deprecated */
+export type NavToolId = DashboardToolId

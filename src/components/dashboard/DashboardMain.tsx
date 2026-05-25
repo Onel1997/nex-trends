@@ -1,44 +1,80 @@
-import type { DashboardToolId } from '@/lib'
+import { isImmersiveTool, type DashboardToolId } from '@/lib'
 import { ToolPageHeader } from '@/components/layout/ToolPageHeader'
-import { DashboardHome } from '@/components/dashboard/home/DashboardHome'
-import { AdCopyTool, HookTool, LandingAnalyzerTool, SeoTitleTool } from './tools'
+import { DashboardPage } from '@/pages/DashboardPage'
+import { TrendIntelligencePage } from '@/pages/trend-intelligence/TrendIntelligencePage'
+import { SavedTrendsPage } from '@/pages/SavedTrendsPage'
+import { HookGeneratorPage } from '@/pages/HookGeneratorPage'
+import { SettingsPage } from '@/pages/SettingsPage'
+import { AdCopyGeneratorPage } from '@/pages/tools/AdCopyGeneratorPage'
+import { SeoTitleGeneratorPage } from '@/pages/tools/SeoTitleGeneratorPage'
+import { LandingPageAnalyzerPage } from '@/pages/tools/LandingPageAnalyzerPage'
+import { cn } from '@/lib'
 
 type DashboardMainProps = {
   activeTool: DashboardToolId
-  onNavigateHome: () => void
+  onSelectTool: (tool: DashboardToolId) => void
 }
 
-function renderToolContent(activeTool: DashboardToolId) {
+function renderPage(activeTool: DashboardToolId, onSelectTool: (tool: DashboardToolId) => void) {
   switch (activeTool) {
-    case 'ad-copy':
-      return <AdCopyTool />
+    case 'trend-intelligence':
+      return <TrendIntelligencePage />
+    case 'saved-trends':
+      return <SavedTrendsPage />
     case 'hook':
-      return <HookTool />
+      return <HookGeneratorPage />
+    case 'ad-copy':
+      return <AdCopyGeneratorPage />
     case 'seo':
-      return <SeoTitleTool />
+      return <SeoTitleGeneratorPage />
     case 'analyzer':
-      return <LandingAnalyzerTool />
-    case 'trends':
+      return <LandingPageAnalyzerPage />
+    case 'settings':
+      return <SettingsPage />
+    case 'dashboard':
     default:
-      return <DashboardHome />
+      return <DashboardPage onNavigate={onSelectTool} />
   }
 }
 
-export function DashboardMain({ activeTool, onNavigateHome }: DashboardMainProps) {
-  return (
-    <div className="relative min-h-full overflow-hidden ambient-glow">
-      <div
-        className="pointer-events-none absolute -right-40 top-0 size-96 rounded-full bg-violet-600/8 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute bottom-0 left-0 size-80 rounded-full bg-fuchsia-600/5 blur-3xl"
-        aria-hidden
-      />
+export function DashboardMain({ activeTool, onSelectTool }: DashboardMainProps) {
+  const immersive = isImmersiveTool(activeTool)
 
-      <div className="relative mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        <ToolPageHeader activeTool={activeTool} onBack={onNavigateHome} />
-        {renderToolContent(activeTool)}
+  return (
+    <div
+      className={cn(
+        'relative min-h-full',
+        immersive ? 'ti-ambient' : 'ambient-glow',
+      )}
+    >
+      {!immersive && (
+        <>
+          <div
+            className="pointer-events-none absolute -right-40 top-0 size-96 rounded-full bg-violet-600/6 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 size-80 rounded-full bg-fuchsia-600/4 blur-3xl"
+            aria-hidden
+          />
+        </>
+      )}
+
+      {immersive && (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-violet-950/30 to-transparent"
+          aria-hidden
+        />
+      )}
+
+      <div
+        className={cn(
+          'relative mx-auto w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10',
+          immersive ? 'max-w-6xl' : 'max-w-7xl',
+        )}
+      >
+        <ToolPageHeader activeTool={activeTool} onBack={() => onSelectTool('dashboard')} />
+        {renderPage(activeTool, onSelectTool)}
       </div>
     </div>
   )

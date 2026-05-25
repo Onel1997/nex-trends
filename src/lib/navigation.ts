@@ -1,28 +1,58 @@
-import { SIDEBAR_ITEMS, type DashboardToolId } from './constants'
+import {
+  DASHBOARD_BASE,
+  getPathForTool,
+  isValidToolId,
+  pathToToolId,
+  type DashboardRouteId,
+} from './routes'
 
-const VALID_TOOL_IDS = new Set<string>(SIDEBAR_ITEMS.map((item) => item.id))
+export type { DashboardRouteId as DashboardToolId }
 
-export function isValidToolId(value: string): value is DashboardToolId {
-  return VALID_TOOL_IDS.has(value)
+const LEGACY_QUERY_MAP: Record<string, DashboardRouteId> = {
+  trends: 'dashboard',
+  'ad-copy': 'ad-copy',
+  hook: 'hook',
+  seo: 'seo',
+  analyzer: 'analyzer',
+  'trend-intelligence': 'trend-intelligence',
+  'saved-trends': 'saved-trends',
+  settings: 'settings',
 }
 
-export function readToolFromUrl(): DashboardToolId {
-  const params = new URLSearchParams(window.location.search)
-  const tool = params.get('tool')
+function buildUrl(tool: DashboardRouteId): string {
+  const url = new URL(window.location.origin + getPathForTool(tool))
+  const current = new URL(window.location.href)
+  const checkout = current.searchParams.get('checkout')
+  if (checkout) url.searchParams.set('checkout', checkout)
+  return `${url.pathname}${url.search}`
+}
+
+export function readToolFromUrl(): DashboardRouteId {
+  const fromPath = pathToToolId(window.location.pathname)
+  if (fromPath) return fromPath
+
+  const tool = new URLSearchParams(window.location.search).get('tool')
   if (tool && isValidToolId(tool)) return tool
-  return 'trends'
+  if (tool && LEGACY_QUERY_MAP[tool]) return LEGACY_QUERY_MAP[tool]
+
+  return 'dashboard'
 }
 
-export function writeToolToUrl(tool: DashboardToolId) {
-  const url = new URL(window.location.href)
-
-  if (tool === 'trends') {
-    url.searchParams.delete('tool')
+export function navigateToTool(
+  tool: DashboardRouteId,
+  options?: { replace?: boolean },
+): void {
+  const href = buildUrl(tool)
+  if (options?.replace) {
+    window.history.replaceState({ tool }, '', href)
   } else {
-    url.searchParams.set('tool', tool)
+    window.history.pushState({ tool }, '', href)
   }
+}
 
-  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+/** @deprecated Use navigateToTool */
+export function writeToolToUrl(tool: DashboardRouteId) {
+  navigateToTool(tool, { replace: true })
 }
 
 export function clearCheckoutParams() {
@@ -38,10 +68,42 @@ export function readCheckoutParam(): 'success' | 'cancel' | null {
 }
 
 export function navigateToHome() {
-  writeToolToUrl('trends')
+  navigateToTool('dashboard')
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 export function navigateToLanding() {
   window.location.href = '/'
+}
+
+/** Redirect legacy ?tool= URLs to path-based routes */
+export function syncLegacyToolQueryToPath(): void {
+  const params = new URLSearchParams(window.location.search)
+  const tool = params.get('tool')
+  if (!tool) return
+
+  const mapped = isValidToolId(tool)
+    ? tool
+    : LEGACY_QUERY_MAP[tool]
+  if (!mapped) return
+
+  const path = getPathForTool(mapped)
+  if (window.location.pathname === path) {
+    params.delete('tool')
+    const search = params.toString() ? `?${params}` : ''
+    window.history.replaceState({ tool: mapped }, '', `${path}${search}`)
+    return
+  }
+
+  navigateToTool(mapped, { replace: true })
+}
+
+/** Ensure authenticated users on `/` land on dashboard */
+export function ensureDashboardPath(): void {
+  const path = window.location.pathname.replace(/\/$/, '') || '/'
+  if (path === '/') {
+    navigateToTool('dashboard', { replace: true })
+  } else if (path.startsWith(DASHBOARD_BASE) && !pathToToolId(path)) {
+    navigateToTool('dashboard', { replace: true })
+  }
 }

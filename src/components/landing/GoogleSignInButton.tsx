@@ -40,7 +40,7 @@ export function GoogleSignInButton({
   return (
     <button
       type="button"
-      onClick={() => signInWithGoogle()}
+      onClick={() => signInWithGoogle({ redirectPath: '/dashboard' })}
       className={cn(
         'group inline-flex items-center justify-center gap-3 rounded-xl font-semibold transition-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400/70 active:scale-[0.98]',
         size === 'lg' ? 'min-h-14 px-8 py-4 text-base' : 'min-h-11 px-6 py-2.5 text-sm',

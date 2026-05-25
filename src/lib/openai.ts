@@ -173,3 +173,38 @@ export async function searchTrendIntelligence(niche: string): Promise<TrendIntel
 export async function searchTrends(niche: string): Promise<TrendIntelligence[]> {
   return searchTrendIntelligence(niche)
 }
+
+const TREND_HOOK_STYLES = {
+  aggressive: 'aggressiv, direkt, konfrontativ — maximale Scroll-Stop-Power',
+  luxury: 'quiet luxury, premium, aspirational — ruhig aber hochwertig',
+  storytelling: 'narrativ, emotional, persönliche Geschichte — starke Retention',
+  faceless: 'faceless, voice-over, text-on-screen — skalierbar ohne Gesicht',
+  ugc: 'authentisch UGC, raw, relatable — wie von einem echten User',
+} as const
+
+export type TrendHookStyle = keyof typeof TREND_HOOK_STYLES
+
+export async function generateTrendHooks(
+  trendTitle: string,
+  hookText: string,
+  style: TrendHookStyle,
+  niche?: string,
+): Promise<string[]> {
+  const styleDesc = TREND_HOOK_STYLES[style]
+  const content = await callOpenAIJson(
+    `Du bist ein Viral Hook Copywriter für TikTok und Instagram Reels.
+Erstelle 4 neue Hooks im Stil: ${styleDesc}.
+Antworte NUR mit JSON: {"hooks":["hook1","hook2","hook3","hook4"]}
+Keine Hashtags. Max 120 Zeichen pro Hook. Deutsch.`,
+    `Trend: ${trendTitle}
+Original-Hook: ${hookText}
+${niche ? `Nische: ${niche}` : ''}`,
+  )
+
+  const parsed = JSON.parse(content) as { hooks?: string[] }
+  const hooks = parsed.hooks?.filter(
+    (h): h is string => typeof h === 'string' && h.trim().length > 0,
+  )
+  if (!hooks?.length) throw new Error('Keine Hooks generiert.')
+  return hooks.slice(0, 4)
+}

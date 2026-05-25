@@ -1,0 +1,331 @@
+import { useEffect } from 'react'
+import { VideoPreview } from '@/components/trends/VideoPreview'
+import { TrendHookGenerator } from '@/components/trends/TrendHookGenerator'
+import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
+import { Button } from '@/components/ui/Button'
+import {
+  BookmarkIcon,
+  CloseIcon,
+  CopyIcon,
+  SparklesIcon,
+  VerifiedIcon,
+} from '@/components/ui/icons'
+import { useToast } from '@/context/ToastContext'
+import { VELOCITY_META } from '@/lib/trend-intelligence'
+import { cn } from '@/lib'
+import type { TrendIntelligence } from '@/types/trend-intelligence'
+
+type TrendDetailModalProps = {
+  trend: TrendIntelligence | null
+  onClose: () => void
+  isSaved?: boolean
+  onToggleSave?: (trend: TrendIntelligence) => boolean
+}
+
+function MetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-3 py-2.5 shadow-sm">
+      <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold tabular-nums text-zinc-100">{value}</p>
+    </div>
+  )
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-400">
+      <SparklesIcon className="size-3.5 text-violet-400/80" aria-hidden />
+      {children}
+    </h3>
+  )
+}
+
+export function TrendDetailModal({
+  trend,
+  onClose,
+  isSaved = false,
+  onToggleSave,
+}: TrendDetailModalProps) {
+  const { showToast } = useToast()
+
+  useEffect(() => {
+    if (!trend) return
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [trend, onClose])
+
+  if (!trend) return null
+
+  const velocity = VELOCITY_META[trend.trendVelocity]
+  const isTikTok = trend.platform.toLowerCase().includes('tiktok')
+
+  async function copyHook() {
+    try {
+      await navigator.clipboard.writeText(trend!.hookAnalysis.hookText)
+      showToast({ type: 'success', title: 'Hook kopiert', message: 'In Zwischenablage.' })
+    } catch {
+      showToast({ type: 'error', title: 'Kopieren fehlgeschlagen' })
+    }
+  }
+
+  function handleSave() {
+    if (!onToggleSave) return
+    const nowSaved = onToggleSave(trend!)
+    showToast({
+      type: 'success',
+      title: nowSaved ? 'Trend gespeichert' : 'Trend entfernt',
+      message: nowSaved ? 'In deiner Bibliothek.' : undefined,
+    })
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="trend-detail-title"
+    >
+      <button
+        type="button"
+        aria-label="Detailansicht schließen"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"
+        onClick={onClose}
+      />
+
+      <article
+        className={cn(
+          'detail-sheet relative flex w-full flex-col overflow-hidden',
+          'max-h-[94vh] sm:max-h-[92vh] sm:max-w-4xl',
+          'rounded-t-2xl border border-zinc-800/70 bg-zinc-950/98 sm:rounded-2xl',
+          'shadow-[0_24px_80px_-12px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.04)_inset]',
+          'animate-sheet-up sm:animate-fade-in-scale',
+        )}
+      >
+        <div
+          className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-zinc-700 sm:hidden"
+          aria-hidden
+        />
+
+        <div className="flex items-center justify-between border-b border-zinc-800/50 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                'rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider',
+                isTikTok
+                  ? 'bg-zinc-900 text-white ring-1 ring-zinc-700'
+                  : 'bg-gradient-to-r from-violet-600/90 to-fuchsia-600/90 text-white',
+              )}
+            >
+              {trend.platform}
+            </span>
+            {trend.isDemo && (
+              <span className="rounded-full bg-zinc-800/80 px-2 py-0.5 text-[10px] text-zinc-500">
+                Beispiel
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-zinc-500 transition-smooth hover:bg-zinc-800/80 hover:text-white"
+            aria-label="Schließen"
+          >
+            <CloseIcon className="size-5" />
+          </button>
+        </div>
+
+        <div className="flex flex-1 flex-col overflow-y-auto overscroll-contain lg:flex-row">
+          <div className="relative w-full shrink-0 bg-zinc-900/30 lg:w-[300px] xl:w-[340px]">
+            <VideoPreview
+              thumbnailUrl={trend.thumbnailUrl}
+              videoUrl={trend.videoUrl}
+              alt={trend.title}
+              duration={trend.videoDuration}
+              aspectClass="aspect-[9/16] max-h-[42vh] sm:max-h-[50vh] lg:max-h-none lg:min-h-[420px]"
+              priority
+            />
+          </div>
+
+          <div className="flex flex-1 flex-col gap-5 p-4 sm:p-6 lg:max-h-[calc(92vh-3rem)] lg:overflow-y-auto">
+            <header>
+              <h2
+                id="trend-detail-title"
+                className="text-xl font-semibold tracking-tight text-white sm:text-2xl"
+              >
+                {trend.title}
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">{trend.description}</p>
+            </header>
+
+            <div className="flex items-center gap-3 rounded-xl border border-zinc-800/50 bg-zinc-900/30 p-3">
+              <img
+                src={trend.creator.avatarUrl}
+                alt=""
+                className="size-11 rounded-full object-cover ring-2 ring-zinc-800/80"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1 text-sm font-semibold text-white">
+                  {trend.creator.displayName}
+                  {trend.creator.verified && (
+                    <VerifiedIcon className="size-4 text-sky-400" aria-label="Verifiziert" />
+                  )}
+                </p>
+                <p className="text-xs text-zinc-500">
+                  {trend.creator.handle} · {trend.creator.followers} Follower
+                </p>
+              </div>
+            </div>
+
+            <TrendMetricsStrip trend={trend} variant="modal" />
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <MetricPill label="Views" value={trend.views} />
+              <MetricPill label="Likes" value={trend.likes} />
+              <MetricPill label="Engagement" value={trend.engagementRate} />
+              <MetricPill label="Velocity" value={`${velocity.icon} ${velocity.label}`} />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" onClick={() => void copyHook()}>
+                <CopyIcon className="size-4" aria-hidden />
+                Hook kopieren
+              </Button>
+              {onToggleSave && (
+                <Button
+                  variant={isSaved ? 'primary' : 'secondary'}
+                  size="sm"
+                  onClick={handleSave}
+                >
+                  <BookmarkIcon
+                    className={cn('size-4', isSaved && 'fill-current')}
+                    aria-hidden
+                  />
+                  {isSaved ? 'Gespeichert' : 'Trend speichern'}
+                </Button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              {trend.hashtags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-lg bg-violet-500/8 px-2.5 py-1 text-xs font-medium text-violet-300/90 ring-1 ring-violet-500/15"
+                >
+                  {tag.startsWith('#') ? tag : `#${tag}`}
+                </span>
+              ))}
+            </div>
+
+            <section className="space-y-3 rounded-xl border border-zinc-800/50 bg-zinc-900/25 p-4">
+              <SectionTitle>Hook Analyse</SectionTitle>
+              <p className="text-sm font-medium leading-relaxed text-white">
+                {trend.hookAnalysis.hookText}
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="rounded-md bg-zinc-800/60 px-2 py-1 text-zinc-300">
+                  {trend.hookAnalysis.hookType}
+                </span>
+                <span className="rounded-md bg-emerald-500/10 px-2 py-1 text-emerald-400/90">
+                  Score {trend.hookAnalysis.hookScore}/100
+                </span>
+              </div>
+              <p className="text-sm text-zinc-400">{trend.hookAnalysis.whyItWorks}</p>
+              <p className="text-xs text-zinc-500">
+                <span className="font-medium text-zinc-400">Retention:</span>{' '}
+                {trend.hookAnalysis.retentionTrigger}
+              </p>
+            </section>
+
+            <section className="space-y-2 rounded-xl border border-zinc-800/50 bg-zinc-900/25 p-4">
+              <SectionTitle>Engagement Analyse</SectionTitle>
+              <p className="text-sm text-zinc-400">{trend.engagementPrediction}</p>
+            </section>
+
+            {trend.targetAudience && (
+              <section className="space-y-2 rounded-xl border border-zinc-800/50 bg-zinc-900/25 p-4">
+                <SectionTitle>Zielgruppe</SectionTitle>
+                <p className="text-sm text-zinc-300">{trend.targetAudience}</p>
+              </section>
+            )}
+
+            {trend.whyViral && (
+              <section className="space-y-2 rounded-xl border border-zinc-800/50 bg-zinc-900/25 p-4">
+                <SectionTitle>Warum viral?</SectionTitle>
+                <p className="text-sm leading-relaxed text-zinc-300">{trend.whyViral}</p>
+              </section>
+            )}
+
+            {trend.aiRecommendations && trend.aiRecommendations.length > 0 && (
+              <section className="space-y-3 rounded-xl border border-violet-500/15 bg-violet-500/5 p-4">
+                <SectionTitle>AI Empfehlungen</SectionTitle>
+                <ul className="space-y-2">
+                  {trend.aiRecommendations.map((rec) => (
+                    <li
+                      key={rec}
+                      className="flex gap-2 text-sm text-zinc-300 before:mt-1.5 before:size-1.5 before:shrink-0 before:rounded-full before:bg-violet-400/80 before:content-['']"
+                    >
+                      {rec}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <section className="space-y-3 rounded-xl border border-zinc-800/50 bg-zinc-900/25 p-4">
+              <SectionTitle>Content Breakdown</SectionTitle>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                {(
+                  [
+                    ['Format', trend.contentBreakdown.format],
+                    ['Pacing', trend.contentBreakdown.pacing],
+                    ['Visual', trend.contentBreakdown.visualStyle],
+                    ['CTA', trend.contentBreakdown.ctaStrategy],
+                    ...(trend.contentBreakdown.audioTrend
+                      ? [['Audio', trend.contentBreakdown.audioTrend] as const]
+                      : []),
+                    ['Post-Zeit', trend.contentBreakdown.bestPostTime],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+                      {label}
+                    </dt>
+                    <dd className="mt-0.5 text-zinc-300">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <section className="space-y-2">
+              <SectionTitle>Content Ideas</SectionTitle>
+              <ul className="space-y-2">
+                {trend.contentIdeas.map((idea) => (
+                  <li
+                    key={idea}
+                    className="rounded-lg border border-zinc-800/40 bg-zinc-950/40 px-3 py-2.5 text-sm text-zinc-300"
+                  >
+                    {idea}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/20 p-4">
+              <TrendHookGenerator trend={trend} />
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  )
+}

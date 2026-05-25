@@ -1,15 +1,15 @@
+import { Suspense } from 'react'
 import { cn } from '@/lib'
-import { VideoPreview } from '@/components/dashboard/VideoPreview'
+import { VideoPreview } from '@/components/trends/VideoPreview'
+import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
+import { ViralScoreRing } from '@/components/trends/ViralScoreRing'
 import {
   EyeIcon,
   HeartIcon,
   SparklesIcon,
   VerifiedIcon,
 } from '@/components/ui/icons'
-import {
-  getViralScoreTone,
-  VELOCITY_META,
-} from '@/lib/trend-intelligence'
+import { getViralScoreTone, VELOCITY_META } from '@/lib/trend-intelligence'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export type DisplayTrend = TrendIntelligence
@@ -18,44 +18,10 @@ type TrendCardProps = {
   trend: TrendIntelligence
   onClick?: () => void
   priority?: boolean
+  isSaved?: boolean
 }
 
-function ViralScoreRing({ score }: { score: number }) {
-  const tone = getViralScoreTone(score)
-  const circumference = 2 * Math.PI * 16
-  const offset = circumference - (score / 100) * circumference
-
-  return (
-    <div className="relative flex size-9 shrink-0 items-center justify-center">
-      <svg className="size-9 -rotate-90" viewBox="0 0 36 36" aria-hidden>
-        <circle
-          cx="18"
-          cy="18"
-          r="16"
-          fill="none"
-          strokeWidth="2.5"
-          className="stroke-black/40"
-        />
-        <circle
-          cx="18"
-          cy="18"
-          r="16"
-          fill="none"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          className={cn('transition-all duration-700', tone.ringClass)}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-        />
-      </svg>
-      <span className={cn('absolute text-[10px] font-bold tabular-nums text-white', tone.textClass)}>
-        {score}
-      </span>
-    </div>
-  )
-}
-
-export function TrendCard({ trend, onClick, priority = false }: TrendCardProps) {
+export function TrendCard({ trend, onClick, priority = false, isSaved }: TrendCardProps) {
   const isTikTok = trend.platform.toLowerCase().includes('tiktok')
   const velocity = VELOCITY_META[trend.trendVelocity]
   const scoreTone = getViralScoreTone(trend.viralScore)
@@ -64,9 +30,11 @@ export function TrendCard({ trend, onClick, priority = false }: TrendCardProps) 
     <article
       className={cn(
         'trend-card group relative flex flex-col overflow-hidden rounded-2xl',
-        'border border-zinc-800/60 bg-zinc-900/40',
-        'shadow-sm transition-smooth',
-        'hover:-translate-y-1 hover:border-zinc-700/80 hover:shadow-2xl hover:shadow-violet-950/20',
+        'border border-zinc-800/50 bg-zinc-900/30',
+        'shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_4px_24px_-8px_rgba(0,0,0,0.4)]',
+        'transition-smooth',
+        'hover:-translate-y-0.5 hover:border-zinc-700/60 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]',
+        'active:scale-[0.99] sm:active:scale-100',
         onClick && 'cursor-pointer',
       )}
       onClick={onClick}
@@ -85,14 +53,20 @@ export function TrendCard({ trend, onClick, priority = false }: TrendCardProps) 
       aria-label={onClick ? `${trend.title} — Details anzeigen` : undefined}
     >
       <div className="relative">
-        <VideoPreview
-          thumbnailUrl={trend.thumbnailUrl}
-          videoUrl={trend.videoUrl}
-          alt={trend.title}
-          duration={trend.videoDuration}
-          aspectClass="aspect-[9/14] sm:aspect-[9/15]"
-          priority={priority}
-        />
+        <Suspense
+          fallback={
+            <div className="aspect-[9/14] animate-shimmer rounded-t-2xl bg-zinc-800/50 sm:aspect-[9/15]" />
+          }
+        >
+          <VideoPreview
+            thumbnailUrl={trend.thumbnailUrl}
+            videoUrl={trend.videoUrl}
+            alt={trend.title}
+            duration={trend.videoDuration}
+            aspectClass="aspect-[9/16] w-full sm:aspect-[9/15]"
+            priority={priority}
+          />
+        </Suspense>
 
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -100,36 +74,42 @@ export function TrendCard({ trend, onClick, priority = false }: TrendCardProps) 
               className={cn(
                 'inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider backdrop-blur-md',
                 isTikTok
-                  ? 'bg-black/70 text-white ring-1 ring-white/20'
-                  : 'bg-gradient-to-r from-purple-600/90 to-pink-600/90 text-white',
+                  ? 'bg-black/60 text-white ring-1 ring-white/10'
+                  : 'bg-violet-600/80 text-white',
               )}
             >
               {trend.platform}
             </span>
             {trend.isDemo && (
-              <span className="rounded-full bg-black/50 px-1.5 py-0.5 text-[9px] font-medium text-zinc-300 backdrop-blur-sm">
+              <span className="rounded-full bg-black/40 px-1.5 py-0.5 text-[9px] font-medium text-zinc-400 backdrop-blur-sm">
                 Demo
               </span>
             )}
+            {isSaved && (
+              <span className="rounded-full bg-violet-500/30 px-1.5 py-0.5 text-[9px] font-medium text-violet-200 backdrop-blur-sm">
+                ★
+              </span>
+            )}
           </div>
-          <ViralScoreRing score={trend.viralScore} />
+          <ViralScoreRing score={trend.viralScore} size="sm" animate={priority} />
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 pt-8">
           <div className="flex items-center gap-2">
             <img
               src={trend.creator.avatarUrl}
               alt=""
-              className="size-7 rounded-full object-cover ring-2 ring-white/20"
+              loading="lazy"
+              className="size-7 rounded-full object-cover ring-2 ring-white/15"
             />
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-0.5 truncate text-xs font-semibold text-white drop-shadow-sm">
+              <p className="flex items-center gap-0.5 truncate text-xs font-semibold text-white">
                 {trend.creator.handle}
                 {trend.creator.verified && (
                   <VerifiedIcon className="size-3 shrink-0 text-sky-300" aria-hidden />
                 )}
               </p>
-              <p className="text-[10px] text-white/70">{trend.creator.followers}</p>
+              <p className="text-[10px] text-white/60">{trend.creator.followers}</p>
             </div>
             <span
               className={cn(
@@ -148,13 +128,15 @@ export function TrendCard({ trend, onClick, priority = false }: TrendCardProps) 
           {trend.title}
         </h3>
 
-        <div className="flex items-center gap-3 text-[11px] tabular-nums text-zinc-400">
+        <TrendMetricsStrip trend={trend} variant="card" />
+
+        <div className="flex items-center gap-3 text-[11px] tabular-nums text-zinc-500">
           <span className="inline-flex items-center gap-1">
-            <EyeIcon className="size-3.5 text-zinc-500" aria-hidden />
+            <EyeIcon className="size-3.5" aria-hidden />
             {trend.views}
           </span>
           <span className="inline-flex items-center gap-1">
-            <HeartIcon className="size-3.5 text-rose-400/80" aria-hidden />
+            <HeartIcon className="size-3.5 text-rose-400/70" aria-hidden />
             {trend.likes}
           </span>
           <span className={cn('ml-auto font-semibold', scoreTone.textClass)}>
@@ -166,27 +148,24 @@ export function TrendCard({ trend, onClick, priority = false }: TrendCardProps) 
           {trend.hashtags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="rounded-md bg-zinc-950/80 px-1.5 py-0.5 text-[10px] font-medium text-violet-300/90 ring-1 ring-zinc-800/60"
+              className="rounded-md bg-zinc-950/60 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 ring-1 ring-zinc-800/50"
             >
               {tag.startsWith('#') ? tag : `#${tag}`}
             </span>
           ))}
-          {trend.hashtags.length > 3 && (
-            <span className="px-1 text-[10px] text-zinc-600">+{trend.hashtags.length - 3}</span>
-          )}
         </div>
 
-        <div className="mt-auto flex items-center justify-between rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-3 py-2">
+        <div className="mt-auto flex items-center justify-between rounded-xl border border-zinc-800/40 bg-zinc-950/40 px-3 py-2">
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-400/80">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500">
               Hook
             </p>
             <p className="truncate text-[11px] text-zinc-400">
               {trend.hookAnalysis.hookText}
             </p>
           </div>
-          <div className="ml-2 flex shrink-0 items-center gap-1 text-[10px] font-medium text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100">
-            <SparklesIcon className="size-3 text-violet-400" aria-hidden />
+          <div className="ml-2 flex shrink-0 items-center gap-1 text-[10px] font-medium text-zinc-500 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+            <SparklesIcon className="size-3 text-violet-400/80" aria-hidden />
             Details
           </div>
         </div>
@@ -194,4 +173,3 @@ export function TrendCard({ trend, onClick, priority = false }: TrendCardProps) 
     </article>
   )
 }
-

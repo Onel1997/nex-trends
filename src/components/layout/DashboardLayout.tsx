@@ -25,7 +25,7 @@ export function DashboardLayout({
 
   const handleNavigateHome = () => {
     navigateToHome()
-    onSelectTool('trends')
+    onSelectTool('dashboard')
     setMobileOpen(false)
   }
 

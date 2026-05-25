@@ -1,6 +1,6 @@
 import { searchTrendIntelligence as searchOpenAITrends } from '@/lib/openai'
 import { DEMO_TREND_INTELLIGENCE } from '@/lib/trend-demo-data'
-import { enrichTrendWithMedia } from '@/lib/trend-intelligence'
+import { enrichTrendIntelligence } from '@/lib/trend-intelligence'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export type TrendsApiOptions = {
@@ -23,7 +23,9 @@ export async function fetchDemoTrends(
 ): Promise<TrendIntelligence[]> {
   const delay = options.delayMs ?? DEFAULT_DELAY_MS
   await simulateLatency(delay)
-  return DEMO_TREND_INTELLIGENCE.map((t) => ({ ...t, isDemo: true }))
+  return DEMO_TREND_INTELLIGENCE.map((t, i) =>
+    enrichTrendIntelligence({ ...t, isDemo: true }, i),
+  )
 }
 
 /**
@@ -39,7 +41,7 @@ export async function fetchTrendsByNiche(
 
   const raw = await searchOpenAITrends(niche)
   return raw.map((trend, index) =>
-    enrichTrendWithMedia(
+    enrichTrendIntelligence(
       {
         ...trend,
         niche,
