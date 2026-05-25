@@ -70,7 +70,9 @@ export function DashboardMain({ activeTool, onSelectTool }: DashboardMainProps) 
       <div
         className={cn(
           'relative mx-auto w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10',
-          immersive ? 'max-w-6xl' : 'max-w-7xl',
+          immersive
+            ? 'max-w-6xl xl:max-w-7xl 2xl:max-w-[1680px]'
+            : 'max-w-7xl',
         )}
       >
         <ToolPageHeader activeTool={activeTool} onBack={() => onSelectTool('dashboard')} />

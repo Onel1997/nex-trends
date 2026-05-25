@@ -13,10 +13,15 @@ export function Skeleton({ className }: SkeletonProps) {
   )
 }
 
-export function TrendCardSkeleton() {
+export function TrendCardSkeleton({ className }: { className?: string }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900/40">
-      <div className="relative aspect-[9/14] w-full sm:aspect-[9/15]">
+    <div
+      className={cn(
+        'overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-900/40',
+        className,
+      )}
+    >
+      <div className="relative aspect-[9/16] min-h-[280px] w-full sm:aspect-[9/15] sm:min-h-[300px]">
         <Skeleton className="absolute inset-0 rounded-none" />
         <div className="absolute inset-x-0 top-0 flex justify-between p-3">
           <Skeleton className="h-5 w-14 rounded-full" />
@@ -52,9 +57,13 @@ export function TrendCardSkeleton() {
 
 export function TrendsGridSkeleton() {
   return (
-    <div className="trends-masonry mt-6">
+    <div className="trend-feed mt-4 min-h-[520px]" aria-hidden>
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="trends-masonry-item" style={{ animationDelay: `${i * 80}ms` }}>
+        <div
+          key={i}
+          className="trend-feed-item animate-fade-in"
+          style={{ animationDelay: `${i * 70}ms` }}
+        >
           <TrendCardSkeleton />
         </div>
       ))}
@@ -74,4 +83,3 @@ export function DashboardSkeleton() {
     </div>
   )
 }
-

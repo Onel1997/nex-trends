@@ -3,8 +3,6 @@ export { TrendScoutSearch, type ScoutPlatform } from '@/components/trends/TrendS
 export { TrendsGrid } from '@/components/trends/TrendsGrid'
 export { TrendCard, type DisplayTrend } from '@/components/trends/TrendCard'
 export { VideoPreview } from '@/components/trends/VideoPreview'
-export { TrendDetailModal } from '@/components/trends/TrendDetailModal'
-export { TrendHookGenerator } from '@/components/trends/TrendHookGenerator'
 export { TrendHistoryTimeline } from '@/components/trends/TrendHistoryTimeline'
 export { SavedTrendsPanel } from '@/components/trends/SavedTrendsPanel'
 export { TrendsTabNav, type TrendsView } from '@/components/trends/TrendsTabNav'

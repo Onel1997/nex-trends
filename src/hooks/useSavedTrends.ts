@@ -7,6 +7,8 @@ import {
 } from '@/lib/saved-trends'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
+const SAVED_STORAGE_KEY = 'nextrends_saved_trends'
+
 export function useSavedTrends() {
   const [saved, setSaved] = useState<TrendIntelligence[]>([])
 
@@ -18,8 +20,16 @@ export function useSavedTrends() {
     refresh()
   }, [refresh])
 
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === SAVED_STORAGE_KEY) refresh()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [refresh])
+
   const checkSaved = useCallback(
-    (trendId: string) => isTrendSaved(trendId),
+    (trendId: string) => saved.some((t) => t.id === trendId),
     [saved],
   )
 

@@ -11,6 +11,7 @@ export type CreatorInfo = {
   displayName: string
   avatarUrl: string
   followers: string
+  bio?: string
   verified?: boolean
 }
 

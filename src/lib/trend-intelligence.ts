@@ -1,6 +1,5 @@
 import type {
   ContentBreakdown,
-  CreatorInfo,
   GrowthIndicator,
   HeatLevel,
   HookAnalysis,
@@ -8,6 +7,8 @@ import type {
   TrendIntelligence,
   TrendVelocity,
 } from '@/types/trend-intelligence'
+import { assignCreatorForTrend, formatCreatorInspiration } from '@/lib/demo-creators'
+import { getDemoMedia } from '@/lib/demo-media'
 
 export { DEMO_TREND_INTELLIGENCE } from '@/lib/trend-demo-data'
 
@@ -18,39 +19,11 @@ const CARD_GRADIENTS = [
   { from: 'from-rose-500', to: 'to-orange-600' },
 ] as const
 
-const MEDIA_FALLBACKS = [
-  {
-    thumbnail:
-      'https://images.unsplash.com/photo-1611162617474-5b21e939e07a?w=720&h=1280&fit=crop&q=80',
-    video:
-      'https://videos.pexels.com/video-files/6774633/6774633-hd_1080_1920_25fps.mp4',
-  },
-  {
-    thumbnail:
-      'https://images.unsplash.com/photo-1611605698335-8b1569810432?w=720&h=1280&fit=crop&q=80',
-    video:
-      'https://videos.pexels.com/video-files/3981768/3981768-hd_1080_1920_25fps.mp4',
-  },
-  {
-    thumbnail:
-      'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=720&h=1280&fit=crop&q=80',
-    video:
-      'https://videos.pexels.com/video-files/7692769/7692769-hd_1080_1920_25fps.mp4',
-  },
-  {
-    thumbnail:
-      'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=720&h=1280&fit=crop&q=80',
-    video:
-      'https://videos.pexels.com/video-files/3129671/3129671-hd_1080_1920_25fps.mp4',
-  },
-] as const
+const MEDIA_FALLBACKS = [0, 1, 2, 3].map((i) => {
+  const media = getDemoMedia(i)
+  return { thumbnail: media.poster, video: media.video, duration: media.duration }
+})
 
-const AVATAR_FALLBACKS = [
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=128&h=128&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=128&h=128&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=128&h=128&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=128&h=128&fit=crop&q=80',
-] as const
 
 const DEMO_STORAGE_KEY = 'nextrends_demo_seen'
 
@@ -88,11 +61,6 @@ function ensureStringArray(value: unknown, fallback: string[]): string[] {
   return items.length > 0 ? items.slice(0, 6) : fallback
 }
 
-function parseHandle(creatorInspiration: string): string {
-  const match = creatorInspiration.match(/@[\w.]+/)
-  return match?.[0] ?? '@creator'
-}
-
 function estimateLikes(views: string, engagement: string): string {
   const viewsNum = parseMetric(views)
   const engNum = parseFloat(engagement.replace('%', '').replace(',', '.')) || 8
@@ -112,18 +80,6 @@ function formatMetric(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace('.0', '')}M`
   if (n >= 1_000) return `${Math.round(n / 1_000)}K`
   return String(n)
-}
-
-function buildDefaultCreator(creatorInspiration: string, index: number): CreatorInfo {
-  const handle = parseHandle(creatorInspiration)
-  const name = handle.replace('@', '').replace('.', ' · ')
-  return {
-    handle,
-    displayName: name.charAt(0).toUpperCase() + name.slice(1),
-    avatarUrl: AVATAR_FALLBACKS[index % AVATAR_FALLBACKS.length],
-    followers: `${120 + index * 80}K`,
-    verified: index % 2 === 0,
-  }
 }
 
 function buildDefaultHookAnalysis(
@@ -151,23 +107,40 @@ function buildDefaultContentBreakdown(platform: string): ContentBreakdown {
   }
 }
 
+function enrichCreatorFields(trend: TrendIntelligence): Pick<
+  TrendIntelligence,
+  'creator' | 'creatorInspiration'
+> {
+  const creator = trend.creator?.handle
+    ? trend.creator
+    : assignCreatorForTrend(trend.id, trend.platform)
+  const creatorInspiration =
+    trend.creatorInspiration?.trim() || formatCreatorInspiration(creator, trend.platform)
+
+  return { creator, creatorInspiration }
+}
+
 export function enrichTrendWithMedia(
   trend: TrendIntelligence,
   index: number,
 ): TrendIntelligence {
-  if (trend.thumbnailUrl && trend.creator) return trend
+  if (trend.thumbnailUrl && trend.creator?.handle && trend.creator.avatarUrl) {
+    return trend
+  }
 
   const media = MEDIA_FALLBACKS[index % MEDIA_FALLBACKS.length]
   const hookText = trend.hookSuggestions[0] ?? trend.title
+  const { creator, creatorInspiration } = enrichCreatorFields(trend)
 
   return {
     ...trend,
     thumbnailUrl: trend.thumbnailUrl || media.thumbnail,
     videoUrl: trend.videoUrl || media.video,
-    videoDuration: trend.videoDuration || '0:45',
+    videoDuration: trend.videoDuration || media.duration,
     likes: trend.likes || estimateLikes(trend.views, trend.engagement),
     engagementRate: trend.engagementRate || trend.engagement,
-    creator: trend.creator || buildDefaultCreator(trend.creatorInspiration, index),
+    creator,
+    creatorInspiration,
     hookAnalysis:
       trend.hookAnalysis ||
       buildDefaultHookAnalysis(hookText, clampScore(trend.viralScore - 5)),
@@ -189,9 +162,6 @@ export function mapRawToTrendIntelligence(
   ])
   const views = raw.views?.trim() || '1.2M'
   const engagement = raw.engagement?.trim() || '8.2%'
-  const creatorInspiration =
-    raw.creatorInspiration?.trim() ||
-    `Creator im ${platform}-Format: schnelle Jump-Cuts, Text-Overlay, authentischer Voice-over.`
   const hookSuggestions = ensureStringArray(raw.hookSuggestions, [
     `„Wenn du ${hashtags[0]?.replace('#', '') || 'diesen Trend'} ignorierst, verpasst du 80 % Reichweite."`,
   ])
@@ -199,8 +169,11 @@ export function mapRawToTrendIntelligence(
     typeof raw.viralScore === 'number' ? raw.viralScore : 72 + index * 4,
   )
 
+  const trendId = `${idPrefix}-${index}`
+  const assignedCreator = assignCreatorForTrend(trendId, platform)
+
   const base: TrendIntelligence = {
-    id: `${idPrefix}-${index}`,
+    id: trendId,
     title,
     platform,
     views,
@@ -222,11 +195,11 @@ export function mapRawToTrendIntelligence(
       `3-Clip-Serie zum Thema „${title.slice(0, 40)}" mit starker Hook in Sekunde 1.`,
     ]),
     hookSuggestions,
-    creatorInspiration,
+    creatorInspiration: formatCreatorInspiration(assignedCreator, platform),
     thumbnailUrl: '',
     videoUrl: undefined,
     videoDuration: '0:45',
-    creator: buildDefaultCreator(creatorInspiration, index),
+    creator: assignedCreator,
     hookAnalysis: buildDefaultHookAnalysis(hookSuggestions[0], clampScore(viralScore - 5)),
     contentBreakdown: buildDefaultContentBreakdown(platform),
     niche: raw.niche?.trim(),
@@ -332,7 +305,7 @@ function buildIntelligenceExtras(
         `Teste ${trend.hashtags.slice(0, 2).join(' ')} in Kombination mit einem eigenen Branded Hashtag.`,
         index % 2 === 0
           ? 'A/B-Teste zwei Thumbnail-Frames in den ersten 2 Sekunden.'
-          : 'Nutze einen Duet/Stitch mit einem Top-Creator in der Nische.',
+          : 'Nutze einen Duet/Stitch mit einem Top-Profil in der Nische.',
       ],
   }
 }

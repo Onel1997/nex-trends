@@ -1,4 +1,6 @@
 import { FeatureNavCard } from '@/components/dashboard/home/FeatureNavCard'
+import { SavedTrendsPreview } from '@/components/dashboard/home/SavedTrendsPreview'
+import { TrendIntelligenceFeaturedCard } from '@/components/dashboard/home/TrendIntelligenceFeaturedCard'
 import { getMarketingToolRoutes } from '@/lib/routes'
 import type { DashboardRouteId } from '@/lib/routes'
 
@@ -10,10 +12,20 @@ export function AiToolsSection({ onNavigate }: AiToolsSectionProps) {
   const routes = getMarketingToolRoutes()
 
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
-      {routes.map((route) => (
-        <FeatureNavCard key={route.id} route={route} onNavigate={onNavigate} />
-      ))}
+    <div className="space-y-6 sm:space-y-8">
+      <TrendIntelligenceFeaturedCard
+        onNavigate={() => onNavigate('trend-intelligence')}
+      />
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {routes.map((route) => (
+          <FeatureNavCard key={route.id} route={route} onNavigate={onNavigate} />
+        ))}
+      </div>
+
+      <div className="border-t border-zinc-800/40 pt-6 sm:pt-8">
+        <SavedTrendsPreview onNavigate={onNavigate} />
+      </div>
     </div>
   )
 }

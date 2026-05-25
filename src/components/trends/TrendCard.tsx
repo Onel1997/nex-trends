@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { memo } from 'react'
 import { cn } from '@/lib'
 import { VideoPreview } from '@/components/trends/VideoPreview'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
@@ -21,7 +21,7 @@ type TrendCardProps = {
   isSaved?: boolean
 }
 
-export function TrendCard({ trend, onClick, priority = false, isSaved }: TrendCardProps) {
+function TrendCardComponent({ trend, onClick, priority = false, isSaved }: TrendCardProps) {
   const isTikTok = trend.platform.toLowerCase().includes('tiktok')
   const velocity = VELOCITY_META[trend.trendVelocity]
   const scoreTone = getViralScoreTone(trend.viralScore)
@@ -32,9 +32,9 @@ export function TrendCard({ trend, onClick, priority = false, isSaved }: TrendCa
         'trend-card group relative flex flex-col overflow-hidden rounded-2xl',
         'border border-zinc-800/50 bg-zinc-900/30',
         'shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_4px_24px_-8px_rgba(0,0,0,0.4)]',
-        'transition-smooth',
+        'transition-smooth touch-manipulation',
         'hover:-translate-y-0.5 hover:border-zinc-700/60 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]',
-        'active:scale-[0.99] sm:active:scale-100',
+        'active:scale-[0.985] active:opacity-95 sm:active:scale-100 sm:active:opacity-100',
         onClick && 'cursor-pointer',
       )}
       onClick={onClick}
@@ -52,23 +52,30 @@ export function TrendCard({ trend, onClick, priority = false, isSaved }: TrendCa
       tabIndex={onClick ? 0 : undefined}
       aria-label={onClick ? `${trend.title} — Details anzeigen` : undefined}
     >
-      <div className="relative">
-        <Suspense
-          fallback={
-            <div className="aspect-[9/14] animate-shimmer rounded-t-2xl bg-zinc-800/50 sm:aspect-[9/15]" />
-          }
-        >
-          <VideoPreview
-            thumbnailUrl={trend.thumbnailUrl}
-            videoUrl={trend.videoUrl}
-            alt={trend.title}
-            duration={trend.videoDuration}
-            aspectClass="aspect-[9/16] w-full sm:aspect-[9/15]"
-            priority={priority}
-          />
-        </Suspense>
+      <div className="relative min-h-[280px] sm:min-h-[300px]">
+        <VideoPreview
+          playbackId={trend.id}
+          variant="card"
+          thumbnailUrl={trend.thumbnailUrl}
+          videoUrl={trend.videoUrl}
+          alt={trend.title}
+          duration={trend.videoDuration}
+          aspectClass="aspect-[9/16] w-full sm:aspect-[9/15]"
+          priority={priority}
+        />
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3">
+        {onClick && (
+          <div
+            aria-hidden
+            className="absolute inset-0 z-[5] cursor-pointer sm:hidden"
+            onClick={(e) => {
+              e.stopPropagation()
+              onClick()
+            }}
+          />
+        )}
+
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between p-3">
           <div className="flex flex-wrap items-center gap-1.5">
             <span
               className={cn(
@@ -94,12 +101,13 @@ export function TrendCard({ trend, onClick, priority = false, isSaved }: TrendCa
           <ViralScoreRing score={trend.viralScore} size="sm" animate={priority} />
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 pt-8">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-3 pt-8">
           <div className="flex items-center gap-2">
             <img
               src={trend.creator.avatarUrl}
               alt=""
               loading="lazy"
+              decoding="async"
               className="size-7 rounded-full object-cover ring-2 ring-white/15"
             />
             <div className="min-w-0 flex-1">
@@ -123,7 +131,7 @@ export function TrendCard({ trend, onClick, priority = false, isSaved }: TrendCa
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-3.5 sm:p-4">
+      <div className="flex flex-1 flex-col gap-3 p-3.5 sm:gap-3.5 sm:p-4">
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-white">
           {trend.title}
         </h3>
@@ -155,7 +163,7 @@ export function TrendCard({ trend, onClick, priority = false, isSaved }: TrendCa
           ))}
         </div>
 
-        <div className="mt-auto flex items-center justify-between rounded-xl border border-zinc-800/40 bg-zinc-950/40 px-3 py-2">
+        <div className="mt-auto flex items-center justify-between rounded-xl border border-zinc-800/40 bg-zinc-950/40 px-3 py-2.5">
           <div className="min-w-0 flex-1">
             <p className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500">
               Hook
@@ -173,3 +181,12 @@ export function TrendCard({ trend, onClick, priority = false, isSaved }: TrendCa
     </article>
   )
 }
+
+export const TrendCard = memo(TrendCardComponent, (prev, next) => {
+  return (
+    prev.trend.id === next.trend.id &&
+    prev.priority === next.priority &&
+    prev.isSaved === next.isSaved &&
+    prev.onClick === next.onClick
+  )
+})

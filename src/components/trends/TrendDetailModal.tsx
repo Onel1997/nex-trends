@@ -1,6 +1,5 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { VideoPreview } from '@/components/trends/VideoPreview'
-import { TrendHookGenerator } from '@/components/trends/TrendHookGenerator'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
 import { Button } from '@/components/ui/Button'
 import {
@@ -12,8 +11,15 @@ import {
 } from '@/components/ui/icons'
 import { useToast } from '@/context/ToastContext'
 import { VELOCITY_META } from '@/lib/trend-intelligence'
+import { videoPlaybackManager } from '@/lib/video-playback-manager'
 import { cn } from '@/lib'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
+
+const TrendHookGenerator = lazy(() =>
+  import('@/components/trends/TrendHookGenerator').then((m) => ({
+    default: m.TrendHookGenerator,
+  })),
+)
 
 type TrendDetailModalProps = {
   trend: TrendIntelligence | null
@@ -55,12 +61,14 @@ export function TrendDetailModal({
       if (e.key === 'Escape') onClose()
     }
 
+    videoPlaybackManager.pauseAll()
     document.addEventListener('keydown', onKeyDown)
     document.body.style.overflow = 'hidden'
 
     return () => {
       document.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = ''
+      videoPlaybackManager.pauseAll()
     }
   }, [trend, onClose])
 
@@ -145,8 +153,11 @@ export function TrendDetailModal({
         </div>
 
         <div className="flex flex-1 flex-col overflow-y-auto overscroll-contain lg:flex-row">
-          <div className="relative w-full shrink-0 bg-zinc-900/30 lg:w-[300px] xl:w-[340px]">
+          <div className="video-preview-modal relative w-full shrink-0 bg-zinc-900/30 lg:w-[300px] xl:w-[340px]">
             <VideoPreview
+              key={trend.id}
+              playbackId={`modal-${trend.id}`}
+              variant="detail"
               thumbnailUrl={trend.thumbnailUrl}
               videoUrl={trend.videoUrl}
               alt={trend.title}
@@ -183,6 +194,11 @@ export function TrendDetailModal({
                 <p className="text-xs text-zinc-500">
                   {trend.creator.handle} · {trend.creator.followers} Follower
                 </p>
+                {trend.creator.bio && (
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-zinc-400">
+                    {trend.creator.bio}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -321,7 +337,13 @@ export function TrendDetailModal({
             </section>
 
             <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/20 p-4">
-              <TrendHookGenerator trend={trend} />
+              <Suspense
+                fallback={
+                  <div className="h-24 animate-shimmer rounded-lg bg-zinc-800/40" aria-hidden />
+                }
+              >
+                <TrendHookGenerator trend={trend} />
+              </Suspense>
             </div>
           </div>
         </div>

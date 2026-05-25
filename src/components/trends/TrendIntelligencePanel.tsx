@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { TrendScoutSearch, type ScoutPlatform } from '@/components/trends/TrendScoutSearch'
 import { TrendsGrid } from '@/components/trends/TrendsGrid'
 import {
@@ -8,27 +8,37 @@ import {
   type TrendsView,
 } from '@/components/trends'
 import { LowCreditBanner } from '@/components/subscription/LowCreditBanner'
+import { TrendsGridSkeleton } from '@/components/ui/Skeleton'
 import { useSavedTrends } from '@/hooks/useSavedTrends'
 import { useTrendHistory } from '@/hooks/useTrendHistory'
+import { useTrendSessionRestore } from '@/hooks/useTrendSessionRestore'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { MAX_FREE_CREDITS } from '@/lib/constants'
+import { getDemoUserSeed } from '@/lib/demo-trend-seed'
 import { markDemoSeen, shouldShowDemoOnLoad } from '@/lib/trend-intelligence'
 import { fetchDemoTrends, fetchTrendsByNiche } from '@/lib/trends-api'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export function TrendIntelligencePanel() {
   const { hasProAccess, usage, isCreditsLow, consumeUsage } = useUsageLimit()
-  const { savedTrends, savedCount, isSaved, toggleSave } = useSavedTrends()
+  const { savedTrends, savedCount, isSaved, toggleSave, unsave } = useSavedTrends()
   const { history, logSearch, clear, removeEntry } = useTrendHistory()
+  const { isRestoring, initial, persist, restoreScroll } = useTrendSessionRestore()
 
-  const [view, setView] = useState<TrendsView>('explore')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [platform, setPlatform] = useState<ScoutPlatform>('all')
+  const [view, setView] = useState<TrendsView>(initial?.view ?? 'explore')
+  const [searchQuery, setSearchQuery] = useState(initial?.searchQuery ?? '')
+  const [platform, setPlatform] = useState<ScoutPlatform>(initial?.platform ?? 'all')
+  const [hasSearched, setHasSearched] = useState(
+    () => Boolean(initial?.searchQuery?.trim()) && !initial?.isDemo,
+  )
   const [isSearching, setIsSearching] = useState(false)
   const [isLoadingDemo, setIsLoadingDemo] = useState(false)
-  const [trends, setTrends] = useState<TrendIntelligence[]>([])
-  const [isDemo, setIsDemo] = useState(false)
+  const [trends, setTrends] = useState<TrendIntelligence[]>(initial?.trends ?? [])
+  const [isDemo, setIsDemo] = useState(initial?.isDemo ?? false)
   const [error, setError] = useState<string | null>(null)
+
+  const sessionReadyRef = useRef(false)
+  const scrollRestoredRef = useRef(false)
 
   const remaining = hasProAccess ? null : (usage.remaining ?? 0)
   const creditLimit = usage.limit ?? MAX_FREE_CREDITS
@@ -36,8 +46,9 @@ export function TrendIntelligencePanel() {
   const loadDemo = useCallback(async () => {
     setIsLoadingDemo(true)
     setError(null)
+    setHasSearched(false)
     try {
-      const results = await fetchDemoTrends()
+      const results = await fetchDemoTrends({ userSeed: getDemoUserSeed() })
       setTrends(results)
       setIsDemo(true)
       markDemoSeen()
@@ -50,10 +61,38 @@ export function TrendIntelligencePanel() {
   }, [])
 
   useEffect(() => {
-    if (shouldShowDemoOnLoad()) {
-      void loadDemo()
+    if (isRestoring) return
+
+    sessionReadyRef.current = true
+
+    if (initial?.trends.length) {
+      return
     }
-  }, [loadDemo])
+
+    if (shouldShowDemoOnLoad()) {
+      queueMicrotask(() => {
+        void loadDemo()
+      })
+    }
+  }, [isRestoring, initial, loadDemo])
+
+  useEffect(() => {
+    if (!sessionReadyRef.current) return
+
+    persist({
+      searchQuery,
+      platform,
+      trends,
+      isDemo,
+      view,
+    })
+  }, [searchQuery, platform, trends, isDemo, view, persist])
+
+  useEffect(() => {
+    if (isRestoring || scrollRestoredRef.current || trends.length === 0) return
+    scrollRestoredRef.current = true
+    restoreScroll()
+  }, [isRestoring, trends.length, restoreScroll])
 
   async function handleSearch() {
     const query = searchQuery.trim()
@@ -65,6 +104,7 @@ export function TrendIntelligencePanel() {
     setError(null)
     setIsSearching(true)
     setIsDemo(false)
+    setHasSearched(true)
     setView('explore')
 
     try {
@@ -73,10 +113,13 @@ export function TrendIntelligencePanel() {
           tool: 'Trend-Scouting',
           label: `Trend-Suche: ${query}`,
         })
-        if (!usageResult.allowed) return
+        if (!usageResult.allowed) {
+          setIsSearching(false)
+          return
+        }
       }
 
-      const results = await fetchTrendsByNiche(query)
+      const results = await fetchTrendsByNiche(query, { userSeed: getDemoUserSeed() })
       setTrends(results)
       markDemoSeen()
       logSearch(query, platform === 'all' ? 'Alle Plattformen' : platform, results.length)
@@ -95,6 +138,30 @@ export function TrendIntelligencePanel() {
       : trends.filter((t) => t.platform.toLowerCase() === platform.toLowerCase())
 
   const isBusy = isSearching || isLoadingDemo
+
+  const platformLabel =
+    platform === 'tiktok' ? 'TikTok' : platform === 'instagram' ? 'Instagram' : undefined
+
+  if (isRestoring) {
+    return (
+      <div
+        className="trends-grid-shell space-y-5"
+        aria-busy="true"
+        aria-label="Trend Intelligence wird geladen"
+      >
+        <div className="h-11 animate-shimmer rounded-xl bg-zinc-800/40" />
+        <div className="space-y-3">
+          <div className="h-12 animate-shimmer rounded-xl bg-zinc-800/40" />
+          <div className="flex gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-9 flex-1 animate-shimmer rounded-lg bg-zinc-800/30" />
+            ))}
+          </div>
+        </div>
+        <TrendsGridSkeleton />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-5">
@@ -133,21 +200,35 @@ export function TrendIntelligencePanel() {
             </p>
           )}
 
-          <TrendsGrid
-            trends={filteredTrends}
-            isSearching={isBusy}
-            isDemo={isDemo}
-            creditsRemaining={remaining}
-            creditsLimit={creditLimit}
-            onTryDemo={() => void loadDemo()}
-            isSaved={isSaved}
-            onToggleSave={toggleSave}
-          />
+          {isLoadingDemo && trends.length === 0 ? (
+            <div className="trends-grid-shell mt-2 min-h-[520px]">
+              <TrendsGridSkeleton />
+            </div>
+          ) : (
+            <TrendsGrid
+              trends={filteredTrends}
+              isSearching={isSearching}
+              isDemo={isDemo}
+              hasSearched={hasSearched}
+              searchQuery={searchQuery.trim()}
+              platformFilter={platformLabel}
+              creditsRemaining={remaining}
+              creditsLimit={creditLimit}
+              onTryDemo={() => void loadDemo()}
+              isSaved={isSaved}
+              onToggleSave={toggleSave}
+            />
+          )}
         </>
       )}
 
       {view === 'saved' && (
-        <SavedTrendsPanel trends={savedTrends} isSaved={isSaved} onToggleSave={toggleSave} />
+        <SavedTrendsPanel
+          trends={savedTrends}
+          isSaved={isSaved}
+          onToggleSave={toggleSave}
+          onRemove={unsave}
+        />
       )}
 
       {view === 'history' && (
@@ -155,6 +236,7 @@ export function TrendIntelligencePanel() {
           history={history}
           onSelectQuery={(q) => {
             setSearchQuery(q)
+            setHasSearched(true)
             setView('explore')
           }}
           onRemove={removeEntry}

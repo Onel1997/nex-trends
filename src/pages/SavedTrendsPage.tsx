@@ -3,7 +3,7 @@ import { SavedTrendsPanel } from '@/components/trends'
 import { useSavedTrends } from '@/hooks/useSavedTrends'
 
 export function SavedTrendsPage() {
-  const { savedTrends, isSaved, toggleSave } = useSavedTrends()
+  const { savedTrends, isSaved, toggleSave, unsave } = useSavedTrends()
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -20,7 +20,12 @@ export function SavedTrendsPage() {
         </p>
       </header>
 
-      <SavedTrendsPanel trends={savedTrends} isSaved={isSaved} onToggleSave={toggleSave} />
+      <SavedTrendsPanel
+        trends={savedTrends}
+        isSaved={isSaved}
+        onToggleSave={toggleSave}
+        onRemove={unsave}
+      />
     </div>
   )
 }

@@ -1,10 +1,11 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, memo, Suspense, useMemo, useState } from 'react'
 import { TrendCard, type DisplayTrend } from '@/components/trends/TrendCard'
 import { TrendAnalysisLoading } from '@/components/trends/TrendAnalysisLoading'
 import { TrendProUpsell } from '@/components/trends/TrendProUpsell'
 import { TrendsEmptyState } from '@/components/trends/TrendsEmptyState'
 import { TrendsGridSkeleton } from '@/components/ui/Skeleton'
 import { SparklesIcon } from '@/components/ui/icons'
+import { cn } from '@/lib'
 import { DEMO_TREND_INTELLIGENCE } from '@/lib/trend-intelligence'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
@@ -18,6 +19,9 @@ type TrendsGridProps = {
   trends: DisplayTrend[]
   isSearching: boolean
   isDemo?: boolean
+  hasSearched?: boolean
+  searchQuery?: string
+  platformFilter?: string
   creditsRemaining?: number | null
   creditsLimit?: number
   onTryDemo?: () => void
@@ -25,10 +29,39 @@ type TrendsGridProps = {
   onToggleSave?: (trend: TrendIntelligence) => boolean
 }
 
+const TrendFeedItem = memo(function TrendFeedItem({
+  trend,
+  index,
+  onSelect,
+  isSaved,
+}: {
+  trend: DisplayTrend
+  index: number
+  onSelect: (t: DisplayTrend) => void
+  isSaved?: (id: string) => boolean
+}) {
+  return (
+    <div
+      className="trend-feed-item animate-fade-in"
+      style={{ animationDelay: `${Math.min(index * 55, 280)}ms` }}
+    >
+      <TrendCard
+        trend={trend}
+        onClick={() => onSelect(trend)}
+        priority={index < 2}
+        isSaved={isSaved?.(trend.id)}
+      />
+    </div>
+  )
+})
+
 export function TrendsGrid({
   trends,
   isSearching,
   isDemo = false,
+  hasSearched = false,
+  searchQuery = '',
+  platformFilter,
   creditsRemaining,
   creditsLimit = 15,
   onTryDemo,
@@ -37,16 +70,33 @@ export function TrendsGrid({
 }: TrendsGridProps) {
   const [selectedTrend, setSelectedTrend] = useState<DisplayTrend | null>(null)
 
-  if (isSearching) {
+  const showInitialEmpty = !hasSearched && trends.length === 0 && !isSearching
+  const showNoResults = hasSearched && trends.length === 0 && !isSearching
+  const showGrid = trends.length > 0
+
+  const noResultsCopy = useMemo(() => {
+    if (platformFilter && platformFilter !== 'all') {
+      return {
+        title: 'Keine Trends für diese Plattform',
+        description: `Für „${searchQuery || 'deine Suche'}“ gibt es keine ${platformFilter}-Treffer. Wähle „Alle“ oder probiere eine andere Nische.`,
+      }
+    }
+    return {
+      title: 'Keine Trends gefunden',
+      description: `Für „${searchQuery}“ konnten wir keine passenden Signale finden. Probiere eine andere Nische oder einen breiteren Suchbegriff.`,
+    }
+  }, [platformFilter, searchQuery])
+
+  if (isSearching && trends.length === 0) {
     return (
-      <div className="mt-6 space-y-4">
+      <div className="trends-grid-shell mt-6 min-h-[520px] space-y-4" aria-busy="true">
         <TrendAnalysisLoading />
         <TrendsGridSkeleton />
       </div>
     )
   }
 
-  if (trends.length === 0) {
+  if (showInitialEmpty) {
     const creditsHint =
       creditsRemaining != null
         ? `Du hast ${creditsRemaining} von ${creditsLimit} Credits — starte deine Nischen-Analyse.`
@@ -108,9 +158,35 @@ export function TrendsGrid({
     )
   }
 
+  if (showNoResults) {
+    return (
+      <div className="mt-6 animate-fade-in">
+        <TrendsEmptyState
+          variant="search"
+          title={noResultsCopy.title}
+          description={noResultsCopy.description}
+        />
+        <Suspense fallback={null}>
+          <TrendDetailModal
+            trend={selectedTrend}
+            onClose={() => setSelectedTrend(null)}
+            isSaved={selectedTrend ? isSaved?.(selectedTrend.id) : false}
+            onToggleSave={onToggleSave}
+          />
+        </Suspense>
+      </div>
+    )
+  }
+
   return (
     <>
-      {isDemo && (
+      {isSearching && (
+        <div className="mt-4 animate-fade-in" aria-live="polite">
+          <TrendAnalysisLoading />
+        </div>
+      )}
+
+      {isDemo && !isSearching && (
         <p className="mt-4 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
           <span className="rounded-full border border-zinc-800/60 bg-zinc-900/40 px-2.5 py-1 font-medium text-zinc-500">
             Beispiel-Insights
@@ -119,30 +195,35 @@ export function TrendsGrid({
         </p>
       )}
 
-      {!isDemo && (
+      {!isDemo && !isSearching && showGrid && (
         <p className="mt-4 text-xs text-zinc-600">
           Tippe auf eine Card für die vollständige AI-Analyse
         </p>
       )}
 
-      <div className="trend-feed mt-4 scroll-smooth-mobile">
-        {trends.map((trend, index) => (
-          <div
-            key={trend.id}
-            className="trend-feed-item animate-fade-in"
-            style={{ animationDelay: `${Math.min(index * 60, 300)}ms` }}
-          >
-            <TrendCard
+      {showGrid && (
+        <div
+          className={cn(
+            'trend-feed mt-4 scroll-smooth-mobile transition-opacity duration-300',
+            isSearching && 'pointer-events-none opacity-40',
+          )}
+          aria-busy={isSearching}
+        >
+          {trends.map((trend, index) => (
+            <TrendFeedItem
+              key={trend.id}
               trend={trend}
-              onClick={() => setSelectedTrend(trend)}
-              priority={index < 2}
-              isSaved={isSaved?.(trend.id)}
+              index={index}
+              onSelect={setSelectedTrend}
+              isSaved={isSaved}
             />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {!isDemo && trends.length > 0 && <TrendProUpsell />}
+      {isSearching && trends.length === 0 && <TrendsGridSkeleton />}
+
+      {!isDemo && showGrid && !isSearching && <TrendProUpsell />}
 
       <Suspense fallback={null}>
         <TrendDetailModal

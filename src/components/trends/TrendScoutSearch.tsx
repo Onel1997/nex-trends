@@ -12,11 +12,16 @@ const PLATFORMS: { id: ScoutPlatform; label: string }[] = [
 ]
 
 const NICHE_SUGGESTIONS = [
+  'Productivity',
   'Fitness',
   'Beauty',
   'Side Hustle',
-  'Productivity',
   'Food',
+  'Luxury',
+  'Motivation',
+  'AI',
+  'Business',
+  'Fashion',
 ] as const
 
 type TrendScoutSearchProps = {

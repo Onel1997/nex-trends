@@ -144,21 +144,30 @@ export function getSidebarRoutes(): DashboardRouteConfig[] {
   return NAV_ROUTE_ORDER.map((id) => getRouteConfig(id)).filter((r) => r.showInSidebar)
 }
 
-/** Quick actions: all features except dashboard & settings */
-export function getQuickActionRoutes(): DashboardRouteConfig[] {
-  return NAV_ROUTE_ORDER.map((id) => getRouteConfig(id)).filter(
-    (r) => r.id !== 'dashboard' && r.id !== 'settings' && r.showOnDashboard,
+/** Dashboard tool grid — each product surface once, in display order */
+export const DASHBOARD_TOOL_GRID_ORDER = [
+  'trend-intelligence',
+  'hook',
+  'ad-copy',
+  'seo',
+  'analyzer',
+  'saved-trends',
+] as const satisfies readonly DashboardRouteId[]
+
+export function getDashboardToolGridRoutes(): DashboardRouteConfig[] {
+  return DASHBOARD_TOOL_GRID_ORDER.map((id) => getRouteConfig(id))
+}
+
+/** Secondary tools in the marketing grid (excludes featured Trend Intelligence hero) */
+export function getMarketingToolRoutes(): DashboardRouteConfig[] {
+  return DASHBOARD_TOOL_GRID_ORDER.filter((id) => id !== 'trend-intelligence').map((id) =>
+    getRouteConfig(id),
   )
 }
 
-/** AI Marketing Tools block — hook → ad-copy → seo → analyzer */
-export function getMarketingToolRoutes(): DashboardRouteConfig[] {
-  return (['hook', 'ad-copy', 'seo', 'analyzer'] as const).map((id) => getRouteConfig(id))
-}
-
-/** @deprecated Use getMarketingToolRoutes */
+/** @deprecated Use getDashboardToolGridRoutes */
 export function getDashboardMarketingTools(): DashboardRouteConfig[] {
-  return getMarketingToolRoutes()
+  return getDashboardToolGridRoutes()
 }
 
 export function pathToToolId(pathname: string): DashboardRouteId | null {

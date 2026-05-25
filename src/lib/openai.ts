@@ -24,7 +24,7 @@ Regeln:
 - hashtags: 3–5 echte, relevante Hashtags mit #
 - contentIdeas: 2 konkrete Video-Ideen
 - hookSuggestions: 2 Scroll-Stopper-Hooks
-- creatorInspiration: 1 Satz mit Creator-Stil (kein erfundener @name nötig, eher Format-Stil)
+- creatorInspiration: 1 Satz mit Posting-Stil / Format (kein @name nötig, eher Schnitt & Hook-Stil)
 - engagementPrediction: 1 Satz Prognose für die nächsten 48–72h
 - platform: "TikTok" oder "Instagram"
 - views: String wie "1.2M" oder "890K"

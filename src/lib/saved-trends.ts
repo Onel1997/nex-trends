@@ -6,12 +6,31 @@ const MAX_SAVED = 50
 /** Supabase table name for future sync — `saved_trends` */
 export const SAVED_TRENDS_TABLE = 'saved_trends' as const
 
+function dedupeRecords(records: SavedTrendRecord[]): SavedTrendRecord[] {
+  const seen = new Set<string>()
+  const unique: SavedTrendRecord[] = []
+
+  for (const record of records) {
+    const id = record.trend?.id
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    unique.push(record)
+  }
+
+  return unique
+}
+
 function readAll(): SavedTrendRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw) as SavedTrendRecord[]
-    return Array.isArray(parsed) ? parsed : []
+    if (!Array.isArray(parsed)) return []
+    const deduped = dedupeRecords(parsed)
+    if (deduped.length !== parsed.length) {
+      writeAll(deduped)
+    }
+    return deduped
   } catch {
     return []
   }
@@ -19,7 +38,7 @@ function readAll(): SavedTrendRecord[] {
 
 function writeAll(records: SavedTrendRecord[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records.slice(0, MAX_SAVED)))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dedupeRecords(records).slice(0, MAX_SAVED)))
   } catch {
     // ignore quota errors
   }

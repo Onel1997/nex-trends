@@ -15,17 +15,23 @@ export function SavedTrendsPreview({ onNavigate, maxItems = 4 }: SavedTrendsPrev
 
   return (
     <div>
-      {savedTrends.length > 0 && (
-        <div className="mb-3 flex justify-end">
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+            Bibliothek
+          </p>
+          <h3 className="mt-1 text-sm font-semibold text-zinc-200">Gespeicherte Trends</h3>
+        </div>
+        {savedTrends.length > 0 && (
           <button
             type="button"
             onClick={() => onNavigate('saved-trends')}
-            className="text-xs font-medium text-violet-400/90 transition-smooth hover:text-violet-300"
+            className="shrink-0 text-xs font-medium text-violet-400/90 transition-smooth hover:text-violet-300"
           >
             Alle anzeigen →
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {preview.length === 0 ? (
         <EmptyState
