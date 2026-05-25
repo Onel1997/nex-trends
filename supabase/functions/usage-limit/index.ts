@@ -11,8 +11,8 @@ import {
   checkUsageLimit,
   ensureProfile,
   ensureWeeklyRefill,
-  hasProAccess,
   incrementUsage,
+  resolveCreditCost,
   type ProfileUsageRow,
 } from "../_shared/usage.ts";
 
@@ -134,10 +134,11 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    const profile = await ensureProfile(supabaseAdmin, user.id);
+    const profile = await ensureProfile(supabaseAdmin, user.id, user.email);
     const currentProfile = await ensureWeeklyRefill(
       supabaseAdmin,
       profile as ProfileUsageRow,
+      user.email,
     );
 
     if (currentProfile.is_banned) {
@@ -155,7 +156,7 @@ serve(async (req) => {
       );
     }
 
-    const isUnlimited = isAdminEmail(user.email) || hasProAccess(currentProfile);
+    const isUnlimited = checkUsageLimit(currentProfile, user.email).unlimited;
 
     if (action === "update_generation") {
       const generationId = String(body.generation_id ?? "");
@@ -227,15 +228,32 @@ serve(async (req) => {
       }), { status: 200, headers: jsonHeaders });
     }
 
+    const usageAction = typeof body.action_id === "string"
+      ? body.action_id
+      : typeof body.tool === "string"
+      ? body.tool
+      : "generation";
+
+    const creditCost = resolveCreditCost(usageAction, cost);
+
     const result =
       action === "increment"
         ? await incrementUsage(
             supabaseAdmin,
             user.id,
             currentProfile,
-            cost,
+            creditCost,
+            {
+              action: usageAction,
+              email: user.email,
+              metadata: {
+                tool: body.tool,
+                label: body.label,
+                generation_type: body.generation_type,
+              },
+            },
           )
-        : checkUsageLimit(currentProfile);
+        : checkUsageLimit(currentProfile, user.email);
 
     if (action === "increment" && result.allowed && body.skip_analytics_log !== true) {
       const meta = readGenerationMeta(body, user);

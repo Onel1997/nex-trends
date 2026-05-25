@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
+import {
+  normalizePlanId,
+  resolveCheckoutPriceId,
+  type BillingPeriod,
+  type PlanId,
+} from "../_shared/plans.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,118 +22,24 @@ function unauthorized(message: string) {
   });
 }
 
-type StripeApiError = {
-  message?: string;
-  type?: string;
-  code?: string;
-  param?: string;
-};
-
 type StripeCheckoutSession = {
   url: string | null;
   client_reference_id: string | null;
-  error?: StripeApiError;
+  error?: { message?: string };
 };
 
-type StripePrice = {
-  id: string;
-  active: boolean;
-  livemode: boolean;
-  error?: StripeApiError;
-};
-
-function getStripeMode(secretKey: string): "test" | "live" | "unknown" {
-  if (secretKey.startsWith("sk_test_")) return "test";
-  if (secretKey.startsWith("sk_live_")) return "live";
-  return "unknown";
-}
-
-function loadStripeConfig() {
-  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim();
-  const priceId = Deno.env.get("STRIPE_PRICE_ID")?.trim();
-
-  // Temporäre Debug-Logs – nach erfolgreichem Test wieder entfernen
-  console.log("[DEBUG] Stripe Secrets geladen:", {
-    priceId,
-    priceIdLength: priceId?.length ?? 0,
-    secretKeyPrefix: stripeSecretKey?.slice(0, 8) ?? null,
-    secretKeyMode: stripeSecretKey ? getStripeMode(stripeSecretKey) : null,
-    deployHint:
-      "Nach Secret-Änderung in Supabase: Function neu deployen (Secrets werden beim Cold Start geladen)",
-  });
-
-  if (!stripeSecretKey) {
-    throw new Error("STRIPE_SECRET_KEY ist nicht gesetzt");
-  }
-
-  if (!priceId) {
-    throw new Error("STRIPE_PRICE_ID ist nicht gesetzt");
-  }
-
-  if (!/^price_[a-zA-Z0-9]+$/.test(priceId)) {
-    throw new Error(
-      `STRIPE_PRICE_ID ungültig (versteckte Zeichen/Leerzeichen?): "${priceId}" (Länge: ${priceId.length})`,
-    );
-  }
-
-  return { stripeSecretKey, priceId };
-}
-
-async function verifyStripePrice(
-  secretKey: string,
-  priceId: string,
-): Promise<StripePrice> {
+async function verifyStripePrice(secretKey: string, priceId: string) {
   const response = await fetch(
     `https://api.stripe.com/v1/prices/${encodeURIComponent(priceId)}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-      },
-    },
+    { headers: { Authorization: `Bearer ${secretKey}` } },
   );
-
-  const data = (await response.json()) as StripePrice;
-
+  const data = await response.json();
   if (!response.ok) {
-    console.error("[DEBUG] Price-Verifikation fehlgeschlagen:", {
-      priceId,
-      status: response.status,
-      stripeError: data.error,
-    });
-
-    throw new Error(
-      data.error?.message ??
-        `Stripe Price "${priceId}" nicht gefunden (Status ${response.status})`,
-    );
+    throw new Error(data?.error?.message ?? `Price ${priceId} not found`);
   }
-
-  const keyMode = getStripeMode(secretKey);
-
-  console.log("[DEBUG] Price verifiziert:", {
-    priceId: data.id,
-    active: data.active,
-    livemode: data.livemode,
-    secretKeyMode: keyMode,
-  });
-
-  if (keyMode === "test" && data.livemode) {
-    throw new Error(
-      `Modus-Konflikt: STRIPE_SECRET_KEY ist Test (sk_test_), aber STRIPE_PRICE_ID "${priceId}" ist ein Live-Preis. Bitte Test-Price-ID aus dem Stripe Test-Dashboard setzen.`,
-    );
-  }
-
-  if (keyMode === "live" && !data.livemode) {
-    throw new Error(
-      `Modus-Konflikt: STRIPE_SECRET_KEY ist Live (sk_live_), aber STRIPE_PRICE_ID "${priceId}" ist ein Test-Preis.`,
-    );
-  }
-
   if (!data.active) {
-    throw new Error(`STRIPE_PRICE_ID "${priceId}" ist in Stripe nicht aktiv.`);
+    throw new Error(`Price ${priceId} is not active in Stripe`);
   }
-
-  return data;
 }
 
 async function createStripeCheckoutSession(params: {
@@ -136,9 +48,9 @@ async function createStripeCheckoutSession(params: {
   successUrl: string;
   cancelUrl: string;
   userId: string;
+  planId: PlanId;
+  billingPeriod: BillingPeriod;
 }): Promise<StripeCheckoutSession> {
-  console.log("[DEBUG] Erstelle Checkout-Session mit priceId:", params.priceId);
-
   const body = new URLSearchParams();
   body.set("mode", "subscription");
   body.set("line_items[0][price]", params.priceId);
@@ -147,7 +59,11 @@ async function createStripeCheckoutSession(params: {
   body.set("cancel_url", params.cancelUrl);
   body.set("client_reference_id", params.userId);
   body.set("metadata[supabase_user_id]", params.userId);
+  body.set("metadata[plan_id]", params.planId);
+  body.set("metadata[billing_period]", params.billingPeriod);
   body.set("subscription_data[metadata][supabase_user_id]", params.userId);
+  body.set("subscription_data[metadata][plan_id]", params.planId);
+  body.set("subscription_data[metadata][billing_period]", params.billingPeriod);
 
   const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
@@ -158,21 +74,7 @@ async function createStripeCheckoutSession(params: {
     body: body.toString(),
   });
 
-  const data = (await response.json()) as StripeCheckoutSession;
-
-  if (!response.ok) {
-    console.error("[DEBUG] Stripe Checkout Session Fehler:", {
-      status: response.status,
-      usedPriceId: params.priceId,
-      stripeError: data.error,
-    });
-
-    throw new Error(
-      data.error?.message ?? `Stripe API Fehler (Status ${response.status})`,
-    );
-  }
-
-  return data;
+  return (await response.json()) as StripeCheckoutSession;
 }
 
 serve(async (req) => {
@@ -182,26 +84,16 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-
     if (!authHeader?.startsWith("Bearer ")) {
-      console.warn(
-        "create-checkout-session: Authorization-Header fehlt oder ungültig",
-      );
       return unauthorized("Nicht authentifiziert");
-    }
-
-    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-
-    if (!token) {
-      console.warn("create-checkout-session: Bearer-Token ist leer");
-      return unauthorized("Kein Auth-Token vorhanden");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")?.trim();
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim();
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error("SUPABASE_URL oder SUPABASE_ANON_KEY fehlt");
+    if (!supabaseUrl || !supabaseAnonKey || !stripeSecretKey) {
+      throw new Error("Missing Supabase or Stripe configuration");
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -211,56 +103,62 @@ serve(async (req) => {
     const {
       data: { user },
       error: authError,
-    } = await supabaseClient.auth.getUser(token);
+    } = await supabaseClient.auth.getUser(
+      authHeader.replace(/^Bearer\s+/i, "").trim(),
+    );
 
-    console.log("Auth-Ergebnis:", {
-      userId: user?.id ?? null,
-      authError: authError?.message ?? null,
-    });
-
-    if (authError) {
-      console.warn("create-checkout-session: Auth-Fehler:", authError.message);
-      return unauthorized("Authentifizierung fehlgeschlagen");
-    }
-
-    const userId = user?.id;
-
-    if (!userId) {
-      console.warn("create-checkout-session: Keine userId im Auth-Response");
+    if (authError || !user?.id) {
       return unauthorized("User nicht gefunden");
     }
 
-    const { stripeSecretKey, priceId } = loadStripeConfig();
+    const body = await req.json().catch(() => ({}));
+    const planId = normalizePlanId(
+      typeof body.planId === "string" ? body.planId : "pro_creator",
+    );
+    const billingPeriod = (body.billingPeriod === "yearly"
+      ? "yearly"
+      : "monthly") as BillingPeriod;
+
+    if (planId === "free" || planId === "founder") {
+      return new Response(JSON.stringify({ error: "Plan not checkout-eligible" }), {
+        status: 400,
+        headers: jsonHeaders,
+      });
+    }
+
+    const priceId = resolveCheckoutPriceId(planId, billingPeriod);
+    if (!priceId) {
+      throw new Error(
+        `No Stripe price configured for ${planId} (${billingPeriod}). Set STRIPE_PRICE_${planId.toUpperCase()}_${billingPeriod.toUpperCase()}.`,
+      );
+    }
 
     await verifyStripePrice(stripeSecretKey, priceId);
 
-    const { successUrl, cancelUrl } = await req.json().catch(() => ({}));
-    const origin = req.headers.get("origin") ?? "";
-    const defaultReturnUrl =
-      origin || Deno.env.get("SITE_URL")?.trim() || "";
-
-    console.log("User-ID vor Stripe-Session:", userId);
+    const origin = req.headers.get("origin") ?? Deno.env.get("SITE_URL")?.trim() ?? "";
+    const successUrl = body.successUrl ??
+      `${origin}/billing/success`;
+    const cancelUrl = body.cancelUrl ?? `${origin}/billing/cancel`;
 
     const session = await createStripeCheckoutSession({
       secretKey: stripeSecretKey,
       priceId,
-      successUrl: successUrl ?? `${defaultReturnUrl}/?checkout=success`,
-      cancelUrl: cancelUrl ?? `${defaultReturnUrl}/?checkout=cancel`,
-      userId,
+      successUrl,
+      cancelUrl,
+      userId: user.id,
+      planId,
+      billingPeriod,
     });
 
-    console.log("Stripe Session erstellt:", {
-      client_reference_id: session.client_reference_id,
-      url: session.url ? "ok" : null,
-    });
+    if (!session.url) {
+      throw new Error(session.error?.message ?? "Stripe returned no checkout URL");
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       status: 200,
       headers: jsonHeaders,
     });
   } catch (err) {
-    console.error("FEHLER in create-checkout-session:", err);
-
     const message = err instanceof Error ? err.message : String(err);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,

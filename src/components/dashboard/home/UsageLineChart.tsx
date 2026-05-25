@@ -113,6 +113,7 @@ export function UsageLineChart({ data, className }: UsageLineChartProps) {
                 'usage-line-chart__dot',
                 hasActivity && p.value > 0 ? 'fill-violet-500' : 'fill-zinc-700',
               )}
+              style={{ animationDelay: `${180 + i * 70}ms` }}
             />
           ))}
         </svg>

@@ -4,6 +4,7 @@ import {
   AiStudioPipeline,
   VideoLibraryGrid,
 } from '@/components/ai-studio'
+import { ProtectedTool } from '@/components/subscription/ProtectedTool'
 import { ClapperboardIcon } from '@/components/ui/icons'
 import { useAiStudio } from '@/hooks/useAiStudio'
 import { navigateToTool } from '@/lib/navigation'
@@ -19,6 +20,11 @@ export function AiStudioPage() {
   const showPipeline = videoGen.status !== 'idle'
 
   return (
+    <ProtectedTool
+      toolId="ai-studio"
+      title="AI Video Studio"
+      description="Generate viral AI shorts with voiceovers, captions, and premium templates — available on Pro Creator and above."
+    >
     <div className="studio-page mx-auto max-w-6xl space-y-8 px-1 pb-8 animate-fade-in sm:space-y-10 sm:px-0 sm:pb-10">
       <header className="relative space-y-3">
         <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-600">
@@ -90,5 +96,6 @@ export function AiStudioPage() {
         className="border-t border-zinc-800/60 pt-8 sm:pt-10"
       />
     </div>
+    </ProtectedTool>
   )
 }

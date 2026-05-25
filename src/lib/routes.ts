@@ -10,6 +10,7 @@ import {
   TrendingUpIcon,
   ClapperboardIcon,
   FilmStripIcon,
+  CreditCardIcon,
 } from '@/components/ui/icons'
 
 export type DashboardRouteId =
@@ -22,6 +23,8 @@ export type DashboardRouteId =
   | 'ad-copy'
   | 'seo'
   | 'analyzer'
+  | 'pricing'
+  | 'billing'
   | 'settings'
 
 /** Canonical navigation order — sidebar, mobile drawer, dashboard */
@@ -35,6 +38,8 @@ export const NAV_ROUTE_ORDER = [
   'seo',
   'analyzer',
   'saved-trends',
+  'pricing',
+  'billing',
   'settings',
 ] as const satisfies readonly DashboardRouteId[]
 
@@ -128,6 +133,22 @@ const ROUTE_DEFINITIONS: Record<DashboardRouteId, Omit<DashboardRouteConfig, 'id
     Icon: ChartBarIcon,
     showInSidebar: true,
     showOnDashboard: true,
+  },
+  pricing: {
+    path: `${DASHBOARD_BASE}/pricing`,
+    label: 'Pricing',
+    description: 'Plans, credits & upgrades',
+    Icon: CreditCardIcon,
+    showInSidebar: true,
+    showOnDashboard: false,
+  },
+  billing: {
+    path: `${DASHBOARD_BASE}/billing`,
+    label: 'Billing',
+    description: 'Subscription, credits & usage',
+    Icon: CreditCardIcon,
+    showInSidebar: false,
+    showOnDashboard: false,
   },
   settings: {
     path: `${DASHBOARD_BASE}/settings`,

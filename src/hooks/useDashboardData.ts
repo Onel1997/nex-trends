@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSubscription } from '@/hooks/useSubscription'
 import { getRecentActivities } from '@/lib/activity'
 import { MAX_FREE_CREDITS } from '@/lib/constants'
+import { PLAN_LABELS } from '@/lib/plans'
+import { resolveUserPlan } from '@/lib/subscription'
+import { startStripePortalFlow } from '@/lib/stripe'
 import { formatUsageResetDate } from '@/lib/usage'
 import type { ActivityItem, DashboardUser, TrendInsight, WeeklyUsagePoint } from '@/types/dashboard'
 
@@ -93,12 +96,13 @@ export function useDashboardData() {
     })
   }, [usage.used])
 
-  const planLabel = isAdmin
-    ? 'Admin Access'
+  const userPlan = resolveUserPlan(profile, session?.user?.email)
+  const planLabel = isAdmin ? PLAN_LABELS.founder : PLAN_LABELS[userPlan]
+  const statusLabel = isAdmin
+    ? 'FOUNDER'
     : hasProAccess
-      ? 'NexTrends Pro'
-      : 'Free Plan'
-  const statusLabel = isAdmin ? 'ADMIN' : hasProAccess ? 'Aktiv' : 'Free'
+      ? 'Active'
+      : 'Free'
   const remainingLabel =
     isAdmin || hasProAccess
       ? 'Unbegrenzt'
@@ -129,7 +133,7 @@ export function useDashboardData() {
       return
     }
     if (hasProAccess) {
-      window.open('https://billing.stripe.com/p/login/test', '_blank')
+      void startStripePortalFlow()
       return
     }
     openUpgradeModal()

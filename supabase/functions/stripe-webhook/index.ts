@@ -4,6 +4,13 @@ import {
   type SupabaseClient,
 } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
 import Stripe from "https://esm.sh/stripe@13.6.0?target=deno";
+import {
+  mapStripePriceToPlan,
+  normalizePlanId,
+  type BillingPeriod,
+  type PlanId,
+} from "../_shared/plans.ts";
+import { applyPlanToProfile } from "../_shared/usage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,21 +18,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-type SubscriptionStatus = "active" | "inactive";
-
-type ProfileSubscriptionUpdate = {
-  is_pro: boolean;
-  subscription_status: SubscriptionStatus;
-  stripe_customer_id?: string | null;
-  stripe_subscription_id?: string | null;
-};
-
 function getStripe(): Stripe {
   const secretKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim();
-  if (!secretKey) {
-    throw new Error("STRIPE_SECRET_KEY ist nicht gesetzt");
-  }
-
+  if (!secretKey) throw new Error("STRIPE_SECRET_KEY ist nicht gesetzt");
   return new Stripe(secretKey, {
     apiVersion: "2023-10-16",
     httpClient: Stripe.createFetchHttpClient(),
@@ -35,11 +30,9 @@ function getStripe(): Stripe {
 function getSupabaseAdmin(): SupabaseClient {
   const url = Deno.env.get("SUPABASE_URL")?.trim();
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
-
   if (!url || !serviceRoleKey) {
     throw new Error("SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY fehlt");
   }
-
   return createClient(url, serviceRoleKey);
 }
 
@@ -50,75 +43,8 @@ function stripeId(
   return typeof value === "string" ? value : value.id;
 }
 
-function mapStripeSubscriptionStatus(status: Stripe.Subscription.Status): {
-  is_pro: boolean;
-  subscription_status: SubscriptionStatus;
-} {
-  switch (status) {
-    case "active":
-    case "trialing":
-      return { is_pro: true, subscription_status: "active" };
-    case "canceled":
-    case "unpaid":
-    case "incomplete_expired":
-    case "past_due":
-    case "incomplete":
-    case "paused":
-    default:
-      return { is_pro: false, subscription_status: "inactive" };
-  }
-}
-
-async function updateProfileByUserId(
-  supabase: SupabaseClient,
-  userId: string,
-  update: ProfileSubscriptionUpdate,
-): Promise<void> {
-  console.log("Update Profil für userId:", userId, update);
-
-  const { data: existing, error: selectError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (selectError) {
-    console.error("Profil-Check fehlgeschlagen:", selectError);
-    throw selectError;
-  }
-
-  if (!existing) {
-    const { data: inserted, error: insertError } = await supabase
-      .from("profiles")
-      .insert({ id: userId, ...update })
-      .select();
-
-    console.log("Insert-Ergebnis:", { data: inserted, error: insertError });
-
-    if (insertError) {
-      console.error("Profil-Insert fehlgeschlagen:", insertError);
-      throw insertError;
-    }
-
-    return;
-  }
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .update(update)
-    .eq("id", userId)
-    .select();
-
-  console.log("Update-Ergebnis:", { data, error });
-
-  if (error) {
-    console.error("Profil-Update fehlgeschlagen:", error);
-    throw error;
-  }
-
-  if (!data?.length) {
-    console.warn("Kein Profil aktualisiert für userId:", userId);
-  }
+function subscriptionIsActive(status: Stripe.Subscription.Status): boolean {
+  return status === "active" || status === "trialing";
 }
 
 async function resolveUserId(
@@ -129,41 +55,113 @@ async function resolveUserId(
     customerId?: string | null;
   },
 ): Promise<string | null> {
-  if (params.metadataUserId) {
-    return params.metadataUserId;
-  }
+  if (params.metadataUserId) return params.metadataUserId;
 
   if (params.subscriptionId) {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("id")
       .eq("stripe_subscription_id", params.subscriptionId)
       .maybeSingle();
-
-    if (error) {
-      console.error("Lookup per subscription_id fehlgeschlagen:", error);
-      throw error;
-    }
-
     if (data?.id) return data.id;
   }
 
   if (params.customerId) {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("id")
       .eq("stripe_customer_id", params.customerId)
       .maybeSingle();
-
-    if (error) {
-      console.error("Lookup per customer_id fehlgeschlagen:", error);
-      throw error;
-    }
-
     if (data?.id) return data.id;
   }
 
   return null;
+}
+
+async function upsertSubscriptionRow(
+  supabase: SupabaseClient,
+  params: {
+    userId: string;
+    stripeSubscriptionId: string;
+    stripePriceId: string | null;
+    plan: PlanId;
+    status: string;
+    billingPeriod: BillingPeriod;
+    currentPeriodEnd: string | null;
+  },
+): Promise<void> {
+  const { error } = await supabase.from("subscriptions").upsert(
+    {
+      user_id: params.userId,
+      stripe_subscription_id: params.stripeSubscriptionId,
+      stripe_price_id: params.stripePriceId,
+      plan: params.plan,
+      status: params.status,
+      billing_period: params.billingPeriod,
+      current_period_end: params.currentPeriodEnd,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "stripe_subscription_id" },
+  );
+
+  if (error) {
+    console.error("[webhook] subscriptions upsert:", error);
+    throw error;
+  }
+}
+
+async function syncSubscription(
+  supabase: SupabaseClient,
+  subscription: Stripe.Subscription,
+  metadataUserId?: string | null,
+): Promise<void> {
+  const customerId = stripeId(subscription.customer);
+  const subscriptionId = subscription.id;
+  const userId = await resolveUserId(supabase, {
+    metadataUserId: metadataUserId ??
+      subscription.metadata?.supabase_user_id ?? null,
+    subscriptionId,
+    customerId,
+  });
+
+  if (!userId) {
+    console.warn("[webhook] No user for subscription", subscriptionId);
+    return;
+  }
+
+  const priceId = subscription.items?.data?.[0]?.price?.id ?? null;
+  const metaPlan = normalizePlanId(subscription.metadata?.plan_id);
+  const plan = mapStripePriceToPlan(priceId ?? "") ?? metaPlan;
+  const billingPeriod = (subscription.metadata?.billing_period === "yearly"
+    ? "yearly"
+    : "monthly") as BillingPeriod;
+  const active = subscriptionIsActive(subscription.status);
+  const periodEnd = subscription.current_period_end
+    ? new Date(subscription.current_period_end * 1000).toISOString()
+    : null;
+
+  await upsertSubscriptionRow(supabase, {
+    userId,
+    stripeSubscriptionId: subscriptionId,
+    stripePriceId: priceId,
+    plan,
+    status: subscription.status,
+    billingPeriod,
+    currentPeriodEnd: periodEnd,
+  });
+
+  await applyPlanToProfile(
+    supabase,
+    userId,
+    active ? plan : "free",
+    active ? "active" : "inactive",
+    { customerId, subscriptionId },
+  );
+
+  await supabase.from("profiles").update({
+    billing_period: billingPeriod,
+    credits_reset_at: periodEnd,
+  }).eq("id", userId);
 }
 
 async function handleCheckoutSessionCompleted(
@@ -171,107 +169,27 @@ async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
 ): Promise<void> {
   const userId = session.client_reference_id ??
-    session.metadata?.supabase_user_id ??
-    null;
+    session.metadata?.supabase_user_id ?? null;
 
+  if (!userId) {
+    console.warn("[webhook] checkout without user id");
+    return;
+  }
+
+  const plan = normalizePlanId(session.metadata?.plan_id ?? "pro_creator");
   const customerId = stripeId(session.customer);
   const subscriptionId = stripeId(session.subscription);
 
-  console.log("checkout.session.completed:", {
-    userId,
-    customerId,
-    subscriptionId,
-    sessionId: session.id,
-  });
-
-  if (!userId) {
-    console.warn(
-      "checkout.session.completed ohne client_reference_id / supabase_user_id",
-    );
+  if (subscriptionId) {
+    const stripe = getStripe();
+    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    await syncSubscription(supabase, sub, userId);
     return;
   }
 
-  await updateProfileByUserId(supabase, userId, {
-    is_pro: true,
-    subscription_status: "active",
-    stripe_customer_id: customerId,
-    stripe_subscription_id: subscriptionId,
-  });
-
-  console.log("Pro freigeschaltet nach Checkout:", userId);
-}
-
-async function handleSubscriptionUpdated(
-  supabase: SupabaseClient,
-  subscription: Stripe.Subscription,
-): Promise<void> {
-  const customerId = stripeId(subscription.customer);
-  const subscriptionId = subscription.id;
-  const metadataUserId = subscription.metadata?.supabase_user_id ?? null;
-
-  const userId = await resolveUserId(supabase, {
-    metadataUserId,
-    subscriptionId,
+  await applyPlanToProfile(supabase, userId, plan, "active", {
     customerId,
-  });
-
-  console.log("customer.subscription.updated:", {
-    userId,
-    stripeStatus: subscription.status,
     subscriptionId,
-    customerId,
-  });
-
-  if (!userId) {
-    console.warn(
-      "customer.subscription.updated: Kein User gefunden",
-      { subscriptionId, customerId },
-    );
-    return;
-  }
-
-  const mapped = mapStripeSubscriptionStatus(subscription.status);
-
-  await updateProfileByUserId(supabase, userId, {
-    ...mapped,
-    stripe_customer_id: customerId,
-    stripe_subscription_id: subscriptionId,
-  });
-}
-
-async function handleSubscriptionDeleted(
-  supabase: SupabaseClient,
-  subscription: Stripe.Subscription,
-): Promise<void> {
-  const customerId = stripeId(subscription.customer);
-  const subscriptionId = subscription.id;
-  const metadataUserId = subscription.metadata?.supabase_user_id ?? null;
-
-  const userId = await resolveUserId(supabase, {
-    metadataUserId,
-    subscriptionId,
-    customerId,
-  });
-
-  console.log("customer.subscription.deleted:", {
-    userId,
-    subscriptionId,
-    customerId,
-  });
-
-  if (!userId) {
-    console.warn(
-      "customer.subscription.deleted: Kein User gefunden",
-      { subscriptionId, customerId },
-    );
-    return;
-  }
-
-  await updateProfileByUserId(supabase, userId, {
-    is_pro: false,
-    subscription_status: "inactive",
-    stripe_customer_id: customerId,
-    stripe_subscription_id: subscriptionId,
   });
 }
 
@@ -283,36 +201,21 @@ serve(async (req) => {
   try {
     const signature = req.headers.get("Stripe-Signature");
     if (!signature) {
-      console.error("Fehlende Stripe-Signatur");
-      return new Response("Fehlende Stripe-Signatur", { status: 400 });
+      return new Response("Missing Stripe-Signature", { status: 400 });
     }
 
     const body = await req.text();
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")?.trim();
-
     if (!webhookSecret) {
-      console.error("STRIPE_WEBHOOK_SECRET ist nicht gesetzt");
-      return new Response("STRIPE_WEBHOOK_SECRET ist nicht gesetzt", {
-        status: 500,
-      });
+      return new Response("STRIPE_WEBHOOK_SECRET missing", { status: 500 });
     }
 
     const stripe = getStripe();
-    let event: Stripe.Event;
-
-    try {
-      event = await stripe.webhooks.constructEventAsync(
-        body,
-        signature,
-        webhookSecret,
-      );
-    } catch (err) {
-      console.error("Webhook-Signatur ungültig:", err);
-      const message = err instanceof Error ? err.message : String(err);
-      return new Response(`Webhook-Fehler: ${message}`, { status: 400 });
-    }
-
-    console.log("Stripe Event:", event.type, "id:", event.id);
+    const event = await stripe.webhooks.constructEventAsync(
+      body,
+      signature,
+      webhookSecret,
+    );
 
     const supabase = getSupabaseAdmin();
 
@@ -325,21 +228,21 @@ serve(async (req) => {
         break;
 
       case "customer.subscription.updated":
-        await handleSubscriptionUpdated(
+        await syncSubscription(
           supabase,
           event.data.object as Stripe.Subscription,
         );
         break;
 
       case "customer.subscription.deleted":
-        await handleSubscriptionDeleted(
+        await syncSubscription(
           supabase,
           event.data.object as Stripe.Subscription,
         );
         break;
 
       default:
-        console.log("Event ignoriert:", event.type);
+        console.log("[webhook] ignored:", event.type);
     }
 
     return new Response(JSON.stringify({ received: true }), {
@@ -347,8 +250,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("FEHLER in stripe-webhook:", err);
+    console.error("[webhook] error:", err);
     const message = err instanceof Error ? err.message : String(err);
-    return new Response(`Server-Fehler: ${message}`, { status: 500 });
+    return new Response(message, { status: 500 });
   }
 });

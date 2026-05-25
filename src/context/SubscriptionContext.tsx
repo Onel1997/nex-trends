@@ -27,6 +27,7 @@ import {
   type UsageGenerationMeta,
 } from '@/lib/usage'
 import { supabase } from '@/lib/supabase'
+import { normalizePlanId, type BillingPeriod, type PlanId } from '@/lib/plans'
 import type { UserProfile } from '@/types/subscription'
 import type { UsageLimitResult } from '@/types/usage'
 
@@ -58,7 +59,11 @@ type SubscriptionContextValue = {
   isUpgradeModalOpen: boolean
   openUpgradeModal: () => void
   closeUpgradeModal: () => void
-  openStripeCheckout: () => Promise<void>
+  openStripeCheckout: (options?: {
+    planId?: PlanId
+    billingPeriod?: BillingPeriod
+  }) => Promise<void>
+  userPlan: PlanId
 }
 
 export const SubscriptionContext = createContext<SubscriptionContextValue | null>(
@@ -70,10 +75,11 @@ type SubscriptionProviderProps = {
 }
 
 const PROFILE_SELECT =
-  'is_pro, subscription_status, stripe_customer_id, stripe_subscription_id, credit_balance, monthly_usage_count, last_weekly_refill_at, usage_reset_date'
+  'plan, is_pro, subscription_status, stripe_customer_id, stripe_subscription_id, credit_balance, monthly_usage_count, last_weekly_refill_at, usage_reset_date, billing_period'
 
 function mapProfileRow(data: Record<string, unknown>): UserProfile {
   return {
+    plan: normalizePlanId(data.plan as string | null),
     is_pro: data.is_pro === true,
     subscription_status:
       data.subscription_status === 'active' ? 'active' : 'inactive',
@@ -83,6 +89,8 @@ function mapProfileRow(data: Record<string, unknown>): UserProfile {
     monthly_usage_count: (data.monthly_usage_count as number | null) ?? 0,
     last_weekly_refill_at: (data.last_weekly_refill_at as string | null) ?? null,
     usage_reset_date: (data.usage_reset_date as string | null) ?? null,
+    billing_period:
+      data.billing_period === 'yearly' ? 'yearly' : 'monthly',
   }
 }
 
@@ -264,9 +272,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
   }, [loadProfileForUser])
 
-  const handleStripeCheckout = useCallback(async () => {
+  const handleStripeCheckout = useCallback(
+    async (options?: { planId?: PlanId; billingPeriod?: BillingPeriod }) => {
     try {
-      await startStripeCheckoutFlow()
+      await startStripeCheckoutFlow({
+        planId: options?.planId,
+        billingPeriod: options?.billingPeriod,
+      })
     } catch (err) {
       const message =
         err instanceof Error
@@ -282,6 +294,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
   }, [showToast])
 
+  const userPlan = normalizePlanId(
+    isAdmin ? 'founder' : profile?.plan,
+  )
   const premiumAccess = hasPremiumAccess(profile, userEmail)
 
   const consumeUsage = useCallback(
@@ -318,6 +333,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           void logGenerationUsage(generationMeta!)
         }
         const unlimited = getUsageFromProfile(profile, userEmail)
+        setUsage({ ...unlimited, allowed: true, unlimited: true })
         return { ...unlimited, allowed: true, unlimited: true }
       }
 
@@ -390,6 +406,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       isProfileLoading,
       isReady,
       hasProAccess: premiumAccess,
+      userPlan,
       isAdmin,
       usage,
       isUsageLimitReached,
@@ -412,6 +429,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       isProfileLoading,
       isReady,
       premiumAccess,
+      userPlan,
       isAdmin,
       usage,
       isUsageLimitReached,

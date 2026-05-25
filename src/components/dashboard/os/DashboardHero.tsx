@@ -51,6 +51,11 @@ export function DashboardHero({ user, stats }: DashboardHeroProps) {
     <section className="dashboard-os-hero dashboard-os-card glass-premium relative overflow-hidden rounded-[var(--dash-radius-lg)] border border-violet-500/12 p-2 sm:p-3">
       <div className="dashboard-os-hero__glow pointer-events-none absolute inset-0" aria-hidden />
       <div className="dashboard-os-hero__mesh pointer-events-none absolute inset-0" aria-hidden />
+      <div className="dashboard-os-hero__particles pointer-events-none absolute inset-0" aria-hidden>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <span key={i} className="dashboard-os-hero__particle" data-i={i} />
+        ))}
+      </div>
 
       <div className="relative space-y-1.5">
         <div className="flex items-center gap-2">

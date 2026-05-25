@@ -40,7 +40,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     id: 'system',
     label: 'System',
-    routes: ['settings'],
+    routes: ['pricing', 'billing', 'settings'],
   },
 ]
 

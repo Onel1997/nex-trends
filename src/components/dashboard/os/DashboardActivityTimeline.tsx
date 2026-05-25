@@ -90,9 +90,9 @@ function ActivityTimelineNode({
 
       <article
         className={cn(
-          'dashboard-os-activity-card min-w-0 flex-1 rounded-[var(--dash-radius)] border px-2.5 py-2 transition-smooth',
+          'dashboard-os-activity-card nex-card-interactive min-w-0 flex-1 rounded-[var(--dash-radius)] border px-2.5 py-2.5 sm:py-2',
           isLatest
-            ? 'border-violet-500/15 bg-violet-500/[0.04]'
+            ? 'border-violet-500/15 bg-violet-500/[0.04] nex-border-glow'
             : 'border-zinc-800/45 bg-zinc-950/35',
         )}
       >
@@ -158,7 +158,7 @@ export function DashboardActivityTimeline() {
           icon={<SparklesIcon className="size-5 text-violet-400/80" aria-hidden />}
         />
       ) : (
-        <div className="dashboard-os-timeline rounded-[var(--dash-radius)] border border-zinc-800/45 bg-zinc-950/25 p-2">
+        <div className="dashboard-os-timeline nex-glass-panel rounded-[var(--dash-radius)] border border-zinc-800/45 p-2.5 sm:p-2">
           <ul>
             {visible.map((item, i) => (
               <ActivityTimelineNode

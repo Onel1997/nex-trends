@@ -2,7 +2,7 @@ import { LogOutIcon, ToolIcon } from '@/components/ui/icons'
 import { SidebarCreditsCard } from '@/components/subscription/SidebarCreditsCard'
 import { APP_NAME, type DashboardToolId } from '@/lib'
 import { cn } from '@/lib'
-import { navigateToHome } from '@/lib/navigation'
+import { navigateToHome, navigateToTool } from '@/lib/navigation'
 import { getRouteConfig } from '@/lib/routes'
 import { SIDEBAR_LIBRARY_ROUTES, SIDEBAR_SECTIONS } from '@/lib/sidebar-navigation'
 import { navigateToAdmin } from '@/lib/admin-navigation'
@@ -107,7 +107,7 @@ function SidebarNavItem({ routeId, isActive, isLibrary, onSelect }: NavItemProps
 }
 
 export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
-  const { isAdmin, openStripeCheckout } = useSubscription()
+  const { isAdmin } = useSubscription()
 
   const handleLogout = () => {
     void supabase.auth.signOut()
@@ -200,7 +200,7 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
 
       {/* Footer */}
       <div className="shrink-0 space-y-3 border-t border-white/[0.04] px-4 py-4">
-        <SidebarCreditsCard onUpgrade={() => void openStripeCheckout()} />
+        <SidebarCreditsCard onUpgrade={() => navigateToTool('pricing')} />
 
         {isAdmin && (
           <button

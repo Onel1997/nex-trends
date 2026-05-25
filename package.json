@@ -13,7 +13,7 @@
     "compress:demo-videos": "bash scripts/compress-demo-videos.sh",
     "deploy:admin-api": "supabase functions deploy admin-api",
     "deploy:admin": "supabase db push && supabase functions deploy admin-api track-event usage-limit",
-    "deploy:functions": "supabase functions deploy admin-api usage-limit track-event generate-video",
+    "deploy:functions": "supabase functions deploy admin-api usage-limit track-event generate-video create-checkout-session create-portal-session stripe-webhook",
     "deploy:video": "supabase functions deploy generate-video"
   },
   "dependencies": {

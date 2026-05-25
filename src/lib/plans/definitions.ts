@@ -1,0 +1,104 @@
+/** Keep in sync with supabase/functions/_shared/plans.ts */
+
+export type PlanId =
+  | 'free'
+  | 'creator'
+  | 'pro_creator'
+  | 'studio'
+  | 'agency'
+  | 'founder'
+
+export type BillingPeriod = 'monthly' | 'yearly'
+
+export type UsageActionId =
+  | 'trend_search'
+  | 'hook_generation'
+  | 'seo_title'
+  | 'ad_copy'
+  | 'landing_analysis'
+  | 'ai_video'
+  | 'voiceover'
+  | 'captions'
+
+export const CREDIT_COSTS: Record<UsageActionId, number> = {
+  trend_search: 1,
+  hook_generation: 1,
+  seo_title: 1,
+  ad_copy: 1,
+  landing_analysis: 2,
+  ai_video: 5,
+  voiceover: 2,
+  captions: 1,
+}
+
+export const PLAN_RANK: Record<PlanId, number> = {
+  free: 0,
+  creator: 1,
+  pro_creator: 2,
+  studio: 3,
+  agency: 4,
+  founder: 5,
+}
+
+export const UNLIMITED_CREDIT_PLANS: PlanId[] = [
+  'pro_creator',
+  'studio',
+  'agency',
+  'founder',
+]
+
+export const PAID_PLANS: PlanId[] = ['creator', 'pro_creator', 'studio', 'agency']
+
+export const PLAN_LABELS: Record<PlanId, string> = {
+  free: 'Free',
+  creator: 'Creator',
+  pro_creator: 'Pro Creator',
+  studio: 'Studio',
+  agency: 'Agency',
+  founder: 'Founder Access',
+}
+
+export function normalizePlanId(value: string | null | undefined): PlanId {
+  if (!value) return 'free'
+  const v = value.trim().toLowerCase().replace(/-/g, '_')
+  if (v === 'admin') return 'founder'
+  if (
+    v === 'free' ||
+    v === 'creator' ||
+    v === 'pro_creator' ||
+    v === 'studio' ||
+    v === 'agency' ||
+    v === 'founder'
+  ) {
+    return v as PlanId
+  }
+  if (v === 'pro') return 'pro_creator'
+  return 'free'
+}
+
+export function pricingTierToPlanId(tier: string): PlanId {
+  if (tier === 'pro-creator') return 'pro_creator'
+  if (tier === 'admin') return 'founder'
+  return normalizePlanId(tier)
+}
+
+export function isUnlimitedPlan(plan: PlanId): boolean {
+  return UNLIMITED_CREDIT_PLANS.includes(plan)
+}
+
+export function planMonthlyCredits(plan: PlanId): number | null {
+  switch (plan) {
+    case 'free':
+      return 10
+    case 'creator':
+      return 50
+    default:
+      return null
+  }
+}
+
+export function legacyIsPro(plan: PlanId, subscriptionStatus: string | null): boolean {
+  if (plan === 'founder') return true
+  if (!PAID_PLANS.includes(plan)) return false
+  return subscriptionStatus === 'active'
+}

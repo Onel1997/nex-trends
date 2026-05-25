@@ -30,7 +30,7 @@ export function DashboardCoreProducts({ onNavigate }: DashboardCoreProductsProps
       <div className="space-y-1.5">
         <article
           className={cn(
-            'dashboard-os-flagship dashboard-os-card dashboard-os-product--flagship',
+            'dashboard-os-flagship dashboard-os-card dashboard-os-product--flagship nex-card-interactive',
             'dashboard-os-flagship--primary group relative overflow-hidden rounded-[var(--dash-radius-lg)] border border-violet-500/25',
           )}
         >
@@ -98,7 +98,7 @@ export function DashboardCoreProducts({ onNavigate }: DashboardCoreProductsProps
             return (
               <article
                 key={product.id}
-                className="dashboard-os-module-card dashboard-os-module-surface group flex h-full min-h-[7rem] flex-col rounded-[var(--dash-radius)] sm:min-h-[7.25rem]"
+                className="dashboard-os-module-card dashboard-os-module-surface nex-card-interactive group flex h-full min-h-[7rem] flex-col rounded-[var(--dash-radius)] sm:min-h-[7.25rem]"
               >
                 <div className="flex flex-1 flex-col p-2.5">
                   <div className="flex items-start justify-between gap-1.5">

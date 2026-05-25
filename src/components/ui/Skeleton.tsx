@@ -7,7 +7,7 @@ type SkeletonProps = {
 export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
-      className={cn('animate-shimmer rounded-xl bg-zinc-800/40', className)}
+      className={cn('nex-skeleton animate-shimmer rounded-xl', className)}
       aria-hidden
     />
   )
@@ -73,8 +73,8 @@ export function TrendsGridSkeleton() {
 
 export function DashboardSkeleton() {
   return (
-    <div className="dashboard-os mx-auto max-w-6xl flex flex-col gap-7">
-      <Skeleton className="h-44 w-full rounded-3xl sm:h-52" />
+    <div className="dashboard-os nex-os-polish mx-auto max-w-6xl flex flex-col gap-4 sm:gap-5">
+      <Skeleton className="h-44 w-full rounded-[var(--dash-radius-lg)] sm:h-52" />
       <div className="flex gap-3 overflow-hidden">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-20 min-w-[11rem] shrink-0 rounded-2xl" />

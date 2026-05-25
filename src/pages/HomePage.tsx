@@ -10,8 +10,18 @@ import {
   readToolFromUrl,
   syncLegacyToolQueryToPath,
 } from '@/lib/navigation'
+import { BillingCancelPage } from '@/pages/BillingCancelPage'
+import { BillingSuccessPage } from '@/pages/BillingSuccessPage'
+
+function readBillingResultPath(): 'success' | 'cancel' | null {
+  const path = window.location.pathname.replace(/\/$/, '')
+  if (path === '/billing/success') return 'success'
+  if (path === '/billing/cancel') return 'cancel'
+  return null
+}
 
 export function HomePage() {
+  const billingResult = readBillingResultPath()
   const [activeTool, setActiveTool] = useState<DashboardToolId>(() => {
     syncLegacyToolQueryToPath()
     return readToolFromUrl()
@@ -39,6 +49,14 @@ export function HomePage() {
       window.removeEventListener(DASHBOARD_NAVIGATE_EVENT, syncFromUrl)
     }
   }, [])
+
+  if (billingResult === 'success') {
+    return <BillingSuccessPage />
+  }
+
+  if (billingResult === 'cancel') {
+    return <BillingCancelPage />
+  }
 
   return (
     <>

@@ -7,6 +7,8 @@ import { MyAiVideosPage } from '@/pages/MyAiVideosPage'
 import { AiStudioPage } from '@/pages/AiStudioPage'
 import { HookGeneratorPage } from '@/pages/HookGeneratorPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { PricingPage } from '@/pages/PricingPage'
+import { BillingPage } from '@/pages/BillingPage'
 import { AdCopyGeneratorPage } from '@/pages/tools/AdCopyGeneratorPage'
 import { SeoTitleGeneratorPage } from '@/pages/tools/SeoTitleGeneratorPage'
 import { LandingPageAnalyzerPage } from '@/pages/tools/LandingPageAnalyzerPage'
@@ -35,6 +37,10 @@ function renderPage(activeTool: DashboardToolId, onSelectTool: (tool: DashboardT
       return <SeoTitleGeneratorPage />
     case 'analyzer':
       return <LandingPageAnalyzerPage />
+    case 'pricing':
+      return <PricingPage />
+    case 'billing':
+      return <BillingPage />
     case 'settings':
       return <SettingsPage />
     case 'dashboard':
@@ -78,15 +84,15 @@ export function DashboardMain({ activeTool, onSelectTool }: DashboardMainProps) 
         className={cn(
           'relative mx-auto w-full px-4 sm:px-6 lg:px-8',
           isDashboard
-            ? 'min-w-0 pt-1 pb-3 sm:pt-3 sm:pb-6 lg:pt-4 lg:pb-8'
-            : 'py-5 sm:py-6 lg:py-8',
+            ? 'min-w-0 pt-1 pb-4 sm:pt-3 sm:pb-6 lg:pt-4 lg:pb-8'
+            : 'min-w-0 py-5 pb-6 sm:py-6 sm:pb-8 lg:py-8',
           immersive
             ? 'max-w-6xl xl:max-w-7xl 2xl:max-w-[1680px]'
             : 'max-w-7xl',
         )}
       >
         <ToolPageHeader activeTool={activeTool} onBack={() => onSelectTool('dashboard')} />
-        <div key={activeTool} className="page-transition-enter">
+        <div key={activeTool} className="page-transition-enter nex-page-enter">
           {renderPage(activeTool, onSelectTool)}
         </div>
       </div>

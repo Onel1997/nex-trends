@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
 import { CrownIcon } from '@/components/ui/icons'
 import { useDashboardData } from '@/hooks/useDashboardData'
+import { PlanBadge } from '@/components/billing/PlanBadge'
+import { useSubscription } from '@/hooks/useSubscription'
+import { navigateToTool } from '@/lib/navigation'
 import {
   MAX_FREE_CREDITS,
   PRO_PRICE_LABEL,
@@ -16,11 +18,10 @@ export function SubscriptionSection() {
     hasProAccess,
     isAdmin,
     planLabel,
-    statusLabel,
-    openUpgradeModal,
     openStripeCheckout,
     manageSubscription,
   } = useDashboardData()
+  const { userPlan } = useSubscription()
 
   return (
     <div className="dashboard-os-account-card dashboard-os-account-panel overflow-hidden">
@@ -30,15 +31,7 @@ export function SubscriptionSection() {
             <h3 className="text-[13px] font-semibold text-white">Subscription</h3>
             <p className="dashboard-os-muted mt-0.5 text-[10px]">Plan & billing</p>
           </div>
-          <Badge
-            variant={isAdmin ? 'admin' : hasProAccess ? 'pro' : 'muted'}
-            className={cn(
-              'shrink-0 px-1.5 py-px text-[8px] capitalize',
-              isAdmin && 'dashboard-os-badge-admin',
-            )}
-          >
-            {statusLabel}
-          </Badge>
+          <PlanBadge plan={userPlan} className="shrink-0 text-[8px]" />
         </div>
       </div>
 
@@ -98,9 +91,13 @@ export function SubscriptionSection() {
             <Button
               variant="secondary"
               fullWidth
-              onClick={hasProAccess ? manageSubscription : openUpgradeModal}
+              onClick={
+                hasProAccess
+                  ? manageSubscription
+                  : () => navigateToTool('pricing')
+              }
             >
-              {hasProAccess ? 'Manage subscription' : 'Compare plans'}
+              {hasProAccess ? 'Manage subscription' : 'View all plans'}
             </Button>
           )}
         </div>
