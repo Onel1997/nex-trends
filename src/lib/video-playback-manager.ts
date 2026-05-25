@@ -55,6 +55,10 @@ class VideoPlaybackManager {
   requestPlay(id: string, priority: number, isMobile: boolean): void {
     const slot = this.slots.get(id)
     if (!slot) return
+    if (priority <= 0) {
+      slot.priority = 0
+      return
+    }
     slot.priority = priority
     this.reconcile(isMobile)
   }

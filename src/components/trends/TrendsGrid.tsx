@@ -1,14 +1,20 @@
-import { lazy, memo, Suspense, useMemo, useState } from 'react'
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { TrendCard, type DisplayTrend } from '@/components/trends/TrendCard'
 import { TrendAnalysisLoading } from '@/components/trends/TrendAnalysisLoading'
 import { TrendProUpsell } from '@/components/trends/TrendProUpsell'
 import { TrendsEmptyState } from '@/components/trends/TrendsEmptyState'
-import { TrendsGridSkeleton } from '@/components/ui/Skeleton'
+import { TrendCardSkeleton, TrendsGridSkeleton } from '@/components/ui/Skeleton'
 import { SparklesIcon } from '@/components/ui/icons'
+import { useInViewport } from '@/hooks/useInViewport'
 import { cn } from '@/lib'
 import { getDemoUserSeed, searchShuffleSeed } from '@/lib/demo-trend-seed'
+import {
+  tierForFeedIndex,
+  videoFeedCoordinator,
+} from '@/lib/video-feed-coordinator'
 import { ensureFeedMediaDiversity } from '@/lib/trend-media-assignment'
 import { DEMO_TREND_INTELLIGENCE } from '@/lib/trend-intelligence'
+import type { VideoPreloadTier } from '@/lib/video-feed-preload'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 const TrendDetailModal = lazy(() =>
@@ -20,6 +26,9 @@ const TrendDetailModal = lazy(() =>
 type TrendsGridProps = {
   trends: DisplayTrend[]
   isSearching: boolean
+  isLoadingMore?: boolean
+  hasMore?: boolean
+  onLoadMore?: () => void
   isDemo?: boolean
   hasSearched?: boolean
   searchQuery?: string
@@ -34,12 +43,14 @@ type TrendsGridProps = {
 const TrendFeedItem = memo(function TrendFeedItem({
   trend,
   index,
+  preloadTier,
   onSelect,
   isSaved,
   feedVideoUrls,
 }: {
   trend: DisplayTrend
   index: number
+  preloadTier: VideoPreloadTier
   onSelect: (t: DisplayTrend) => void
   isSaved?: (id: string) => boolean
   feedVideoUrls: readonly string[]
@@ -47,12 +58,14 @@ const TrendFeedItem = memo(function TrendFeedItem({
   return (
     <div
       className="trend-feed-item animate-fade-in"
-      style={{ animationDelay: `${Math.min(index * 55, 280)}ms` }}
+      style={{ animationDelay: `${Math.min(index * 40, 200)}ms` }}
     >
       <TrendCard
         trend={trend}
         onClick={() => onSelect(trend)}
-        priority={index < 2}
+        priority={index === 0}
+        feedIndex={index}
+        preloadTier={preloadTier}
         isSaved={isSaved?.(trend.id)}
         feedVideoUrls={feedVideoUrls}
       />
@@ -60,9 +73,62 @@ const TrendFeedItem = memo(function TrendFeedItem({
   )
 })
 
+function LoadMoreSentinel({
+  onLoadMore,
+  hasMore,
+  isLoadingMore,
+}: {
+  onLoadMore?: () => void
+  hasMore: boolean
+  isLoadingMore: boolean
+}) {
+  const handleIntersect = useCallback(
+    (visible: boolean) => {
+      if (visible && hasMore && !isLoadingMore) onLoadMore?.()
+    },
+    [hasMore, isLoadingMore, onLoadMore],
+  )
+
+  const { ref, inViewport } = useInViewport({
+    rootMargin: '240px 0px',
+    threshold: 0,
+    onIntersecting: handleIntersect,
+  })
+
+  useEffect(() => {
+    if (inViewport && hasMore && !isLoadingMore) onLoadMore?.()
+  }, [inViewport, hasMore, isLoadingMore, onLoadMore])
+
+  if (!hasMore) return null
+
+  return (
+    <div ref={ref} className="trend-feed-load-more mt-4 w-full px-0.5">
+      {isLoadingMore ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <TrendCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onLoadMore}
+          className="mx-auto flex w-full max-w-sm items-center justify-center gap-2 rounded-xl border border-violet-500/25 bg-violet-500/8 px-4 py-3 text-sm font-semibold text-violet-200 transition-smooth hover:bg-violet-500/12 active:scale-[0.98] sm:max-w-none"
+        >
+          <SparklesIcon className="size-4" aria-hidden />
+          Mehr Trends laden
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function TrendsGrid({
   trends,
   isSearching,
+  isLoadingMore = false,
+  hasMore = false,
+  onLoadMore,
   isDemo = false,
   hasSearched = false,
   searchQuery = '',
@@ -74,6 +140,7 @@ export function TrendsGrid({
   onToggleSave,
 }: TrendsGridProps) {
   const [selectedTrend, setSelectedTrend] = useState<DisplayTrend | null>(null)
+  const [activeFeedIndex, setActiveFeedIndex] = useState(0)
 
   const displayTrends = useMemo(
     () =>
@@ -91,6 +158,16 @@ export function TrendsGrid({
         .filter((url): url is string => Boolean(url)),
     [displayTrends],
   )
+
+  useEffect(() => {
+    videoFeedCoordinator.bootstrapFeed(
+      displayTrends.map((t) => ({
+        videoUrl: t.videoUrl,
+        posterUrl: t.thumbnailUrl,
+      })),
+    )
+    return videoFeedCoordinator.subscribeActiveIndex(setActiveFeedIndex)
+  }, [displayTrends])
 
   const showInitialEmpty = !hasSearched && trends.length === 0 && !isSearching
   const showNoResults = hasSearched && trends.length === 0 && !isSearching
@@ -236,6 +313,7 @@ export function TrendsGrid({
               key={trend.id}
               trend={trend}
               index={index}
+              preloadTier={tierForFeedIndex(index, activeFeedIndex)}
               onSelect={setSelectedTrend}
               isSaved={isSaved}
               feedVideoUrls={feedVideoUrls}
@@ -244,9 +322,21 @@ export function TrendsGrid({
         </div>
       )}
 
+      {showGrid && (
+        <LoadMoreSentinel
+          hasMore={hasMore}
+          isLoadingMore={isLoadingMore}
+          onLoadMore={onLoadMore}
+        />
+      )}
+
       {isSearching && trends.length === 0 && <TrendsGridSkeleton />}
 
-      {!isDemo && showGrid && !isSearching && <TrendProUpsell />}
+      {!isDemo && showGrid && !isSearching && (
+        <div className="mt-6">
+          <TrendProUpsell />
+        </div>
+      )}
 
       <Suspense fallback={null}>
         <TrendDetailModal

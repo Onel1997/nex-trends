@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib'
 
 const STEPS = [
-  'Nische & Zielgruppe analysieren',
-  'TikTok & Instagram Signale scannen',
-  'Viral Score & Velocity berechnen',
-  'Content- & Hook-Insights generieren',
+  'Scanning TikTok & Instagram signals',
+  'Ranking viral velocity & engagement',
+  'Matching creators & hook patterns',
+  'Generating trend cards & captions',
 ] as const
 
 type TrendAnalysisLoadingProps = {
@@ -30,7 +30,7 @@ export function TrendAnalysisLoading({ className }: TrendAnalysisLoadingProps) {
       )}
       role="status"
       aria-live="polite"
-      aria-label="Trend-Analyse läuft"
+      aria-label="Generating AI trend analysis"
     >
       <div className="flex items-center gap-3">
         <span className="relative flex size-10 shrink-0 items-center justify-center">
@@ -38,8 +38,10 @@ export function TrendAnalysisLoading({ className }: TrendAnalysisLoadingProps) {
           <span className="relative size-8 animate-spin rounded-full border-2 border-zinc-800 border-t-violet-500 border-r-fuchsia-500/80" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white">Trend Intelligence läuft</p>
-          <p className="mt-0.5 text-xs text-zinc-500">Geschätzte Metriken · KI-Analyse</p>
+          <p className="text-sm font-semibold text-white">Generating AI Trend Analysis…</p>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Fresh signals · creators · hooks · metrics
+          </p>
         </div>
       </div>
 

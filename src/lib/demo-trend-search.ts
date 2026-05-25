@@ -173,11 +173,12 @@ function finalizeSearchResults(
 
 export function searchDemoTrendCatalog(
   query: string,
-  options: { limit?: number; userSeed?: string } = {},
+  options: { limit?: number; userSeed?: string; nonce?: string; offset?: number } = {},
 ): TrendIntelligence[] {
   const limit = options.limit ?? DEFAULT_LIMIT
+  const offset = options.offset ?? 0
   const catalog = getDemoTrendCatalog()
-  const seed = searchShuffleSeed(query, options.userSeed)
+  const seed = searchShuffleSeed(query, options.userSeed, options.nonce)
   const q = normalizeQuery(query)
   const primaryNiches = resolvePrimaryNiches(q)
 
@@ -201,7 +202,9 @@ export function searchDemoTrendCatalog(
   }
 
   const shuffled = shuffleSeeded(pool, seed)
-  const results = finalizeSearchResults(shuffled, limit, seed)
+  const fetchCount = Math.min(shuffled.length, limit + offset)
+  const batch = finalizeSearchResults(shuffled, fetchCount, seed)
+  const results = batch.slice(offset, offset + limit)
 
   assertUniqueTrendSet(results, `search:"${query}"`)
   return results

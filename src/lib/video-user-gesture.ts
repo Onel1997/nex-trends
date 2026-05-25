@@ -34,19 +34,98 @@ function applyInlineVideoAttrs(video: HTMLVideoElement): void {
   video.setAttribute('webkit-playsinline', 'true')
 }
 
+import { logVideoPlayback } from '@/lib/video-playback-log'
+
+const HAVE_CURRENT_DATA = 2
+const MEDIA_WAIT_MS = 4_000
+const PLAY_PROMISE_MS = 800
+
 /** Muted play — safe before user gesture. */
 export async function playVideoMuted(video: HTMLVideoElement): Promise<boolean> {
+  return playVideoMutedFast(video)
+}
+
+function waitForPlaybackData(
+  video: HTMLVideoElement,
+  tag: string,
+): Promise<boolean> {
+  if (video.readyState >= HAVE_CURRENT_DATA) return Promise.resolve(true)
+
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (ok: boolean) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timer)
+      video.removeEventListener('loadeddata', onReady)
+      video.removeEventListener('canplay', onReady)
+      video.removeEventListener('loadedmetadata', onReady)
+      resolve(ok)
+    }
+
+    const onReady = () => {
+      logVideoPlayback('video loaded', {
+        tag,
+        readyState: video.readyState,
+      })
+      finish(true)
+    }
+
+    const timer = window.setTimeout(() => {
+      logVideoPlayback('video load timeout', { tag, readyState: video.readyState })
+      finish(false)
+    }, MEDIA_WAIT_MS)
+
+    video.addEventListener('loadeddata', onReady, { once: true })
+    video.addEventListener('canplay', onReady, { once: true })
+    video.addEventListener('loadedmetadata', onReady, { once: true })
+    if (video.readyState < HAVE_CURRENT_DATA) video.load()
+  })
+}
+
+async function attemptMutedPlay(
+  video: HTMLVideoElement,
+  tag: string,
+): Promise<boolean> {
   applyInlineVideoAttrs(video)
   video.muted = true
   video.setAttribute('muted', '')
   video.volume = 0
+
   try {
-    if (video.readyState < 2) video.load()
-    await video.play()
-    return !video.paused
-  } catch {
+    const playPromise = video.play()
+    const result = await Promise.race([
+      playPromise.then(() => !video.paused),
+      new Promise<boolean>((resolve) => {
+        window.setTimeout(() => resolve(false), PLAY_PROMISE_MS)
+      }),
+    ])
+    logVideoPlayback(result ? 'play success' : 'play timeout', {
+      tag,
+      paused: video.paused,
+      readyState: video.readyState,
+    })
+    return result
+  } catch (err) {
+    logVideoPlayback('play failure', {
+      tag,
+      error: err instanceof Error ? err.message : String(err),
+      readyState: video.readyState,
+    })
     return false
   }
+}
+
+/**
+ * Wait for first-frame data, then call play() — does not abort load at 300ms.
+ */
+export async function playVideoMutedFast(
+  video: HTMLVideoElement,
+  tag = 'feed',
+): Promise<boolean> {
+  const hasData = await waitForPlaybackData(video, tag)
+  if (!hasData) return false
+  return attemptMutedPlay(video, tag)
 }
 
 /**

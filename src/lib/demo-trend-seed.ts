@@ -33,6 +33,17 @@ export function getDemoUserSeed(): string {
   }
 }
 
-export function searchShuffleSeed(query: string, userSeed = getDemoUserSeed()): number {
-  return hashString(`${userSeed}::${query.trim().toLowerCase()}`)
+export function searchShuffleSeed(
+  query: string,
+  userSeed = getDemoUserSeed(),
+  nonce?: string,
+): number {
+  const parts = [userSeed, query.trim().toLowerCase()]
+  if (nonce) parts.push(nonce)
+  return hashString(parts.join('::'))
+}
+
+/** Fresh entropy per search — different cards every time */
+export function createSearchNonce(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`
 }

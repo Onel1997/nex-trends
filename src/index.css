@@ -257,6 +257,15 @@ body {
   contain-intrinsic-size: auto 520px;
 }
 
+/* Safari: content-visibility can block IntersectionObserver on nested videos */
+.trend-feed-item:has(.video-card) {
+  content-visibility: visible;
+}
+
+.trend-feed-load-more {
+  break-inside: avoid;
+}
+
 @media (min-width: 640px) {
   .trend-feed {
     display: block;
@@ -423,16 +432,26 @@ body {
   content-visibility: auto;
 }
 
+.video-card__poster {
+  transition: opacity 0.16s var(--ease-out-expo);
+  will-change: opacity;
+}
+
 .video-card__video {
   opacity: 0;
-  transition: opacity 0.45s var(--ease-out-expo);
+  transition: opacity 0.16s var(--ease-out-expo);
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+  will-change: opacity;
 }
 
 .video-card__video--visible {
   opacity: 1;
-  animation: video-preview-fade-in 0.5s var(--ease-out-expo) both;
+}
+
+.scroll-smooth-mobile {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .video-card__ken-burns {

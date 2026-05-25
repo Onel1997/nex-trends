@@ -14,11 +14,15 @@ import { useTrendHistory } from '@/hooks/useTrendHistory'
 import { useTrendSessionRestore } from '@/hooks/useTrendSessionRestore'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { MAX_FREE_CREDITS } from '@/lib/constants'
-import { getDemoUserSeed } from '@/lib/demo-trend-seed'
+import { createSearchNonce, getDemoUserSeed } from '@/lib/demo-trend-seed'
 import { markDemoSeen, shouldShowDemoOnLoad } from '@/lib/trend-intelligence'
 import { runAiGenerationPipeline } from '@/lib/ai-generation-pipeline'
 import { trackAnalyticsEvent } from '@/lib/track-event'
-import { fetchDemoTrends, fetchTrendsByNiche } from '@/lib/trends-api'
+import {
+  fetchDemoTrends,
+  fetchTrendsPage,
+  LOAD_MORE_PAGE_SIZE,
+} from '@/lib/trends-api'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export function TrendIntelligencePanel() {
@@ -35,6 +39,9 @@ export function TrendIntelligencePanel() {
     () => Boolean(initial?.searchQuery?.trim()) && !initial?.isDemo,
   )
   const [isSearching, setIsSearching] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [searchNonce, setSearchNonce] = useState<string | null>(null)
   const [isLoadingDemo, setIsLoadingDemo] = useState(false)
   const [trends, setTrends] = useState<TrendIntelligence[]>(initial?.trends ?? [])
   const [isDemo, setIsDemo] = useState(initial?.isDemo ?? false)
@@ -117,7 +124,8 @@ export function TrendIntelligencePanel() {
       }
 
       const platformLabel = platform === 'all' ? 'Alle Plattformen' : platform
-      const results = await runAiGenerationPipeline({
+      const nonce = createSearchNonce()
+      const page = await runAiGenerationPipeline({
         tool: 'Trend-Scouting',
         label: `Trend-Suche: ${query}`,
         generation_type: 'search',
@@ -126,9 +134,17 @@ export function TrendIntelligencePanel() {
         prompt: `Trend-Suche: ${query}`,
         trackAnalytics: false,
         timeoutMs: 30_000,
-        run: () => fetchTrendsByNiche(query, { userSeed: getDemoUserSeed() }),
+        run: () =>
+          fetchTrendsPage(query, {
+            userSeed: getDemoUserSeed(),
+            nonce,
+            offset: 0,
+          }),
       })
-      setTrends(results)
+      setSearchNonce(page.nonce)
+      setHasMore(page.hasMore)
+      setTrends(page.trends)
+      const results = page.trends
       markDemoSeen()
       logSearch(query, platformLabel, results.length)
       trackAnalyticsEvent('niche_search', {
@@ -152,6 +168,32 @@ export function TrendIntelligencePanel() {
       setIsSearching(false)
     }
   }
+
+  const loadMore = useCallback(async () => {
+    const query = searchQuery.trim()
+    if (!query || isLoadingMore || !hasMore || isDemo || !searchNonce) return
+
+    setIsLoadingMore(true)
+    setError(null)
+    try {
+      const page = await fetchTrendsPage(query, {
+        userSeed: getDemoUserSeed(),
+        nonce: searchNonce,
+        offset: trends.length,
+        limit: LOAD_MORE_PAGE_SIZE,
+      })
+      setTrends((prev) => {
+        const ids = new Set(prev.map((t) => t.id))
+        const fresh = page.trends.filter((t) => !ids.has(t.id))
+        return [...prev, ...fresh]
+      })
+      setHasMore(page.hasMore)
+    } catch {
+      setError('Weitere Trends konnten nicht geladen werden.')
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [searchQuery, isLoadingMore, hasMore, isDemo, searchNonce, trends.length])
 
   const filteredTrends =
     platform === 'all'
@@ -229,6 +271,9 @@ export function TrendIntelligencePanel() {
             <TrendsGrid
               trends={filteredTrends}
               isSearching={isSearching}
+              isLoadingMore={isLoadingMore}
+              hasMore={hasMore && !isDemo && hasSearched}
+              onLoadMore={() => void loadMore()}
               isDemo={isDemo}
               hasSearched={hasSearched}
               searchQuery={searchQuery.trim()}

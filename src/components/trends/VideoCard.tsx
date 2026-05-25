@@ -1,6 +1,7 @@
 import { memo, useCallback, useState } from 'react'
 import { cn } from '@/lib'
 import { useVideoCardPlayback } from '@/hooks/useVideoCardPlayback'
+import type { VideoPreloadTier } from '@/lib/video-feed-preload'
 import { VolumeOffIcon, VolumeOnIcon } from '@/components/ui/icons'
 
 export type VideoCardProps = {
@@ -10,6 +11,8 @@ export type VideoCardProps = {
   alt: string
   duration?: string
   priority?: boolean
+  feedIndex?: number
+  preloadTier?: VideoPreloadTier
   aspectClass?: string
   className?: string
   onVideoUnavailable?: () => void
@@ -49,6 +52,8 @@ function VideoCardComponent({
   alt,
   duration,
   priority = false,
+  feedIndex = -1,
+  preloadTier = 'none',
   aspectClass = 'aspect-[9/16] w-full',
   className,
   onVideoUnavailable,
@@ -65,8 +70,9 @@ function VideoCardComponent({
   const {
     containerRef,
     videoRef,
+    playbackUrl,
     formatValid,
-    shouldAttachVideo,
+    showVideoElement,
     resolvedPoster,
     preload,
     videoVisible,
@@ -76,10 +82,10 @@ function VideoCardComponent({
     videoReady,
     showStallHint,
     showTapForSound,
-    isActiveViewport,
     toggleMute,
     handleCardTap,
     handleVideoReady,
+    handleCanPlay,
     handleVideoError,
     handlePlay,
     handlePause,
@@ -88,6 +94,8 @@ function VideoCardComponent({
     videoUrl,
     posterUrl,
     priority,
+    feedIndex,
+    preloadTier,
     onVideoUnavailable,
     onSoundOn: showSoundToast,
   })
@@ -117,8 +125,9 @@ function VideoCardComponent({
         <img
           src={resolvedPoster}
           alt={alt}
-          loading={priority ? 'eager' : 'lazy'}
+          loading={priority || preloadTier === 'hot' ? 'eager' : 'lazy'}
           decoding="async"
+          fetchPriority={priority ? 'high' : undefined}
           onLoad={() => {
             setPosterLoaded(true)
             setPosterError(false)
@@ -128,26 +137,28 @@ function VideoCardComponent({
             setPosterLoaded(false)
           }}
           className={cn(
-            'absolute inset-0 size-full object-cover transition-opacity duration-500 ease-out',
+            'video-card__poster absolute inset-0 size-full object-cover',
             videoVisible ? 'opacity-0' : 'opacity-100',
           )}
         />
       ) : null}
 
-      {shouldAttachVideo && (
+      {showVideoElement && playbackUrl ? (
         <video
+          key={`${playbackId}-${playbackUrl}`}
           ref={videoRef}
-          src={videoUrl}
+          src={playbackUrl}
           poster={resolvedPoster || undefined}
           loop
+          muted
           playsInline
-          autoPlay={isActiveViewport}
           preload={preload}
           disablePictureInPicture
           controls={false}
           controlsList="nodownload noplaybackrate"
           onLoadedData={handleVideoReady}
-          onCanPlay={handleVideoReady}
+          onCanPlay={handleCanPlay}
+          onLoadedMetadata={handleCanPlay}
           onPlay={handlePlay}
           onPause={handlePause}
           onError={handleVideoError}
@@ -156,7 +167,7 @@ function VideoCardComponent({
             videoVisible && 'video-card__video--visible',
           )}
         />
-      )}
+      ) : null}
 
       <div
         className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20"
@@ -246,4 +257,13 @@ function VideoCardComponent({
   )
 }
 
-export const VideoCard = memo(VideoCardComponent)
+export const VideoCard = memo(VideoCardComponent, (prev, next) => {
+  return (
+    prev.playbackId === next.playbackId &&
+    prev.videoUrl === next.videoUrl &&
+    prev.posterUrl === next.posterUrl &&
+    prev.priority === next.priority &&
+    prev.feedIndex === next.feedIndex &&
+    prev.preloadTier === next.preloadTier
+  )
+})

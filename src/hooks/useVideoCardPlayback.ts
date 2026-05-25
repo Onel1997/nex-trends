@@ -1,11 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useInViewport } from '@/hooks/useInViewport'
 import { useIsTouchDevice } from '@/hooks/useIsTouchDevice'
+import { videoFeedCoordinator } from '@/lib/video-feed-coordinator'
+import {
+  isVideoUrlWarmed,
+  preloadPosterUrl,
+  warmVideoUrl,
+  type VideoPreloadTier,
+} from '@/lib/video-feed-preload'
 import { videoPlaybackManager } from '@/lib/video-playback-manager'
+import { resolveAdaptiveVideoUrl } from '@/lib/video-url-adaptive'
 import {
   initVideoUserGestureListeners,
   isVideoAudioUnlocked,
-  playVideoMuted,
+  playVideoMutedFast,
   playVideoWithSound,
   subscribeVideoAudioUnlock,
   unlockVideoAudioOnCard,
@@ -14,20 +22,41 @@ import {
   isPlayableDemoVideoUrl,
   posterForVideoUrl,
 } from '@/lib/demo-media'
+import { logVideoPlayback } from '@/lib/video-playback-log'
 import { isValidVideoUrl } from '@/lib/video-url'
 
-const ACTIVE_RATIO = 0.42
-const LOAD_STALL_MS = 4_000
-const POSTER_READY_MS = 350
-const TAP_DEBOUNCE_MS = 450
+const ACTIVE_RATIO = 0.32
+const LOAD_STALL_MS = 3_200
+const TAP_DEBOUNCE_MS = 400
+const DETACH_NEAR_MS = 8_000
+const DETACH_FAR_MS = 2_500
 
 export type UseVideoCardPlaybackOptions = {
   playbackId: string
   videoUrl?: string
   posterUrl?: string
   priority?: boolean
+  feedIndex?: number
+  preloadTier?: VideoPreloadTier
   onVideoUnavailable?: () => void
   onSoundOn?: () => void
+}
+
+function applySafariVideoAttrs(video: HTMLVideoElement): void {
+  video.playsInline = true
+  video.setAttribute('playsinline', '')
+  video.setAttribute('webkit-playsinline', 'true')
+  video.muted = true
+  video.setAttribute('muted', '')
+  video.volume = 0
+  video.defaultMuted = true
+}
+
+function rootMarginForTier(tier: VideoPreloadTier, priority: boolean): string {
+  if (priority || tier === 'hot') return '40% 0px 55% 0px'
+  if (tier === 'warm') return '30% 0px 45% 0px'
+  if (tier === 'metadata') return '18% 0px 28% 0px'
+  return '12% 0px 20% 0px'
 }
 
 export function useVideoCardPlayback({
@@ -35,23 +64,35 @@ export function useVideoCardPlayback({
   videoUrl,
   posterUrl,
   priority = false,
+  feedIndex = -1,
+  preloadTier = 'none',
   onVideoUnavailable,
   onSoundOn,
 }: UseVideoCardPlaybackOptions) {
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const playbackUrl = resolveAdaptiveVideoUrl(videoUrl) ?? videoUrl
+  const videoRef = useRef<HTMLVideoElement | null>(null)
   const isTouch = useIsTouchDevice()
   const canPlayRef = useRef(false)
-  const isActiveRef = useRef(priority)
-  const viewportPriorityRef = useRef(priority ? 2 : 0)
+  const isActiveRef = useRef(false)
+  const viewportRatioRef = useRef(0)
   const stallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const detachTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const retryCountRef = useRef(0)
   const wantsSoundRef = useRef(false)
+  const needsGestureRetryRef = useRef(false)
+  const playVideoRef = useRef<() => Promise<void>>(async () => {})
   const lastTapRef = useRef(0)
+  const logTag = playbackId.length > 12 ? playbackId.slice(-10) : playbackId
 
   const [audioUnlocked, setAudioUnlocked] = useState(() => isVideoAudioUnlocked())
-  const [isNearViewport, setIsNearViewport] = useState(priority)
-  const [isActiveViewport, setIsActiveViewport] = useState(priority)
-  const [posterReady, setPosterReady] = useState(!posterUrl && !videoUrl)
+  const [isNearViewport, setIsNearViewport] = useState(
+    priority || preloadTier === 'hot' || preloadTier === 'warm',
+  )
+  const [isActiveViewport, setIsActiveViewport] = useState(false)
+  const [videoElementMounted, setVideoElementMounted] = useState(
+    priority || preloadTier === 'hot',
+  )
+  const [posterReady, setPosterReady] = useState(true)
   const [videoReady, setVideoReady] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
@@ -61,19 +102,49 @@ export function useVideoCardPlayback({
 
   const resolvedPoster =
     posterUrl?.trim() ||
-    (videoUrl ? posterForVideoUrl(videoUrl) ?? '' : '')
+    (playbackUrl ? posterForVideoUrl(playbackUrl) ?? '' : '')
 
-  const formatValid = isValidVideoUrl(videoUrl) && isPlayableDemoVideoUrl(videoUrl)
+  const formatValid =
+    isValidVideoUrl(playbackUrl) && isPlayableDemoVideoUrl(playbackUrl)
+
+  const prefetchZone =
+    priority || preloadTier === 'hot' || preloadTier === 'warm'
   const shouldAttachVideo =
-    formatValid && posterReady && (priority || isNearViewport)
+    formatValid && posterReady && (isNearViewport || prefetchZone)
+
+  const htmlPreload =
+    preloadTier === 'hot' || isActiveViewport
+      ? 'auto'
+      : preloadTier === 'warm' || isNearViewport
+        ? 'auto'
+        : preloadTier === 'metadata'
+          ? 'metadata'
+          : 'none'
+
+  useEffect(() => {
+    if (!resolvedPoster) return
+    preloadPosterUrl(resolvedPoster)
+  }, [resolvedPoster])
+
+  useEffect(() => {
+    if (!formatValid || !playbackUrl) return
+    if (preloadTier === 'hot' || preloadTier === 'warm' || priority) {
+      warmVideoUrl(playbackUrl, preloadTier === 'none' ? 'metadata' : preloadTier)
+    }
+  }, [playbackUrl, formatValid, preloadTier, priority])
 
   useEffect(() => initVideoUserGestureListeners(), [])
 
   useEffect(() => {
     return subscribeVideoAudioUnlock(() => {
       setAudioUnlocked(isVideoAudioUnlocked())
+      if (needsGestureRetryRef.current && isActiveRef.current) {
+        logVideoPlayback('retry play after gesture', { tag: logTag })
+        needsGestureRetryRef.current = false
+        void playVideoRef.current()
+      }
     })
-  }, [])
+  }, [logTag])
 
   useEffect(() => {
     setShowTapForSound(
@@ -85,6 +156,13 @@ export function useVideoCardPlayback({
     if (stallTimerRef.current) {
       window.clearTimeout(stallTimerRef.current)
       stallTimerRef.current = null
+    }
+  }, [])
+
+  const clearDetachTimer = useCallback(() => {
+    if (detachTimerRef.current) {
+      window.clearTimeout(detachTimerRef.current)
+      detachTimerRef.current = null
     }
   }, [])
 
@@ -136,8 +214,7 @@ export function useVideoCardPlayback({
 
   const pauseVideo = useCallback(() => {
     const video = videoRef.current
-    if (!video) return
-    video.pause()
+    if (video) video.pause()
     setIsPlaying(false)
     syncMutedState(true)
     videoPlaybackManager.release(playbackId)
@@ -145,12 +222,33 @@ export function useVideoCardPlayback({
 
   const playVideo = useCallback(async () => {
     const video = videoRef.current
-    if (!video || !canPlayRef.current || !isActiveRef.current) return
+    if (!video) {
+      logVideoPlayback('play skipped (no ref)', { tag: logTag })
+      return
+    }
+    if (!isActiveRef.current) {
+      logVideoPlayback('play skipped (not active)', { tag: logTag })
+      return
+    }
+    if (!canPlayRef.current) {
+      logVideoPlayback('play skipped (not mounted)', { tag: logTag })
+      return
+    }
 
-    const playPriority = priority ? 2 : viewportPriorityRef.current
+    applySafariVideoAttrs(video)
+
+    const playPriority = Math.max(viewportRatioRef.current, ACTIVE_RATIO)
     videoPlaybackManager.requestPlay(playbackId, playPriority, isTouch)
 
-    if (!videoPlaybackManager.isAllowed(playbackId, isTouch)) return
+    if (!videoPlaybackManager.isAllowed(playbackId, isTouch)) {
+      logVideoPlayback('play blocked (slot busy)', { tag: logTag, playPriority })
+      window.requestAnimationFrame(() => {
+        if (isActiveRef.current && canPlayRef.current) {
+          void playVideoRef.current()
+        }
+      })
+      return
+    }
 
     const staggerMs = videoPlaybackManager.getStaggerDelay(playbackId, isTouch)
     if (staggerMs > 0) {
@@ -163,29 +261,38 @@ export function useVideoCardPlayback({
     if (wantsSoundRef.current && isVideoAudioUnlocked()) {
       const ok = await enableSound()
       if (ok) {
+        needsGestureRetryRef.current = false
         clearStallTimer()
         return
       }
     }
 
     syncMutedState(true)
-    const ok = await playVideoMuted(video)
+    const ok = await playVideoMutedFast(video, logTag)
     if (ok) {
+      needsGestureRetryRef.current = false
       setIsPlaying(true)
       setShowStallHint(false)
       clearStallTimer()
     } else {
       setIsPlaying(false)
-      videoPlaybackManager.release(playbackId)
+      if (isActiveRef.current && videoPlaybackManager.isAllowed(playbackId, isTouch)) {
+        needsGestureRetryRef.current = true
+        logVideoPlayback('play failed (retry on gesture)', { tag: logTag })
+      } else {
+        videoPlaybackManager.release(playbackId)
+      }
     }
   }, [
     clearStallTimer,
     enableSound,
     isTouch,
+    logTag,
     playbackId,
-    priority,
     syncMutedState,
   ])
+
+  playVideoRef.current = playVideo
 
   const scheduleStallWatch = useCallback(() => {
     clearStallTimer()
@@ -211,6 +318,32 @@ export function useVideoCardPlayback({
     }, LOAD_STALL_MS)
   }, [clearStallTimer, onVideoUnavailable, playVideo, videoReady])
 
+  const setVideoElementRef = useCallback(
+    (node: HTMLVideoElement | null) => {
+      videoRef.current = node
+      if (!node) {
+        canPlayRef.current = false
+        setVideoElementMounted(false)
+        return
+      }
+      setVideoElementMounted(true)
+      canPlayRef.current = shouldAttachVideo
+      applySafariVideoAttrs(node)
+      if (isVideoUrlWarmed(playbackUrl) && node.readyState >= 2) {
+        setVideoReady(true)
+      }
+      logVideoPlayback('video ref attached', {
+        tag: logTag,
+        readyState: node.readyState,
+        active: isActiveRef.current,
+      })
+      if (isActiveRef.current) {
+        queueMicrotask(() => void playVideoRef.current())
+      }
+    },
+    [logTag, playbackUrl, shouldAttachVideo],
+  )
+
   const handleCardTap = useCallback(
     (e: React.PointerEvent | React.MouseEvent) => {
       e.stopPropagation()
@@ -234,7 +367,7 @@ export function useVideoCardPlayback({
             setShowTapForSound(false)
             onSoundOn?.()
           } else {
-            void playVideoMuted(video).then((mutedOk) => {
+            void playVideoMutedFast(video).then((mutedOk) => {
               if (mutedOk) setIsPlaying(true)
               setAudioUnlocked(isVideoAudioUnlocked())
             })
@@ -261,7 +394,7 @@ export function useVideoCardPlayback({
         wantsSoundRef.current = false
         videoPlaybackManager.releaseAudio(playbackId)
         syncMutedState(true)
-        void playVideoMuted(video).then((ok) => {
+        void playVideoMutedFast(video).then((ok) => {
           if (ok) setIsPlaying(true)
         })
         return
@@ -273,30 +406,28 @@ export function useVideoCardPlayback({
   )
 
   useEffect(() => {
-    canPlayRef.current = shouldAttachVideo
-    if (shouldAttachVideo && isActiveRef.current) {
-      void playVideo()
+    canPlayRef.current = shouldAttachVideo && videoElementMounted
+    if (canPlayRef.current && isActiveRef.current) {
+      void playVideoRef.current()
     }
-  }, [shouldAttachVideo, playVideo])
+  }, [shouldAttachVideo, videoElementMounted])
 
   useEffect(() => {
     isActiveRef.current = isActiveViewport
     if (isActiveViewport && canPlayRef.current) {
-      void playVideo()
-    } else {
+      void playVideoRef.current()
+    } else if (!isActiveViewport) {
       pauseVideo()
       const video = videoRef.current
       if (video) video.currentTime = 0
     }
-  }, [isActiveViewport, pauseVideo, playVideo])
+  }, [isActiveViewport, pauseVideo])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     return videoPlaybackManager.register(
       playbackId,
       () => pauseVideo(),
-      () => {
-        syncMutedState(true)
-      },
+      () => syncMutedState(true),
     )
   }, [pauseVideo, playbackId, syncMutedState])
 
@@ -305,19 +436,31 @@ export function useVideoCardPlayback({
     setVideoReady(false)
     setIsPlaying(false)
     setShowStallHint(false)
-    setPosterReady(!resolvedPoster)
+    setPosterReady(true)
     wantsSoundRef.current = false
     syncMutedState(true)
     videoPlaybackManager.releaseAudio(playbackId)
+    videoPlaybackManager.release(playbackId)
 
-    if (!resolvedPoster) {
-      setPosterReady(true)
-      return
+    if (preloadTier === 'hot' || priority) {
+      setVideoElementMounted(true)
+      setIsNearViewport(true)
     }
+  }, [playbackUrl, syncMutedState, playbackId, preloadTier, priority])
 
-    const timer = window.setTimeout(() => setPosterReady(true), POSTER_READY_MS)
-    return () => window.clearTimeout(timer)
-  }, [videoUrl, resolvedPoster, syncMutedState, playbackId])
+  useEffect(() => {
+    if (shouldAttachVideo) {
+      clearDetachTimer()
+      return undefined
+    }
+    clearDetachTimer()
+    const delay =
+      preloadTier === 'hot' || preloadTier === 'warm' ? DETACH_NEAR_MS : DETACH_FAR_MS
+    detachTimerRef.current = window.setTimeout(() => {
+      setVideoElementMounted(false)
+    }, delay)
+    return () => clearDetachTimer()
+  }, [shouldAttachVideo, preloadTier, clearDetachTimer])
 
   useEffect(() => {
     if (!shouldAttachVideo || videoReady) {
@@ -329,27 +472,66 @@ export function useVideoCardPlayback({
   }, [shouldAttachVideo, videoReady, scheduleStallWatch, clearStallTimer])
 
   const { ref: containerRef } = useInViewport({
-    observe: !priority,
-    rootMargin: '100px 0px',
-    threshold: [0, 0.15, ACTIVE_RATIO, 0.65],
+    observe: true,
+    rootMargin: rootMarginForTier(preloadTier, priority),
+    threshold: [0, 0.06, ACTIVE_RATIO, 0.5, 0.82],
     onIntersecting: (visible, ratio) => {
-      const near = visible && ratio > 0.12
+      const near = visible && ratio > 0.04
       const active = visible && ratio >= ACTIVE_RATIO
-      viewportPriorityRef.current = priority ? 2 : ratio
-      setIsNearViewport(priority || near)
-      setIsActiveViewport(priority || active)
-      if (active && canPlayRef.current) {
-        videoPlaybackManager.requestPlay(playbackId, viewportPriorityRef.current, isTouch)
+      viewportRatioRef.current = visible ? ratio : 0
+      setIsNearViewport(near || prefetchZone)
+      setIsActiveViewport(active)
+      isActiveRef.current = active
+
+      if (feedIndex >= 0) {
+        videoFeedCoordinator.reportVisibility(
+          feedIndex,
+          visible ? ratio : 0,
+          videoUrl,
+          resolvedPoster,
+        )
+      }
+
+      if (active) {
+        logVideoPlayback('observer enter', {
+          tag: logTag,
+          ratio,
+          feedIndex,
+        })
+        videoPlaybackManager.requestPlay(
+          playbackId,
+          Math.max(ratio, ACTIVE_RATIO),
+          isTouch,
+        )
+        queueMicrotask(() => void playVideoRef.current())
+      } else {
+        logVideoPlayback('observer leave', { tag: logTag, ratio, visible })
+        videoPlaybackManager.release(playbackId)
       }
     },
   })
+
+  useLayoutEffect(() => {
+    if (videoElementMounted && isActiveRef.current && canPlayRef.current) {
+      void playVideoRef.current()
+    }
+  }, [videoElementMounted])
 
   const handleVideoReady = useCallback(() => {
     setVideoReady(true)
     setShowStallHint(false)
     clearStallTimer()
-    if (isActiveRef.current) void playVideo()
-  }, [clearStallTimer, playVideo])
+    logVideoPlayback('video ready (loadeddata)', { tag: logTag })
+    if (isActiveRef.current) void playVideoRef.current()
+  }, [clearStallTimer, logTag])
+
+  const handleCanPlay = useCallback(() => {
+    if (!videoReady) {
+      setVideoReady(true)
+      logVideoPlayback('video ready (canplay)', { tag: logTag })
+    }
+    if (isActiveRef.current) void playVideoRef.current()
+  }, [logTag, videoReady])
 
   const handleVideoError = useCallback(() => {
     setVideoReady(false)
@@ -360,18 +542,20 @@ export function useVideoCardPlayback({
   const handlePlay = useCallback(() => setIsPlaying(true), [])
   const handlePause = useCallback(() => setIsPlaying(false), [])
 
-  const preload =
-    priority || isActiveViewport ? 'metadata' : isNearViewport ? 'metadata' : 'none'
-
-  const videoVisible = shouldAttachVideo && isPlaying && videoReady
+  const showVideoElement = shouldAttachVideo || videoElementMounted
+  const videoVisible =
+    showVideoElement &&
+    videoReady &&
+    (isPlaying || (isActiveViewport && videoElementMounted))
 
   return {
     containerRef,
-    videoRef,
+    videoRef: setVideoElementRef,
+    playbackUrl,
     formatValid,
-    shouldAttachVideo,
+    showVideoElement: formatValid && showVideoElement,
     resolvedPoster,
-    preload,
+    preload: htmlPreload,
     videoVisible,
     isPlaying,
     isMuted,
@@ -384,6 +568,7 @@ export function useVideoCardPlayback({
     toggleMute,
     handleCardTap,
     handleVideoReady,
+    handleCanPlay,
     handleVideoError,
     handlePlay,
     handlePause,

@@ -11,6 +11,7 @@ import {
   VerifiedIcon,
 } from '@/components/ui/icons'
 import { getViralScoreTone, VELOCITY_META } from '@/lib/trend-intelligence'
+import type { VideoPreloadTier } from '@/lib/video-feed-preload'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export type DisplayTrend = TrendIntelligence
@@ -19,6 +20,8 @@ type TrendCardProps = {
   trend: TrendIntelligence
   onClick?: () => void
   priority?: boolean
+  feedIndex?: number
+  preloadTier?: VideoPreloadTier
   isSaved?: boolean
   /** Other cards' video URLs — avoids failover picking a duplicate in the feed */
   feedVideoUrls?: readonly string[]
@@ -28,6 +31,8 @@ function TrendCardComponent({
   trend,
   onClick,
   priority = false,
+  feedIndex = -1,
+  preloadTier = 'none',
   isSaved,
   feedVideoUrls = [],
 }: TrendCardProps) {
@@ -99,6 +104,8 @@ function TrendCardComponent({
           duration={media.videoDuration}
           aspectClass="relative z-[40] aspect-[9/16] w-full"
           priority={priority}
+          feedIndex={feedIndex}
+          preloadTier={preloadTier}
           onVideoUnavailable={handleVideoUnavailable}
         />
 
@@ -109,11 +116,16 @@ function TrendCardComponent({
                 'inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider backdrop-blur-md',
                 isTikTok
                   ? 'bg-black/60 text-white ring-1 ring-white/10'
-                  : 'bg-violet-600/80 text-white',
+                  : 'bg-gradient-to-r from-purple-600/90 to-pink-600/90 text-white ring-1 ring-white/10',
               )}
             >
-              {trend.platform}
+              {isTikTok ? 'TikTok' : 'Reels'}
             </span>
+            {trend.contentBreakdown?.audioTrend && (
+              <span className="inline-flex max-w-[9rem] truncate rounded-full bg-zinc-950/55 px-2 py-0.5 text-[8px] font-medium text-zinc-300 ring-1 ring-white/5 backdrop-blur-md sm:max-w-[11rem]">
+                ♪ {trend.contentBreakdown.audioTrend.split('—')[0].trim().slice(0, 28)}
+              </span>
+            )}
             {isSaved && (
               <span className="rounded-full bg-violet-500/30 px-1.5 py-0.5 text-[9px] font-medium text-violet-200 backdrop-blur-sm">
                 ★
@@ -159,9 +171,16 @@ function TrendCardComponent({
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-3.5 sm:gap-3.5 sm:p-4">
-        <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-white">
-          {trend.title}
-        </h3>
+        <div className="space-y-1">
+          <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-white">
+            {trend.title}
+          </h3>
+          {trend.description && (
+            <p className="line-clamp-2 text-[11px] leading-relaxed text-zinc-500">
+              {trend.description}
+            </p>
+          )}
+        </div>
 
         <TrendMetricsStrip trend={trend} variant="card" />
 
@@ -212,7 +231,11 @@ function TrendCardComponent({
 export const TrendCard = memo(TrendCardComponent, (prev, next) => {
   return (
     prev.trend.id === next.trend.id &&
+    prev.trend.videoUrl === next.trend.videoUrl &&
+    prev.trend.thumbnailUrl === next.trend.thumbnailUrl &&
     prev.priority === next.priority &&
+    prev.feedIndex === next.feedIndex &&
+    prev.preloadTier === next.preloadTier &&
     prev.isSaved === next.isSaved &&
     prev.onClick === next.onClick
   )
