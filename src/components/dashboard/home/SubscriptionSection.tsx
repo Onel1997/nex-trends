@@ -23,30 +23,52 @@ export function SubscriptionSection() {
   } = useDashboardData()
 
   return (
-    <div className="dashboard-os-account-card dashboard-os-card overflow-hidden rounded-2xl border border-zinc-800/55 bg-zinc-900/30">
-      <div className="border-b border-zinc-800/50 px-3 py-3 sm:px-4">
-        <div className="flex items-start justify-between gap-3">
+    <div className="dashboard-os-account-card dashboard-os-account-panel overflow-hidden">
+      <div className="border-b border-zinc-800/45 px-2.5 py-2">
+        <div className="flex items-start justify-between gap-2">
           <div>
-            <h3 className="text-sm font-medium text-white">Subscription</h3>
-            <p className="dashboard-os-muted mt-0.5 text-[11px]">Plan & billing</p>
+            <h3 className="text-[13px] font-semibold text-white">Subscription</h3>
+            <p className="dashboard-os-muted mt-0.5 text-[10px]">Plan & billing</p>
           </div>
           <Badge
             variant={isAdmin ? 'admin' : hasProAccess ? 'pro' : 'muted'}
-            className="shrink-0 capitalize"
+            className={cn(
+              'shrink-0 px-1.5 py-px text-[8px] capitalize',
+              isAdmin && 'dashboard-os-badge-admin',
+            )}
           >
             {statusLabel}
           </Badge>
         </div>
       </div>
 
-      <div className="p-3 sm:p-4">
-        <div className="rounded-lg border border-zinc-800/60 bg-zinc-950/50 p-3">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+      <div className="p-2.5">
+        <div
+          className={cn(
+            'rounded-[var(--dash-radius)] border p-2.5',
+            isAdmin
+              ? 'border-amber-500/25 bg-gradient-to-br from-amber-500/[0.08] to-zinc-950/80'
+              : 'border-zinc-800/50 bg-zinc-950/70',
+          )}
+        >
+          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
             Current plan
           </p>
-          <p className="mt-1 text-lg font-semibold tracking-tight text-white">{planLabel}</p>
+          <p
+            className={cn(
+              'mt-1 text-base font-semibold tracking-tight',
+              isAdmin ? 'text-amber-100' : 'text-white',
+            )}
+          >
+            {planLabel}
+          </p>
+          {isAdmin && (
+            <p className="mt-1 text-[10px] text-amber-200/70">
+              Full platform access · Priority infrastructure
+            </p>
+          )}
 
-          <ul className="mt-4 space-y-2.5 text-xs text-zinc-400 sm:text-sm">
+          <ul className="mt-3 space-y-2 text-[11px] text-zinc-400">
             {isAdmin || hasProAccess ? (
               <>
                 <FeatureItem>Unlimited credits</FeatureItem>
@@ -65,7 +87,7 @@ export function SubscriptionSection() {
           </ul>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-3 flex flex-col gap-1.5">
           {!isAdmin && !hasProAccess && (
             <Button variant="pro" fullWidth onClick={() => void openStripeCheckout()}>
               <CrownIcon className="size-4" />
@@ -99,7 +121,7 @@ function FeatureItem({
       <span
         className={cn(
           'size-1.5 shrink-0 rounded-full',
-          muted ? 'bg-zinc-600' : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.65)]',
+          muted ? 'bg-zinc-600' : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.55)]',
         )}
         aria-hidden
       />

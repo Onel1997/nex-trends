@@ -5,13 +5,13 @@ import { WeeklyUsageSection } from '@/components/dashboard/home/WeeklyUsageSecti
 
 export function DashboardCreditsStrip() {
   return (
-    <section className="dashboard-os-section dashboard-os-account space-y-3">
+    <section className="dashboard-os-section dashboard-os-account space-y-1.5">
       <DashboardSectionHeading
         title="Account & Usage"
-        description="Credits, subscription, and weekly analytics."
+        description="Credits, subscription, and creator analytics."
         compact
       />
-      <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+      <div className="grid gap-1.5 sm:grid-cols-2">
         <CreditsOverview />
         <SubscriptionSection />
       </div>

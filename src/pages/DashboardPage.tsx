@@ -24,13 +24,12 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
   return (
     <div className="dashboard-os nex-ambient relative mx-auto w-full min-w-0 max-w-6xl">
-      {/* Decorative layer — outside flex gap so it never adds vertical spacing */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="nex-ambient__orb nex-ambient__orb--1" />
         <div className="nex-ambient__orb nex-ambient__orb--2" />
       </div>
 
-      <div className="dashboard-os__content relative flex flex-col gap-3 sm:gap-4">
+      <div className="dashboard-os__content relative flex flex-col gap-2 sm:gap-2.5">
         {error && (
           <div
             role="alert"
@@ -42,15 +41,14 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
         <DashboardHero user={user} stats={stats} />
 
-        <div className="dashboard-os-workspace">
-          <DashboardCoreProducts onNavigate={onNavigate} />
+        <DashboardCoreProducts onNavigate={onNavigate} />
 
+        <div className="dashboard-os-workspace">
           <DashboardLibrarySection
             videos={videos}
             videosLoading={loadingVideos}
             onNavigate={onNavigate}
           />
-
           <DashboardActivityTimeline />
         </div>
 

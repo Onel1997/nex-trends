@@ -20,7 +20,7 @@ export function DashboardSectionHeading({
     <div
       className={cn(
         'flex flex-wrap items-end justify-between gap-2',
-        compact ? 'mb-2' : 'mb-2.5 sm:mb-3',
+        compact ? 'mb-1.5' : 'mb-2 sm:mb-2.5',
         className,
       )}
     >

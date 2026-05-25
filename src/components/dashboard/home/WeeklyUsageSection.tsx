@@ -6,17 +6,17 @@ export function WeeklyUsageSection() {
   const { weeklyUsage } = useDashboardData()
 
   return (
-    <div className="dashboard-os-account-card dashboard-os-card overflow-hidden rounded-2xl border border-zinc-800/55 bg-zinc-900/30">
-      <div className="flex items-center gap-2.5 border-b border-zinc-800/50 px-3 py-3 sm:px-4">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-700/60 bg-zinc-800/50">
+    <div className="dashboard-os-account-card dashboard-os-account-panel overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-zinc-800/45 px-2.5 py-2">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/8">
           <ChartBarIcon className="size-3.5 text-violet-400" aria-hidden />
         </span>
         <div className="min-w-0">
-          <h3 className="text-sm font-medium text-white">Weekly Usage</h3>
-          <p className="dashboard-os-muted text-[11px]">Credit consumption</p>
+          <h3 className="text-[13px] font-semibold text-white">Analytics</h3>
+          <p className="dashboard-os-muted text-[10px]">Weekly credit consumption</p>
         </div>
       </div>
-      <div className="dashboard-os-analytics-chart px-3 pb-3 pt-2 sm:px-4 sm:pb-4">
+      <div className="dashboard-os-analytics-chart px-2.5 pb-2.5 pt-1.5">
         <UsageLineChart data={weeklyUsage} />
       </div>
     </div>

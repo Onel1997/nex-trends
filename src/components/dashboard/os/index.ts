@@ -1,3 +1,4 @@
+export { DashboardAiEngineVisual } from './DashboardAiEngineVisual'
 export { DashboardCarousel, DashboardCarouselItem } from './DashboardCarousel'
 export { DashboardSubsectionHeader } from './DashboardSubsectionHeader'
 export { DashboardSectionHeading } from './DashboardSectionHeading'
