@@ -1,3 +1,5 @@
+export { DashboardCarousel, DashboardCarouselItem } from './DashboardCarousel'
+export { DashboardSubsectionHeader } from './DashboardSubsectionHeader'
 export { DashboardSectionHeading } from './DashboardSectionHeading'
 export { DashboardHero } from './DashboardHero'
 export { DashboardQuickActions } from './DashboardQuickActions'

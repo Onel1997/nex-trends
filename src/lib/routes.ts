@@ -166,18 +166,18 @@ export function getSidebarRoutes(): DashboardRouteConfig[] {
   return NAV_ROUTE_ORDER.map((id) => getRouteConfig(id)).filter((r) => r.showInSidebar)
 }
 
-/** Core NexTrends features — hero cards on dashboard (in order) */
+/** Core NexTrends modules — Quick Actions & Core Products (in display order) */
 export const DASHBOARD_CORE_FEATURES = [
   'trend-intelligence',
   'ai-studio',
-] as const satisfies readonly DashboardRouteId[]
-
-/** Remaining tools below core heroes on dashboard */
-export const DASHBOARD_SECONDARY_TOOL_ORDER = [
   'analyzer',
   'hook',
   'ad-copy',
   'seo',
+] as const satisfies readonly DashboardRouteId[]
+
+/** Remaining tools below core module grid on legacy home sections */
+export const DASHBOARD_SECONDARY_TOOL_ORDER = [
   'saved-trends',
   'my-videos',
 ] as const satisfies readonly DashboardRouteId[]

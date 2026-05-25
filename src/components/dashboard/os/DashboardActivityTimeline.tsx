@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { DashboardSectionHeading } from '@/components/dashboard/os/DashboardSectionHeading'
+import { DashboardSubsectionHeader } from '@/components/dashboard/os/DashboardSubsectionHeader'
+import { AiPulseIndicator } from '@/components/ui/AiPulseIndicator'
 import {
   BoltIcon,
   BookmarkIcon,
@@ -21,7 +22,6 @@ type ActivityVisual = {
   chip: string
   chipClass: string
   iconWrap: string
-  emoji: string
 }
 
 function getActivityVisual(tool: string, label: string): ActivityVisual {
@@ -31,81 +31,64 @@ function getActivityVisual(tool: string, label: string): ActivityVisual {
     return {
       Icon: ClapperboardIcon,
       chip: 'AI Video',
-      chipClass: 'border-violet-500/35 bg-violet-500/12 text-violet-300 shadow-[0_0_16px_-6px_rgba(139,92,246,0.4)]',
-      iconWrap: 'bg-violet-500/18 text-violet-400 ring-1 ring-violet-500/25',
-      emoji: '🎥',
+      chipClass: 'border-violet-500/35 bg-violet-500/15 text-violet-300',
+      iconWrap: 'bg-violet-500/20 text-violet-400 ring-1 ring-violet-500/30 shadow-[0_0_20px_-8px_rgba(139,92,246,0.5)]',
     }
   }
   if (text.includes('saved') || text.includes('bookmark')) {
     return {
       Icon: BookmarkIcon,
-      chip: 'Trend Saved',
+      chip: 'Saved',
       chipClass: 'border-fuchsia-500/35 bg-fuchsia-500/12 text-fuchsia-300',
       iconWrap: 'bg-fuchsia-500/18 text-fuchsia-400 ring-1 ring-fuchsia-500/25',
-      emoji: '🔥',
     }
   }
   if (text.includes('trend') && !text.includes('saved')) {
     return {
       Icon: TrendingUpIcon,
       chip: 'Trend',
-      chipClass: 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300',
-      iconWrap: 'bg-fuchsia-500/15 text-fuchsia-400',
-      emoji: '📈',
-    }
-  }
-  if (text.includes('score') || text.includes('increas')) {
-    return {
-      Icon: TrendingUpIcon,
-      chip: 'Growth',
-      chipClass: 'border-emerald-500/35 bg-emerald-500/12 text-emerald-300',
-      iconWrap: 'bg-emerald-500/15 text-emerald-400',
-      emoji: '📈',
+      chipClass: 'border-violet-500/30 bg-violet-500/12 text-violet-300',
+      iconWrap: 'bg-violet-500/18 text-violet-400 ring-1 ring-violet-500/25',
     }
   }
   if (text.includes('hook')) {
     return {
       Icon: BoltIcon,
       chip: 'Hook',
-      chipClass: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-      iconWrap: 'bg-amber-500/15 text-amber-400',
-      emoji: '✍️',
+      chipClass: 'border-amber-500/30 bg-amber-500/12 text-amber-300',
+      iconWrap: 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/25',
     }
   }
   if (text.includes('analy') || text.includes('landing')) {
     return {
       Icon: ChartBarIcon,
       chip: 'Analytics',
-      chipClass: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
-      iconWrap: 'bg-indigo-500/15 text-indigo-300',
-      emoji: '📊',
+      chipClass: 'border-indigo-500/30 bg-indigo-500/12 text-indigo-300',
+      iconWrap: 'bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/25',
     }
   }
   if (text.includes('seo') || text.includes('title')) {
     return {
       Icon: MagnifyingGlassIcon,
       chip: 'SEO',
-      chipClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300',
-      iconWrap: 'bg-cyan-500/15 text-cyan-300',
-      emoji: '✍️',
+      chipClass: 'border-cyan-500/30 bg-cyan-500/12 text-cyan-300',
+      iconWrap: 'bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/25',
     }
   }
   if (text.includes('ad') || text.includes('copy')) {
     return {
       Icon: SparklesIcon,
       chip: 'Ad Copy',
-      chipClass: 'border-violet-500/30 bg-violet-500/10 text-violet-300',
-      iconWrap: 'bg-violet-500/15 text-violet-400',
-      emoji: '✨',
+      chipClass: 'border-violet-500/30 bg-violet-500/12 text-violet-300',
+      iconWrap: 'bg-violet-500/15 text-violet-400 ring-1 ring-violet-500/25',
     }
   }
 
   return {
     Icon: SparklesIcon,
     chip: 'AI',
-    chipClass: 'border-zinc-700/80 bg-zinc-800/60 text-zinc-400',
-    iconWrap: 'bg-zinc-800 text-zinc-400',
-    emoji: '⚡',
+    chipClass: 'border-zinc-700/70 bg-zinc-800/60 text-zinc-400',
+    iconWrap: 'bg-zinc-800/80 text-zinc-400 ring-1 ring-zinc-700/80',
   }
 }
 
@@ -120,49 +103,60 @@ function formatRelativeTime(iso: string): string {
   return `${days}d ago`
 }
 
-function ActivityCard({ item, isLatest }: { item: ActivityItem; isLatest: boolean }) {
+function ActivityRow({
+  item,
+  isLatest,
+}: {
+  item: ActivityItem
+  isLatest: boolean
+}) {
   const visual = getActivityVisual(item.tool, item.label)
   const { Icon } = visual
 
   return (
-    <li className="relative pl-0">
+    <li>
       <div
         className={cn(
-          'dashboard-os-activity-card glass-premium flex gap-3.5 rounded-2xl p-4 sm:p-4',
-          isLatest && 'border-emerald-500/15',
+          'dashboard-os-activity-row dashboard-os-card glass-premium flex items-center gap-3 rounded-2xl border p-3 transition-smooth sm:gap-3.5 sm:p-3.5',
+          isLatest
+            ? 'border-emerald-500/25 shadow-[0_0_28px_-14px_rgba(52,211,153,0.35)]'
+            : 'border-zinc-800/55',
         )}
       >
         <span
           className={cn(
-            'flex size-11 shrink-0 items-center justify-center rounded-xl text-lg',
+            'flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-11',
             visual.iconWrap,
           )}
-          aria-hidden
         >
-          <span className="sr-only">{visual.emoji}</span>
           <Icon className="size-5" aria-hidden />
         </span>
+
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-zinc-100">{item.label}</p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="truncate text-sm font-semibold text-zinc-50">{item.label}</p>
             <span
               className={cn(
-                'rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide',
+                'shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide',
                 visual.chipClass,
               )}
             >
               {visual.chip}
             </span>
             {isLatest && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-semibold text-emerald-300">
-                <span className="ai-pulse-ring relative size-1.5 rounded-full bg-emerald-400" />
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2 py-0.5 text-[9px] font-semibold text-emerald-300">
+                <span className="relative flex size-1.5" aria-hidden>
+                  <span className="ai-pulse-ring absolute inset-0 rounded-full bg-emerald-400/50" />
+                  <span className="relative size-1.5 rounded-full bg-emerald-400" />
+                </span>
                 Live
               </span>
             )}
           </div>
-          <p className="mt-1 text-xs text-zinc-500">{item.tool}</p>
+          <p className="dashboard-os-muted mt-0.5 truncate text-xs">{item.tool}</p>
         </div>
-        <time className="shrink-0 self-start text-[10px] font-medium tabular-nums text-zinc-600">
+
+        <time className="dashboard-os-muted shrink-0 text-[10px] font-medium tabular-nums">
           {formatRelativeTime(item.timestamp)}
         </time>
       </div>
@@ -177,20 +171,22 @@ export function DashboardActivityTimeline() {
   const hasMore = activities.length > MAX_VISIBLE
 
   return (
-    <section className="animate-fade-in animation-delay-400">
-      <DashboardSectionHeading
+    <section className="dashboard-os-section animate-fade-in animation-delay-400">
+      <DashboardSubsectionHeader
         title="AI Activity Feed"
-        description="Real-time log of your creator system — videos, trends, and tools."
         action={
-          hasMore ? (
-            <button
-              type="button"
-              onClick={() => setExpanded((e) => !e)}
-              className="text-xs font-medium text-violet-400 transition-smooth hover:text-violet-300"
-            >
-              {expanded ? 'Show less' : 'View all activity →'}
-            </button>
-          ) : undefined
+          <div className="flex shrink-0 items-center gap-2">
+            <AiPulseIndicator label="Live" size="sm" />
+            {hasMore ? (
+              <button
+                type="button"
+                onClick={() => setExpanded((e) => !e)}
+                className="text-xs font-medium text-violet-400 transition-smooth hover:text-violet-300"
+              >
+                {expanded ? 'Show less' : 'View all →'}
+              </button>
+            ) : null}
+          </div>
         }
       />
 
@@ -203,18 +199,14 @@ export function DashboardActivityTimeline() {
           icon={<SparklesIcon className="size-5 text-violet-400/80" aria-hidden />}
         />
       ) : (
-        <ul className="relative space-y-2">
-          <div
-            className="absolute bottom-2 left-[1.35rem] top-2 w-px bg-gradient-to-b from-violet-500/40 via-zinc-700/50 to-transparent"
-            aria-hidden
-          />
+        <ul className="flex flex-col gap-2">
           {visible.map((item, i) => (
             <div
               key={item.id}
               className="animate-fade-in"
-              style={{ animationDelay: `${i * 45}ms` }}
+              style={{ animationDelay: `${i * 40}ms` }}
             >
-              <ActivityCard item={item} isLatest={i === 0} />
+              <ActivityRow item={item} isLatest={i === 0} />
             </div>
           ))}
         </ul>

@@ -1,10 +1,15 @@
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { Card, CardBody, CardHeader } from '@/components/ui/Card'
 import { CrownIcon } from '@/components/ui/icons'
 import { useDashboardData } from '@/hooks/useDashboardData'
-import { MAX_FREE_CREDITS, PRO_PRICE_LABEL, SIGNUP_CREDITS, WEEKLY_REFILL_CREDITS } from '@/lib/constants'
+import {
+  MAX_FREE_CREDITS,
+  PRO_PRICE_LABEL,
+  SIGNUP_CREDITS,
+  WEEKLY_REFILL_CREDITS,
+} from '@/lib/constants'
+import { cn } from '@/lib'
 
 export function SubscriptionSection() {
   const {
@@ -18,64 +23,66 @@ export function SubscriptionSection() {
   } = useDashboardData()
 
   return (
-    <Card variant="glass" className="animate-fade-in animation-delay-200 glass-premium">
-      <CardHeader>
-        <h3 className="text-sm font-semibold tracking-tight text-white">Subscription</h3>
-        <p className="mt-0.5 text-xs text-zinc-500">Plan verwalten & upgraden</p>
-      </CardHeader>
-      <CardBody className="space-y-5">
-        <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/50 p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-widest text-zinc-600">
-                Aktueller Plan
-              </p>
-              <p className="mt-1.5 text-lg font-semibold tracking-tight text-white">{planLabel}</p>
-            </div>
-            <Badge variant={isAdmin ? 'admin' : hasProAccess ? 'pro' : 'muted'}>
-              {statusLabel}
-            </Badge>
-          </div>
-
-          <ul className="mt-5 space-y-2.5 text-sm text-zinc-400">
-            {isAdmin || hasProAccess ? (
-              <>
-                <FeatureItem>Unbegrenzte Credits</FeatureItem>
-                <FeatureItem>Alle Premium-Tools</FeatureItem>
-                <FeatureItem>Priorisierter KI-Zugriff</FeatureItem>
-              </>
-            ) : (
-              <>
-                <FeatureItem muted>
-                  {SIGNUP_CREDITS} Credits Start · +{WEEKLY_REFILL_CREDITS} wöchentlich (max.{' '}
-                  {MAX_FREE_CREDITS})
-                </FeatureItem>
-                <FeatureItem muted>Alle KI-Tools mit Credits</FeatureItem>
-                <FeatureItem muted>Trend-Scouting inklusive</FeatureItem>
-              </>
-            )}
-          </ul>
+    <div className="dashboard-os-account-card dashboard-os-card glass-premium animate-fade-in animation-delay-100 rounded-2xl border border-zinc-800/55 p-4 sm:p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold tracking-tight text-white">Subscription</h3>
+          <p className="dashboard-os-muted mt-0.5 text-xs">Manage plan & upgrades</p>
         </div>
+        <Badge
+          variant={isAdmin ? 'admin' : hasProAccess ? 'pro' : 'muted'}
+          className={cn(
+            'shrink-0 capitalize',
+            isAdmin && 'shadow-[0_0_20px_-6px_rgba(139,92,246,0.5)]',
+          )}
+        >
+          {statusLabel}
+        </Badge>
+      </div>
 
-        <div className="flex flex-col gap-2.5">
-          {!isAdmin && !hasProAccess && (
-            <Button variant="pro" fullWidth onClick={() => void openStripeCheckout()}>
-              <CrownIcon className="size-4" />
-              Upgrade · {PRO_PRICE_LABEL}
-            </Button>
+      <div className="rounded-xl border border-zinc-800/60 bg-zinc-950/50 p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+          Current plan
+        </p>
+        <p className="mt-1 text-lg font-semibold tracking-tight text-white">{planLabel}</p>
+
+        <ul className="mt-4 space-y-2 text-xs text-zinc-400 sm:text-sm">
+          {isAdmin || hasProAccess ? (
+            <>
+              <FeatureItem>Unlimited credits</FeatureItem>
+              <FeatureItem>All premium tools</FeatureItem>
+              <FeatureItem>Priority AI access</FeatureItem>
+            </>
+          ) : (
+            <>
+              <FeatureItem muted>
+                {SIGNUP_CREDITS} start · +{WEEKLY_REFILL_CREDITS}/week (max {MAX_FREE_CREDITS})
+              </FeatureItem>
+              <FeatureItem muted>All AI tools with credits</FeatureItem>
+              <FeatureItem muted>Trend scouting included</FeatureItem>
+            </>
           )}
-          {!isAdmin && (
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={hasProAccess ? manageSubscription : openUpgradeModal}
-            >
-              {hasProAccess ? 'Abo verwalten' : 'Pläne vergleichen'}
-            </Button>
-          )}
-        </div>
-      </CardBody>
-    </Card>
+        </ul>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-2">
+        {!isAdmin && !hasProAccess && (
+          <Button variant="pro" fullWidth onClick={() => void openStripeCheckout()}>
+            <CrownIcon className="size-4" />
+            Upgrade · {PRO_PRICE_LABEL}
+          </Button>
+        )}
+        {!isAdmin && (
+          <Button
+            variant="secondary"
+            fullWidth
+            onClick={hasProAccess ? manageSubscription : openUpgradeModal}
+          >
+            {hasProAccess ? 'Manage subscription' : 'Compare plans'}
+          </Button>
+        )}
+      </div>
+    </div>
   )
 }
 
@@ -87,9 +94,12 @@ function FeatureItem({
   muted?: boolean
 }) {
   return (
-    <li className="flex items-center gap-2.5">
+    <li className="flex items-center gap-2">
       <span
-        className={`size-1.5 shrink-0 rounded-full ${muted ? 'bg-zinc-600' : 'bg-emerald-400'}`}
+        className={cn(
+          'size-1.5 shrink-0 rounded-full',
+          muted ? 'bg-zinc-600' : 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]',
+        )}
         aria-hidden
       />
       {children}

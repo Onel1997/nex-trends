@@ -72,30 +72,30 @@ export function DashboardLayout({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky-header-smooth sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-zinc-800/50 glass-subtle px-4 lg:hidden">
+        <header className="dashboard-mobile-header sticky-header-smooth sticky top-0 z-30 flex items-center gap-2.5 border-b border-zinc-800/50 glass-subtle px-3.5 lg:hidden">
           <button
             type="button"
             aria-label={mobileOpen ? 'Menü schließen' : 'Menü öffnen'}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((open) => !open)}
-            className="flex size-10 items-center justify-center rounded-xl text-zinc-300 transition-smooth hover:bg-zinc-800/60 hover:text-white active:scale-95"
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-zinc-300 transition-smooth hover:bg-zinc-800/60 hover:text-white active:scale-95"
           >
             {mobileOpen ? (
-              <CloseIcon className="size-5" />
+              <CloseIcon className="size-[1.125rem]" />
             ) : (
-              <MenuIcon className="size-5" />
+              <MenuIcon className="size-[1.125rem]" />
             )}
           </button>
           <button
             type="button"
             onClick={handleNavigateHome}
-            className="truncate text-sm font-semibold tracking-tight text-white"
+            className="min-w-0 truncate text-[13px] font-semibold tracking-tight text-white"
           >
             {APP_NAME}
           </button>
         </header>
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto scroll-smooth-mobile">
+        <main className="dashboard-main-safe flex-1 overflow-x-hidden overflow-y-auto scroll-smooth-mobile">
           {children}
         </main>
       </div>

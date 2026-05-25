@@ -15,16 +15,23 @@ export function DashboardSectionHeading({
   className,
 }: DashboardSectionHeadingProps) {
   return (
-    <div className={cn('mb-5 flex flex-wrap items-end justify-between gap-3 sm:mb-6', className)}>
-      <div className="min-w-0">
-        <h2 className="text-sm font-semibold tracking-tight text-zinc-200 sm:text-base">
+    <div
+      className={cn(
+        'mb-3 flex flex-wrap items-end justify-between gap-2 sm:mb-4 sm:gap-2.5',
+        className,
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <h2 className="text-[13px] font-semibold tracking-tight text-zinc-100 sm:text-base">
           {title}
         </h2>
         {description ? (
-          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-zinc-500">{description}</p>
+          <p className="dashboard-os-muted mt-0.5 max-w-xl text-xs leading-snug sm:mt-1 sm:text-sm sm:leading-relaxed">
+            {description}
+          </p>
         ) : null}
       </div>
-      {action}
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   )
 }
