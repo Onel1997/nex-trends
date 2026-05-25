@@ -4,6 +4,12 @@ import { PlayIcon } from '@/components/ui/icons'
 import { useInViewport } from '@/hooks/useInViewport'
 import { useIsTouchDevice } from '@/hooks/useIsTouchDevice'
 import { videoPlaybackManager } from '@/lib/video-playback-manager'
+import {
+  isPlayableDemoVideoUrl,
+  isTrustedDemoVideoUrl,
+  posterForVideoUrl,
+} from '@/lib/demo-media'
+import { markDemoVideoFailed } from '@/lib/trend-media-assignment'
 import { isLocalDemoVideo, isValidVideoUrl, probeVideoUrl } from '@/lib/video-url'
 
 type VideoPreviewProps = {
@@ -61,7 +67,11 @@ export function VideoPreview({
   const [isNearViewport, setIsNearViewport] = useState(priority)
   const [isActiveViewport, setIsActiveViewport] = useState(priority)
 
-  const formatValid = isValidVideoUrl(videoUrl)
+  const formatValid = isValidVideoUrl(videoUrl) && isPlayableDemoVideoUrl(videoUrl)
+  const trustedVideo = isTrustedDemoVideoUrl(videoUrl)
+  const posterSrc =
+    thumbnailUrl?.trim() ||
+    (videoUrl ? (posterForVideoUrl(videoUrl) ?? '') : '')
   const shouldAttachVideo = formatValid && !videoFailed && (priority || isNearViewport)
   const canPlay = shouldAttachVideo
   const videoVisible = canPlay && isPlaying && videoReady && !videoFailed
@@ -153,7 +163,9 @@ export function VideoPreview({
     setVideoReady(false)
     setIsPlaying(false)
     setAutoplayBlocked(false)
-  }, [videoUrl])
+    setThumbLoaded(false)
+    setThumbFailed(false)
+  }, [videoUrl, posterSrc])
 
   const { ref: containerRef } = useInViewport({
     observe: !priority,
@@ -173,7 +185,13 @@ export function VideoPreview({
   })
 
   useEffect(() => {
-    if (!formatValid || !videoUrl || !shouldAttachVideo || isLocalDemoVideo(videoUrl)) {
+    if (
+      !formatValid ||
+      !videoUrl ||
+      !shouldAttachVideo ||
+      isLocalDemoVideo(videoUrl) ||
+      trustedVideo
+    ) {
       return
     }
 
@@ -181,13 +199,19 @@ export function VideoPreview({
 
     void probeVideoUrl(videoUrl, controller.signal).then((ok) => {
       if (controller.signal.aborted || ok) return
+      markDemoVideoFailed(videoUrl)
+      if (onVideoUnavailable) {
+        onVideoUnavailable()
+        return
+      }
+      setVideoFailed(true)
       if (import.meta.env.DEV) {
-        console.warn('[VideoPreview] Metadata probe failed, relying on element load:', videoUrl)
+        console.warn('[VideoPreview] Metadata probe failed:', videoUrl)
       }
     })
 
     return () => controller.abort()
-  }, [videoUrl, formatValid, shouldAttachVideo])
+  }, [videoUrl, formatValid, shouldAttachVideo, onVideoUnavailable, trustedVideo])
 
   const preloadMode = priority || isActiveViewport ? 'auto' : isNearViewport ? 'metadata' : 'none'
   const showThumbnail = !videoVisible || autoplayBlocked || videoFailed
@@ -223,6 +247,7 @@ export function VideoPreview({
   }, [isTouch, isHovered, videoReady, canPlay, isCard])
 
   function handleVideoError() {
+    markDemoVideoFailed(videoUrl)
     if (onVideoUnavailable) {
       pauseVideo()
       setVideoReady(false)
@@ -293,12 +318,16 @@ export function VideoPreview({
         <div className="absolute inset-0 animate-shimmer bg-zinc-900/60" aria-hidden />
       )}
 
+      {posterSrc ? (
       <img
-        src={thumbnailUrl}
+        src={posterSrc}
         alt={alt}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
-        onLoad={() => setThumbLoaded(true)}
+        onLoad={() => {
+          setThumbLoaded(true)
+          setThumbFailed(false)
+        }}
         onError={() => {
           setThumbFailed(true)
           setThumbLoaded(false)
@@ -308,8 +337,9 @@ export function VideoPreview({
           showThumbnail || thumbFailed ? 'opacity-100' : 'opacity-0',
         )}
       />
+      ) : null}
 
-      {thumbFailed && (
+      {thumbFailed && !posterSrc && (
         <div
           className="absolute inset-0 flex items-center justify-center bg-zinc-900/80"
           aria-hidden

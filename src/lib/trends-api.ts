@@ -1,6 +1,6 @@
 import { getDemoUserSeed, searchShuffleSeed } from '@/lib/demo-trend-seed'
 import { pickDemoBrowsePack, searchDemoTrendCatalog } from '@/lib/demo-trend-search'
-import { ensureFeedMediaDiversity } from '@/lib/trend-media-assignment'
+import { ensureFeedMediaDiversity, sanitizeTrendMedia } from '@/lib/trend-media-assignment'
 import { enrichTrendIntelligence } from '@/lib/trend-intelligence'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
@@ -35,7 +35,9 @@ export async function fetchDemoTrends(
 
   const seed = searchShuffleSeed('__browse__', userSeed)
   const raw = ensureFeedMediaDiversity(pickDemoBrowsePack(userSeed, limit), seed)
-  return raw.map((t, i) => enrichTrendIntelligence({ ...t, isDemo: true }, i))
+  return raw.map((t, i) =>
+    enrichTrendIntelligence(sanitizeTrendMedia({ ...t, isDemo: true }, i), i),
+  )
 }
 
 /**
@@ -54,11 +56,14 @@ export async function fetchTrendsByNiche(
   const raw = searchDemoTrendCatalog(niche, { limit, userSeed })
   return raw.map((trend, index) =>
     enrichTrendIntelligence(
-      {
-        ...trend,
-        niche: trend.niche ?? niche,
-        isDemo: true,
-      },
+      sanitizeTrendMedia(
+        {
+          ...trend,
+          niche: trend.niche ?? niche,
+          isDemo: true,
+        },
+        index,
+      ),
       index,
     ),
   )

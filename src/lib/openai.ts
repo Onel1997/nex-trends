@@ -175,30 +175,74 @@ export async function searchTrends(niche: string): Promise<TrendIntelligence[]> 
 }
 
 const TREND_HOOK_STYLES = {
-  aggressive: 'aggressiv, direkt, konfrontativ — maximale Scroll-Stop-Power',
-  luxury: 'quiet luxury, premium, aspirational — ruhig aber hochwertig',
-  storytelling: 'narrativ, emotional, persönliche Geschichte — starke Retention',
-  faceless: 'faceless, voice-over, text-on-screen — skalierbar ohne Gesicht',
-  ugc: 'authentisch UGC, raw, relatable — wie von einem echten User',
+  aggressive: 'Aggressive — direkt, konfrontativ, maximale Scroll-Stop-Power',
+  luxury: 'Luxury — quiet luxury, premium, aspirational, ruhig aber hochwertig',
+  storytelling:
+    'Storytelling — narrativ, emotional, persönliche Geschichte, starke Retention',
+  faceless: 'Faceless — voice-over, text-on-screen, skalierbar ohne Gesicht',
+  ugc: 'UGC — authentisch, raw, relatable, wie von einem echten User',
 } as const
 
 export type TrendHookStyle = keyof typeof TREND_HOOK_STYLES
 
-export async function generateTrendHooks(
-  trendTitle: string,
-  hookText: string,
-  style: TrendHookStyle,
-  niche?: string,
-): Promise<string[]> {
+export type GenerateHooksInput = {
+  style: TrendHookStyle
+  niche: string
+  trendTitle?: string
+  hookText?: string
+  description?: string
+  hashtags?: string[]
+  hookSuggestions?: string[]
+  contentIdeas?: string[]
+  platform?: string
+  briefing?: string
+}
+
+function buildHookUserMessage(input: GenerateHooksInput): string {
+  const lines: string[] = [`Nische / Trend-Thema: ${input.niche.trim()}`]
+
+  if (input.trendTitle?.trim()) lines.push(`Trend-Titel: ${input.trendTitle.trim()}`)
+  if (input.platform?.trim()) lines.push(`Plattform: ${input.platform.trim()}`)
+  if (input.hookText?.trim()) lines.push(`Referenz-Hook (viral): ${input.hookText.trim()}`)
+  if (input.description?.trim()) lines.push(`Trend-Kontext: ${input.description.trim()}`)
+  if (input.hashtags?.length) lines.push(`Hashtags: ${input.hashtags.join(' ')}`)
+  if (input.hookSuggestions?.length) {
+    lines.push(`Weitere Hook-Ideen: ${input.hookSuggestions.join(' | ')}`)
+  }
+  if (input.contentIdeas?.length) {
+    lines.push(`Content-Ideen: ${input.contentIdeas.join(' | ')}`)
+  }
+  if (input.briefing?.trim()) {
+    lines.push(`Zusätzliches Briefing: ${input.briefing.trim()}`)
+  }
+
+  return lines.join('\n')
+}
+
+function buildHookSystemPrompt(style: TrendHookStyle): string {
   const styleDesc = TREND_HOOK_STYLES[style]
+  return `Du bist ein Elite Viral Hook Copywriter für TikTok, Instagram Reels und YouTube Shorts (DACH-Markt).
+
+Schreibe kurzform Hooks im Stil: ${styleDesc}.
+
+Anforderungen:
+- Scroll-Stopper für die ersten 1–3 Sekunden
+- TikTok/Reels-native Formulierung (POV, „Stopp", direkte Ansprache, Neugier-Lücken)
+- Hohe Retention durch offene Loops und Neugier — kein generischer Marketing-Sprech
+- Max 120 Zeichen pro Hook, keine Hashtags, Deutsch
+- Genau 4 einzigartige Hooks — jeder muss sich klar vom anderen unterscheiden
+- Hooks müssen zur genannten Nische und zum Trend-Kontext passen
+
+Antworte NUR mit JSON: {"hooks":["hook1","hook2","hook3","hook4"]}`
+}
+
+export async function generateTrendHooks(input: GenerateHooksInput): Promise<string[]> {
+  const niche = input.niche?.trim()
+  if (!niche) throw new Error('Bitte wähle eine Nische oder gib ein Thema ein.')
+
   const content = await callOpenAIJson(
-    `Du bist ein Viral Hook Copywriter für TikTok und Instagram Reels.
-Erstelle 4 neue Hooks im Stil: ${styleDesc}.
-Antworte NUR mit JSON: {"hooks":["hook1","hook2","hook3","hook4"]}
-Keine Hashtags. Max 120 Zeichen pro Hook. Deutsch.`,
-    `Trend: ${trendTitle}
-Original-Hook: ${hookText}
-${niche ? `Nische: ${niche}` : ''}`,
+    buildHookSystemPrompt(input.style),
+    buildHookUserMessage({ ...input, niche }),
   )
 
   const parsed = JSON.parse(content) as { hooks?: string[] }
@@ -207,4 +251,33 @@ ${niche ? `Nische: ${niche}` : ''}`,
   )
   if (!hooks?.length) throw new Error('Keine Hooks generiert.')
   return hooks.slice(0, 4)
+}
+
+/** Map trend intelligence into hook generation context */
+export function trendToHookInput(
+  trend: {
+    title: string
+    niche?: string
+    platform: string
+    description: string
+    hashtags: string[]
+    hookSuggestions: string[]
+    contentIdeas: string[]
+    hookAnalysis: { hookText: string }
+  },
+  style: TrendHookStyle,
+  briefing?: string,
+): GenerateHooksInput {
+  return {
+    style,
+    niche: trend.niche?.trim() || trend.title,
+    trendTitle: trend.title,
+    hookText: trend.hookAnalysis.hookText,
+    description: trend.description,
+    hashtags: trend.hashtags,
+    hookSuggestions: trend.hookSuggestions,
+    contentIdeas: trend.contentIdeas,
+    platform: trend.platform,
+    briefing,
+  }
 }

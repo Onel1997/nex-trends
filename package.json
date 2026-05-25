@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "fetch-demo-videos": "bash scripts/fetch-demo-videos.sh"
+    "fetch-demo-videos": "bash scripts/fetch-demo-videos.sh",
+    "validate-demo-media": "node scripts/validate-demo-media.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",

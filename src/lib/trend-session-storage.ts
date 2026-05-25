@@ -1,9 +1,11 @@
 import type { ScoutPlatform } from '@/components/trends/TrendScoutSearch'
 import type { TrendsView } from '@/components/trends/TrendsTabNav'
+import { sanitizeTrendMedia } from '@/lib/trend-media-assignment'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 const STORAGE_KEY = 'nextrends_ti_session'
-const SESSION_VERSION = 1
+/** Bump when demo media pool / assignment logic changes */
+const SESSION_VERSION = 3
 const MAX_TRENDS = 40
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -52,7 +54,10 @@ export function loadTrendSession(): PersistedTrendSession | null {
     if (!isTrendsView(parsed.view)) return null
     if (!Array.isArray(parsed.trends)) return null
 
-    const trends = parsed.trends.filter(isTrendIntelligence).slice(0, MAX_TRENDS)
+    const trends = parsed.trends
+      .filter(isTrendIntelligence)
+      .slice(0, MAX_TRENDS)
+      .map((trend, index) => sanitizeTrendMedia(trend, index))
     const searchQuery = typeof parsed.searchQuery === 'string' ? parsed.searchQuery : ''
     const hasContent = trends.length > 0 || searchQuery.trim() !== ''
     if (!hasContent) return null

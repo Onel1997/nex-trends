@@ -3,20 +3,12 @@ import { resolveUniqueCatalogMedia } from '@/lib/trend-media-assignment'
 import { assertUniqueTrendCatalog } from '@/lib/demo-trend-uniqueness'
 import type { TrendIntelligence, TrendVelocity } from '@/types/trend-intelligence'
 
-export const DEMO_CATALOG_NICHES = [
-  'Productivity',
-  'Fitness',
-  'Beauty',
-  'Side Hustle',
-  'Food',
-  'Luxury',
-  'Motivation',
-  'AI',
-  'Business',
-  'Fashion',
-] as const
+import {
+  DEMO_CATALOG_NICHES,
+  type DemoCatalogNiche,
+} from '@/lib/demo-catalog-niches'
 
-export type DemoCatalogNiche = (typeof DEMO_CATALOG_NICHES)[number]
+export { DEMO_CATALOG_NICHES, type DemoCatalogNiche }
 
 type TrendBlueprint = {
   title: string
@@ -1113,7 +1105,7 @@ function buildTrendFromBlueprint(
 ): TrendIntelligence {
   const id = `demo-${slugify(niche)}-${nicheIndex}`
   const gradient = GRADIENTS[globalIndex % GRADIENTS.length]
-  const media = resolveUniqueCatalogMedia(globalIndex, usedVideos, usedThumbnails)
+  const media = resolveUniqueCatalogMedia(globalIndex, niche, usedVideos, usedThumbnails)
   const creator = assignCreatorForCatalogSlot(globalIndex, id, blueprint.platform, usedCreators)
   const hookScore = clampScore(blueprint.viralScore - 3 + (globalIndex % 5))
   const hookText = blueprint.hook
@@ -1169,7 +1161,7 @@ function clampScore(score: number): number {
   return Math.min(99, Math.max(42, Math.round(score)))
 }
 
-const CATALOG_MEDIA_VERSION = 2
+const CATALOG_MEDIA_VERSION = 5
 
 let catalogCache: TrendIntelligence[] | null = null
 let catalogMediaVersion: number | null = null

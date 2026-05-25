@@ -56,8 +56,7 @@ function TrendCardComponent({
     for (const url of feedVideoUrls) {
       if (url && url !== media.videoUrl) exclude.add(url)
     }
-    const next = pickNextFallbackMedia(trend.id, media.videoUrl, exclude)
-    if (!next) return
+    const next = pickNextFallbackMedia(trend.id, trend.niche, media.videoUrl, exclude)
     setMedia({
       videoUrl: next.video,
       thumbnailUrl: next.poster,

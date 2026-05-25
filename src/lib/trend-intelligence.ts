@@ -8,8 +8,12 @@ import type {
   TrendVelocity,
 } from '@/types/trend-intelligence'
 import { assignCreatorForTrend, formatCreatorInspiration } from '@/lib/demo-creators'
-import { buildCatalogMediaSlot } from '@/lib/trend-media-assignment'
+import {
+  buildCatalogMediaSlot,
+  sanitizeTrendMedia,
+} from '@/lib/trend-media-assignment'
 import { hashString } from '@/lib/demo-trend-seed'
+import { isPlayableDemoVideoUrl, posterForVideoUrl } from '@/lib/demo-media'
 import { isValidVideoUrl } from '@/lib/video-url'
 
 export { DEMO_TREND_INTELLIGENCE } from '@/lib/trend-demo-data'
@@ -21,9 +25,9 @@ const CARD_GRADIENTS = [
   { from: 'from-rose-500', to: 'to-orange-600' },
 ] as const
 
-function stableMediaForTrendId(trendId: string, index: number) {
+function stableMediaForTrendId(trendId: string, index: number, niche?: string) {
   const slot = hashString(`${trendId}:${index}`) % 997
-  const media = buildCatalogMediaSlot(slot)
+  const media = buildCatalogMediaSlot(slot, niche)
   return { thumbnail: media.poster, video: media.video, duration: media.duration }
 }
 
@@ -127,25 +131,39 @@ export function enrichTrendWithMedia(
   trend: TrendIntelligence,
   index: number,
 ): TrendIntelligence {
-  const hasValidVideo = isValidVideoUrl(trend.videoUrl)
-  if (
-    trend.thumbnailUrl &&
-    hasValidVideo &&
-    trend.creator?.handle &&
-    trend.creator.avatarUrl
-  ) {
-    return trend
+  const video = trend.videoUrl?.trim() ?? ''
+  const hasValidVideo =
+    isValidVideoUrl(video) && isPlayableDemoVideoUrl(video) && !video.includes('undefined')
+  const expectedPoster = hasValidVideo ? posterForVideoUrl(video) : null
+  const thumbMatches =
+    Boolean(trend.thumbnailUrl?.trim()) &&
+    (!expectedPoster || trend.thumbnailUrl?.trim() === expectedPoster)
+
+  let withMedia = trend
+  if (!hasValidVideo || !thumbMatches) {
+    const media = stableMediaForTrendId(trend.id, index, trend.niche)
+    withMedia = {
+      ...trend,
+      thumbnailUrl: media.thumbnail,
+      videoUrl: media.video,
+      videoDuration: trend.videoDuration || media.duration,
+    }
   }
 
-  const media = stableMediaForTrendId(trend.id, index)
-  const hookText = trend.hookSuggestions[0] ?? trend.title
-  const { creator, creatorInspiration } = enrichCreatorFields(trend)
+  withMedia = sanitizeTrendMedia(withMedia, index)
+
+  if (withMedia.creator?.handle && withMedia.creator.avatarUrl) {
+    return withMedia
+  }
+
+  const hookText = withMedia.hookSuggestions[0] ?? withMedia.title
+  const { creator, creatorInspiration } = enrichCreatorFields(withMedia)
 
   return {
-    ...trend,
-    thumbnailUrl: trend.thumbnailUrl || media.thumbnail,
-    videoUrl: trend.videoUrl || media.video,
-    videoDuration: trend.videoDuration || media.duration,
+    ...withMedia,
+    thumbnailUrl: withMedia.thumbnailUrl,
+    videoUrl: withMedia.videoUrl,
+    videoDuration: withMedia.videoDuration,
     likes: trend.likes || estimateLikes(trend.views, trend.engagement),
     engagementRate: trend.engagementRate || trend.engagement,
     creator,

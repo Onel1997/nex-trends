@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { VideoPreview } from '@/components/trends/VideoPreview'
+import { pickNextFallbackMedia } from '@/lib/trend-media-assignment'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
 import { Button } from '@/components/ui/Button'
 import {
@@ -53,6 +54,33 @@ export function TrendDetailModal({
   onToggleSave,
 }: TrendDetailModalProps) {
   const { showToast } = useToast()
+  const failedVideosRef = useRef(new Set<string>())
+  const [media, setMedia] = useState({
+    videoUrl: trend?.videoUrl,
+    thumbnailUrl: trend?.thumbnailUrl ?? '',
+    videoDuration: trend?.videoDuration,
+  })
+
+  useEffect(() => {
+    if (!trend) return
+    failedVideosRef.current.clear()
+    setMedia({
+      videoUrl: trend.videoUrl,
+      thumbnailUrl: trend.thumbnailUrl,
+      videoDuration: trend.videoDuration,
+    })
+  }, [trend?.id, trend?.videoUrl, trend?.thumbnailUrl, trend?.videoDuration])
+
+  const handleVideoUnavailable = useCallback(() => {
+    if (!trend) return
+    if (media.videoUrl) failedVideosRef.current.add(media.videoUrl)
+    const next = pickNextFallbackMedia(trend.id, trend.niche, media.videoUrl, failedVideosRef.current)
+    setMedia({
+      videoUrl: next.video,
+      thumbnailUrl: next.poster,
+      videoDuration: next.duration,
+    })
+  }, [trend, media.videoUrl])
 
   useEffect(() => {
     if (!trend) return
@@ -155,15 +183,16 @@ export function TrendDetailModal({
         <div className="flex flex-1 flex-col overflow-y-auto overscroll-contain lg:flex-row">
           <div className="video-preview-modal relative w-full shrink-0 bg-zinc-900/30 lg:w-[300px] xl:w-[340px]">
             <VideoPreview
-              key={trend.id}
+              key={`${trend.id}-${media.videoUrl ?? 'none'}`}
               playbackId={`modal-${trend.id}`}
               variant="detail"
-              thumbnailUrl={trend.thumbnailUrl}
-              videoUrl={trend.videoUrl}
+              thumbnailUrl={media.thumbnailUrl}
+              videoUrl={media.videoUrl}
               alt={trend.title}
-              duration={trend.videoDuration}
+              duration={media.videoDuration}
               aspectClass="aspect-[9/16] max-h-[42vh] sm:max-h-[50vh] lg:max-h-none lg:min-h-[420px]"
               priority
+              onVideoUnavailable={handleVideoUnavailable}
             />
           </div>
 
