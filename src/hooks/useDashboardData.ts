@@ -100,11 +100,11 @@ export function useDashboardData() {
   const planLabel = isAdmin ? PLAN_LABELS.founder : PLAN_LABELS[userPlan]
   const statusLabel = isAdmin
     ? 'FOUNDER'
-    : hasProAccess
+    : usage.unlimited
       ? 'Active'
       : 'Free'
   const remainingLabel =
-    isAdmin || hasProAccess
+    isAdmin || usage.unlimited
       ? 'Unbegrenzt'
       : `${usage.remaining ?? 0} / ${usage.limit ?? MAX_FREE_CREDITS}`
 

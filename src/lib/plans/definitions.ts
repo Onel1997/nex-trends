@@ -20,15 +20,16 @@ export type UsageActionId =
   | 'voiceover'
   | 'captions'
 
+/** Per-feature credit cost — keep in sync with DB + edge _shared/plans.ts */
 export const CREDIT_COSTS: Record<UsageActionId, number> = {
   trend_search: 1,
-  hook_generation: 1,
-  seo_title: 1,
-  ad_copy: 1,
-  landing_analysis: 2,
-  ai_video: 5,
-  voiceover: 2,
-  captions: 1,
+  hook_generation: 2,
+  seo_title: 2,
+  ad_copy: 3,
+  landing_analysis: 5,
+  ai_video: 20,
+  voiceover: 10,
+  captions: 5,
 }
 
 export const PLAN_RANK: Record<PlanId, number> = {
@@ -40,12 +41,8 @@ export const PLAN_RANK: Record<PlanId, number> = {
   founder: 5,
 }
 
-export const UNLIMITED_CREDIT_PLANS: PlanId[] = [
-  'pro_creator',
-  'studio',
-  'agency',
-  'founder',
-]
+/** Only agency + founder bypass balance checks */
+export const UNLIMITED_CREDIT_PLANS: PlanId[] = ['agency', 'founder']
 
 export const PAID_PLANS: PlanId[] = ['creator', 'pro_creator', 'studio', 'agency']
 
@@ -56,6 +53,15 @@ export const PLAN_LABELS: Record<PlanId, string> = {
   studio: 'Studio',
   agency: 'Agency',
   founder: 'Founder Access',
+}
+
+export const PLAN_MONTHLY_CREDITS: Record<PlanId, number | null> = {
+  free: 25,
+  creator: 250,
+  pro_creator: 1000,
+  studio: 5000,
+  agency: null,
+  founder: null,
 }
 
 export function normalizePlanId(value: string | null | undefined): PlanId {
@@ -87,14 +93,7 @@ export function isUnlimitedPlan(plan: PlanId): boolean {
 }
 
 export function planMonthlyCredits(plan: PlanId): number | null {
-  switch (plan) {
-    case 'free':
-      return 10
-    case 'creator':
-      return 50
-    default:
-      return null
-  }
+  return PLAN_MONTHLY_CREDITS[plan]
 }
 
 export function legacyIsPro(plan: PlanId, subscriptionStatus: string | null): boolean {

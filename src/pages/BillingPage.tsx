@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
 import { BillingActivityList, PlanBadge } from '@/components/billing'
+import {
+  CreditsUsageCard,
+  MonthlyUsageProgressBar,
+  RecentUsageActivity,
+  UpgradePlanWarning,
+} from '@/components/credits'
 import { Button } from '@/components/ui/Button'
 import { CrownIcon, CreditIcon } from '@/components/ui/icons'
 import { useDashboardData } from '@/hooks/useDashboardData'
@@ -53,6 +59,10 @@ export function BillingPage() {
       </header>
 
       <div className="space-y-4">
+        <UpgradePlanWarning />
+        <CreditsUsageCard />
+        <MonthlyUsageProgressBar />
+
         <section className="dashboard-os-card rounded-[var(--dash-radius-lg)] border border-zinc-800/50 bg-zinc-950/60 p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -113,8 +123,10 @@ export function BillingPage() {
           </div>
         </section>
 
+        <RecentUsageActivity limit={15} />
+
         <section>
-          <h2 className="mb-2 text-sm font-semibold text-zinc-200">Recent usage</h2>
+          <h2 className="mb-2 text-sm font-semibold text-zinc-200">Full activity log</h2>
           {loading ? (
             <p className="text-[11px] text-zinc-500">Loading activity…</p>
           ) : (

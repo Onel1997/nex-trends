@@ -296,13 +296,13 @@ export type CreditUsageItem = {
 
 export const CREDIT_USAGE_ITEMS: readonly CreditUsageItem[] = [
   { tool: 'Trend search', cost: 1, description: 'Discover viral niches & hashtags' },
-  { tool: 'Hook generator', cost: 1, description: 'Scroll-stopping opener for Reels' },
-  { tool: 'Ad copy', cost: 1, description: 'Headlines & CTAs for paid ads' },
-  { tool: 'SEO titles', cost: 1, description: 'CTR-optimized titles' },
-  { tool: 'Landing analyzer', cost: 2, description: 'Full CRO audit with scores' },
-  { tool: 'AI video (short)', cost: 5, description: 'Generate a viral AI short' },
-  { tool: 'Voiceover', cost: 2, description: 'AI narration for your clip' },
-  { tool: 'Captions', cost: 1, description: 'Auto captions & styling' },
+  { tool: 'Hook generator', cost: 2, description: 'Scroll-stopping opener for Reels' },
+  { tool: 'SEO titles', cost: 2, description: 'CTR-optimized titles' },
+  { tool: 'Ad copy', cost: 3, description: 'Headlines & CTAs for paid ads' },
+  { tool: 'Landing analyzer', cost: 5, description: 'Full CRO audit with scores' },
+  { tool: 'AI video (short)', cost: 20, description: 'Generate a viral AI short' },
+  { tool: 'Voiceover', cost: 10, description: 'AI narration for your clip' },
+  { tool: 'Captions', cost: 5, description: 'Auto captions & styling' },
 ] as const
 
 export const ENTERPRISE_CONTACT_EMAIL = 'agency@nextrends.ai'

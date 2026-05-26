@@ -50,7 +50,7 @@ export function TrendIntelligencePanel() {
   const sessionReadyRef = useRef(false)
   const scrollRestoredRef = useRef(false)
 
-  const remaining = hasProAccess ? null : (usage.remaining ?? 0)
+  const remaining = usage.unlimited ? null : (usage.remaining ?? 0)
   const creditLimit = usage.limit ?? MAX_FREE_CREDITS
 
   const loadDemo = useCallback(async () => {

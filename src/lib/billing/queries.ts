@@ -5,7 +5,7 @@ import type { PlanId } from '@/lib/plans'
 export async function fetchUsageLogs(userId: string, limit = 12): Promise<UsageLogRow[]> {
   const { data, error } = await supabase
     .from('usage_logs')
-    .select('id, user_id, action, credits_used, metadata, created_at')
+    .select('id, user_id, action, feature, credits_used, balance_after, metadata, created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit)

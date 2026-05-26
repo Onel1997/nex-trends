@@ -1,5 +1,5 @@
 import { CreditIcon } from '@/components/ui/icons'
-import { MAX_FREE_CREDITS, SIGNUP_CREDITS, WEEKLY_REFILL_CREDITS } from '@/lib/constants'
+import { SIGNUP_CREDITS } from '@/lib/constants'
 import { CREDIT_USAGE_ITEMS } from '@/lib/pricing'
 import { cn } from '@/lib'
 
@@ -15,9 +15,8 @@ export function PricingCreditUsage() {
             How credits work
           </h3>
           <p className="dashboard-os-muted mt-1 max-w-xl text-[11px] leading-relaxed sm:text-xs">
-            Every AI action consumes credits. Free creators start with {SIGNUP_CREDITS}{' '}
-            credits and receive +{WEEKLY_REFILL_CREDITS} weekly (max {MAX_FREE_CREDITS}).
-            Paid plans unlock higher limits or unlimited usage.
+            Every AI action consumes credits. Free includes {SIGNUP_CREDITS} credits per
+            month. Paid plans unlock higher monthly allowances — Agency is unlimited.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2 rounded-[var(--dash-radius)] border border-violet-500/20 bg-violet-500/10 px-3 py-2">
@@ -27,7 +26,7 @@ export function PricingCreditUsage() {
               Free tier
             </p>
             <p className="text-sm font-semibold text-white">
-              {SIGNUP_CREDITS} → {MAX_FREE_CREDITS} max
+              {SIGNUP_CREDITS} / month
             </p>
           </div>
         </div>

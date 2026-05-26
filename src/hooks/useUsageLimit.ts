@@ -29,13 +29,13 @@ export function useUsageLimit() {
 
   /** Block new generations at 0 credits and show the Pro modal. */
   const requireCredits = useCallback((): boolean => {
-    if (hasProAccess) return true
+    if (usage.unlimited) return true
     if (isUsageLimitReached) {
       openUpgradeModal()
       return false
     }
     return true
-  }, [hasProAccess, isUsageLimitReached, openUpgradeModal])
+  }, [usage.unlimited, isUsageLimitReached, openUpgradeModal])
 
   /** Deduct credit after success; Pro/Admin only logs analytics (no charge). */
   const consumeCreditAfterSuccess = useCallback(

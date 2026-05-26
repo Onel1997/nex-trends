@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
-import { isAdminEmail } from "../_shared/admin.ts";
 import {
   recordAiGeneration,
   updateAiGenerationStatus,
@@ -116,12 +115,6 @@ serve(async (req) => {
     const action = (body.action ?? "check") as UsageAction;
     const cost = typeof body.cost === "number" ? body.cost : 1;
 
-    console.log("[usage-limit] action:", action, {
-      tool: body.tool,
-      type: body.generation_type,
-      status: body.status,
-    });
-
     if (
       action !== "check" && action !== "increment" &&
       action !== "log_generation" && action !== "update_generation"
@@ -152,11 +145,10 @@ serve(async (req) => {
           usageResetDate: currentProfile.usage_reset_date ?? null,
           error: "Account gesperrt",
         }),
-        { status: 403, headers: jsonHeaders },
+        { status: 403,
+          headers: jsonHeaders },
       );
     }
-
-    const isUnlimited = checkUsageLimit(currentProfile, user.email).unlimited;
 
     if (action === "update_generation") {
       const generationId = String(body.generation_id ?? "");
@@ -185,46 +177,11 @@ serve(async (req) => {
         supabaseAdmin,
         readGenerationMeta(body, user),
       );
-      const used = currentProfile.monthly_usage_count ?? 0;
+      const status = await checkUsageLimit(supabaseAdmin, user.id, user.email);
       return new Response(JSON.stringify({
         ok: recorded.ok,
         generationId: recorded.id ?? null,
-        allowed: true,
-        unlimited: isUnlimited,
-        used,
-        remaining: isUnlimited ? null : (currentProfile.credit_balance ?? 0),
-        limit: isUnlimited ? null : null,
-        usageResetDate: currentProfile.usage_reset_date ?? null,
-      }), { status: 200, headers: jsonHeaders });
-    }
-
-    if (isUnlimited && action === "increment") {
-      const recorded = await recordAiGeneration(
-        supabaseAdmin,
-        readGenerationMeta(body, user),
-      );
-      console.log("[usage-limit] unlimited increment logged", recorded.id);
-      const used = currentProfile.monthly_usage_count ?? 0;
-      return new Response(JSON.stringify({
-        allowed: true,
-        unlimited: true,
-        used,
-        remaining: null,
-        limit: null,
-        usageResetDate: currentProfile.usage_reset_date ?? null,
-        generationId: recorded.id ?? null,
-      }), { status: 200, headers: jsonHeaders });
-    }
-
-    if (isUnlimited && action === "check") {
-      const used = currentProfile.monthly_usage_count ?? 0;
-      return new Response(JSON.stringify({
-        allowed: true,
-        unlimited: true,
-        used,
-        remaining: null,
-        limit: null,
-        usageResetDate: currentProfile.usage_reset_date ?? null,
+        ...status,
       }), { status: 200, headers: jsonHeaders });
     }
 
@@ -235,46 +192,39 @@ serve(async (req) => {
       : "generation";
 
     const creditCost = resolveCreditCost(usageAction, cost);
+    const idempotencyKey = typeof body.idempotency_key === "string"
+      ? body.idempotency_key
+      : undefined;
 
-    const result =
-      action === "increment"
-        ? await incrementUsage(
-            supabaseAdmin,
-            user.id,
-            currentProfile,
-            creditCost,
-            {
-              action: usageAction,
-              email: user.email,
-              metadata: {
-                tool: body.tool,
-                label: body.label,
-                generation_type: body.generation_type,
-              },
+    const result = action === "increment"
+      ? await incrementUsage(
+          supabaseAdmin,
+          user.id,
+          currentProfile,
+          creditCost,
+          {
+            action: usageAction,
+            email: user.email,
+            metadata: {
+              tool: body.tool,
+              label: body.label,
+              generation_type: body.generation_type,
             },
-          )
-        : checkUsageLimit(currentProfile, user.email);
+            idempotencyKey,
+          },
+        )
+      : await checkUsageLimit(supabaseAdmin, user.id, user.email);
 
     if (action === "increment" && result.allowed && body.skip_analytics_log !== true) {
-      const meta = readGenerationMeta(body, user);
+      const meta = readGenerationMeta({ ...body, cost: creditCost }, user);
       const recorded = await recordAiGeneration(supabaseAdmin, meta);
       console.log("[usage-limit] increment logged", recorded.id, meta.tool_used);
-      const { error: logError } = await supabaseAdmin
-        .from("analytics_events")
-        .insert({
-          user_id: user.id,
-          event_type: "generation",
-          payload: {
-            tool: meta.tool_used,
-            label: typeof body.label === "string" ? body.label : "",
-            generation_type: meta.generation_type,
-          },
-        });
-      if (logError) console.warn("[usage-limit] analytics_events:", logError.message);
     }
 
+    const httpStatus = action === "increment" && !result.allowed ? 402 : 200;
+
     return new Response(JSON.stringify(result), {
-      status: 200,
+      status: httpStatus,
       headers: jsonHeaders,
     });
   } catch (err) {

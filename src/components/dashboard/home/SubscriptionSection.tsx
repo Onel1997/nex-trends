@@ -5,12 +5,7 @@ import { useDashboardData } from '@/hooks/useDashboardData'
 import { PlanBadge } from '@/components/billing/PlanBadge'
 import { useSubscription } from '@/hooks/useSubscription'
 import { navigateToTool } from '@/lib/navigation'
-import {
-  MAX_FREE_CREDITS,
-  PRO_PRICE_LABEL,
-  SIGNUP_CREDITS,
-  WEEKLY_REFILL_CREDITS,
-} from '@/lib/constants'
+import { PRO_PRICE_LABEL, SIGNUP_CREDITS } from '@/lib/constants'
 import { cn } from '@/lib'
 
 export function SubscriptionSection() {
@@ -71,7 +66,7 @@ export function SubscriptionSection() {
             ) : (
               <>
                 <FeatureItem muted>
-                  {SIGNUP_CREDITS} start · +{WEEKLY_REFILL_CREDITS}/week (max {MAX_FREE_CREDITS})
+                  {SIGNUP_CREDITS} credits / month on Free
                 </FeatureItem>
                 <FeatureItem muted>All AI tools with credits</FeatureItem>
                 <FeatureItem muted>Trend scouting included</FeatureItem>

@@ -14,24 +14,28 @@ supabase db push
 
 Tables:
 
-| Table | Purpose |
-|-------|---------|
-| `plans` | Catalog (free → founder) with credits + features JSON |
-| `profiles.plan` | Current tier synced from Stripe / admin |
-| `profiles.credit_balance` | Remaining credits |
-| `subscriptions` | Stripe subscription mirror |
-| `usage_logs` | Per-action credit audit trail |
+
+| Table                     | Purpose                                               |
+| ------------------------- | ----------------------------------------------------- |
+| `plans`                   | Catalog (free → founder) with credits + features JSON |
+| `profiles.plan`           | Current tier synced from Stripe / admin               |
+| `profiles.credit_balance` | Remaining credits                                     |
+| `subscriptions`           | Stripe subscription mirror                            |
+| `usage_logs`              | Per-action credit audit trail                         |
+
 
 ## Plans
 
-| Plan | Credits | Notes |
-|------|---------|-------|
-| `free` | 10 (+ weekly refill, max 15) | Watermarked exports |
-| `creator` | 50 / period | HD, hooks, SEO |
-| `pro_creator` | Unlimited | AI Video Studio |
-| `studio` | Unlimited | Team features |
-| `agency` | Unlimited | API, white-label |
-| `founder` | Unlimited | Admin email allowlist |
+
+| Plan          | Credits                      | Notes                 |
+| ------------- | ---------------------------- | --------------------- |
+| `free`        | 10 (+ weekly refill, max 15) | Watermarked exports   |
+| `creator`     | 50 / period                  | HD, hooks, SEO        |
+| `pro_creator` | Unlimited                    | AI Video Studio       |
+| `studio`      | Unlimited                    | Team features         |
+| `agency`      | Unlimited                    | API, white-label      |
+| `founder`     | Unlimited                    | Admin email allowlist |
+
 
 ## Credit costs
 
@@ -54,7 +58,7 @@ Set in Supabase Edge Function secrets:
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_PRICE_ID=                    # legacy → pro_creator monthly
-STRIPE_PRICE_CREATOR_MONTHLY=price_1Tb6d4FspTFcULBiskQFTcfj
+STRIPE_PRICE_CREATOR_MONTHLY=price_1TbP85FspTFcULBiLP1rb8hM
 STRIPE_PRICE_CREATOR_YEARLY=
 STRIPE_PRICE_PRO_CREATOR_MONTHLY=
 STRIPE_PRICE_PRO_CREATOR_YEARLY=
@@ -73,12 +77,14 @@ supabase functions deploy create-checkout-session create-portal-session stripe-w
 
 ## Routes
 
-| Path | Page |
-|------|------|
-| `/dashboard/pricing` | Plan comparison + checkout CTAs |
+
+| Path                 | Page                              |
+| -------------------- | --------------------------------- |
+| `/dashboard/pricing` | Plan comparison + checkout CTAs   |
 | `/dashboard/billing` | Subscription, credits, usage logs |
-| `/billing/success` | Post-checkout confirmation |
-| `/billing/cancel` | Checkout canceled |
+| `/billing/success`   | Post-checkout confirmation        |
+| `/billing/cancel`    | Checkout canceled                 |
+
 
 ## Client modules
 
@@ -99,3 +105,4 @@ supabase functions deploy create-checkout-session create-portal-session stripe-w
 1. Add minimum plan in `src/lib/plans/access.ts` (`ROUTE_MIN_PLAN`)
 2. Wrap page with `<ProtectedTool toolId="…" />`
 3. Map tool slug in `tool-actions.ts` for credit deduction
+

@@ -11,8 +11,8 @@ type SidebarCreditsCardProps = {
 export function SidebarCreditsCard({ onUpgrade, className }: SidebarCreditsCardProps) {
   const { usage, hasProAccess, isAdmin } = useUsageLimit()
 
-  const planLabel = isAdmin ? 'Admin' : hasProAccess ? 'Pro' : 'Free'
-  const unlimited = hasProAccess || usage.unlimited
+  const planLabel = isAdmin ? 'Admin' : usage.unlimited ? 'Unlimited' : hasProAccess ? 'Pro' : 'Free'
+  const unlimited = usage.unlimited
   const limit = usage.limit ?? MAX_FREE_CREDITS
   const remaining = unlimited ? '∞' : String(usage.remaining ?? 0)
 

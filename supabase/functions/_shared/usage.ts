@@ -1,20 +1,24 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
 import { isAdminEmail } from "./admin.ts";
 import {
-  CREDIT_COSTS,
+  consumeCredits,
+  getCreditStatus,
+  SIGNUP_CREDITS,
+  type CreditStatusResult,
+} from "./credits.ts";
+import {
   isUnlimitedPlan,
   legacyIsPro,
   normalizePlanId,
   planMonthlyCredits,
   type PlanId,
-  type UsageActionId,
 } from "./plans.ts";
+import { resolveFeatureCost } from "./credits.ts";
 
-export const SIGNUP_CREDITS = 10;
-export const WEEKLY_REFILL_CREDITS = 5;
-export const MAX_FREE_CREDITS = 15;
-
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+/** @deprecated Weekly refill removed — use monthly reset via RPC */
+export const WEEKLY_REFILL_CREDITS = 0;
+export const MAX_FREE_CREDITS = 25;
+export { SIGNUP_CREDITS };
 
 export type ProfileUsageRow = {
   id: string;
@@ -23,25 +27,19 @@ export type ProfileUsageRow = {
   subscription_status: string | null;
   credit_balance: number | null;
   monthly_usage_count: number | null;
+  bonus_credits?: number | null;
   last_weekly_refill_at: string | null;
   usage_reset_date: string | null;
   credits_reset_at?: string | null;
   is_banned?: boolean | null;
   banned_at?: string | null;
+  workspace_id?: string | null;
 };
 
-export type UsageLimitResult = {
-  allowed: boolean;
-  unlimited: boolean;
-  used: number;
-  remaining: number | null;
-  limit: number | null;
-  usageResetDate: string | null;
-  plan: PlanId;
-};
+export type UsageLimitResult = CreditStatusResult;
 
 const PROFILE_SELECT =
-  "id, plan, is_pro, subscription_status, credit_balance, monthly_usage_count, last_weekly_refill_at, usage_reset_date, credits_reset_at, is_banned, banned_at";
+  "id, plan, is_pro, subscription_status, credit_balance, bonus_credits, monthly_usage_count, last_weekly_refill_at, usage_reset_date, credits_reset_at, is_banned, banned_at, workspace_id";
 
 export function resolvePlan(
   profile: ProfileUsageRow,
@@ -54,17 +52,6 @@ export function resolvePlan(
 export function hasProAccess(profile: ProfileUsageRow): boolean {
   const plan = normalizePlanId(profile.plan);
   return legacyIsPro(plan, profile.subscription_status);
-}
-
-export function getNextWeeklyRefillDate(from = new Date()): string {
-  return new Date(from.getTime() + WEEK_MS).toISOString();
-}
-
-export function shouldWeeklyRefill(
-  lastWeeklyRefillAt: string | null | undefined,
-): boolean {
-  if (!lastWeeklyRefillAt) return true;
-  return Date.now() - new Date(lastWeeklyRefillAt).getTime() >= WEEK_MS;
 }
 
 export async function ensureProfile(
@@ -92,7 +79,7 @@ export async function ensureProfile(
   }
 
   const now = new Date();
-  const nextRefill = getNextWeeklyRefillDate(now);
+  const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
   const plan: PlanId = isAdminEmail(email) ? "founder" : "free";
 
   const { data: created, error: insertError } = await supabaseAdmin
@@ -102,9 +89,11 @@ export async function ensureProfile(
       email: email ?? null,
       plan,
       credit_balance: SIGNUP_CREDITS,
+      bonus_credits: 0,
       monthly_usage_count: 0,
       last_weekly_refill_at: now.toISOString(),
-      usage_reset_date: nextRefill,
+      usage_reset_date: nextReset,
+      credits_reset_at: nextReset,
       is_pro: plan === "founder",
       subscription_status: plan === "founder" ? "active" : "inactive",
     })
@@ -128,45 +117,19 @@ export async function ensureProfile(
   throw insertError ?? retryError ?? new Error("Profil konnte nicht erstellt werden");
 }
 
+/** No-op: monthly reset handled in Postgres RPC */
 export async function ensureWeeklyRefill(
   supabaseAdmin: SupabaseClient,
   profile: ProfileUsageRow,
-  email?: string | null,
+  _email?: string | null,
 ): Promise<ProfileUsageRow> {
-  const plan = resolvePlan(profile, email);
-
-  if (isUnlimitedPlan(plan) || plan === "creator") {
-    return profile;
-  }
-
-  if (!shouldWeeklyRefill(profile.last_weekly_refill_at)) {
-    return profile;
-  }
-
-  const now = new Date();
-  const currentBalance = profile.credit_balance ?? SIGNUP_CREDITS;
-  const newBalance = Math.min(
-    MAX_FREE_CREDITS,
-    currentBalance + WEEKLY_REFILL_CREDITS,
-  );
-  const nextRefill = getNextWeeklyRefillDate(now);
-
-  const { data, error } = await supabaseAdmin
+  await supabaseAdmin.rpc("maybe_reset_user_credits", { p_user_id: profile.id });
+  const { data } = await supabaseAdmin
     .from("profiles")
-    .update({
-      credit_balance: newBalance,
-      last_weekly_refill_at: now.toISOString(),
-      usage_reset_date: nextRefill,
-    })
-    .eq("id", profile.id)
     .select(PROFILE_SELECT)
+    .eq("id", profile.id)
     .single();
-
-  if (error || !data) {
-    throw error ?? new Error("Profil nach Weekly Refill nicht gefunden");
-  }
-
-  return data as ProfileUsageRow;
+  return (data ?? profile) as ProfileUsageRow;
 }
 
 export async function logUsage(
@@ -179,6 +142,7 @@ export async function logUsage(
   const { error } = await supabaseAdmin.from("usage_logs").insert({
     user_id: userId,
     action,
+    feature: action,
     credits_used: creditsUsed,
     metadata,
   });
@@ -188,113 +152,36 @@ export async function logUsage(
   }
 }
 
-export function resolveCreditCost(
-  action?: string,
-  explicitCost?: number,
-): number {
-  if (typeof explicitCost === "number" && explicitCost > 0) {
-    return Math.floor(explicitCost);
-  }
-  if (action && action in CREDIT_COSTS) {
-    return CREDIT_COSTS[action as UsageActionId];
-  }
-  return 1;
-}
+export { resolveFeatureCost as resolveCreditCost };
 
-export function checkUsageLimit(
-  profile: ProfileUsageRow,
+export async function checkUsageLimit(
+  supabaseAdmin: SupabaseClient,
+  userId: string,
   email?: string | null,
-): UsageLimitResult {
-  const plan = resolvePlan(profile, email);
-  const used = profile.monthly_usage_count ?? 0;
-  const usageResetDate = profile.usage_reset_date ?? null;
-
-  if (isAdminEmail(email) || isUnlimitedPlan(plan)) {
-    return {
-      allowed: true,
-      unlimited: true,
-      used,
-      remaining: null,
-      limit: null,
-      usageResetDate,
-      plan,
-    };
-  }
-
-  const monthlyAllowance = planMonthlyCredits(plan);
-  const remaining = Math.max(0, profile.credit_balance ?? 0);
-  const limit = plan === "free" ? MAX_FREE_CREDITS : (monthlyAllowance ?? MAX_FREE_CREDITS);
-
-  return {
-    allowed: remaining > 0,
-    unlimited: false,
-    used,
-    remaining,
-    limit,
-    usageResetDate,
-    plan,
-  };
+): Promise<UsageLimitResult> {
+  return getCreditStatus(supabaseAdmin, userId, email);
 }
 
 export async function incrementUsage(
   supabaseAdmin: SupabaseClient,
   userId: string,
-  profile: ProfileUsageRow,
+  _profile: ProfileUsageRow,
   cost = 1,
   options?: {
     action?: string;
     metadata?: Record<string, unknown>;
     email?: string | null;
+    idempotencyKey?: string;
   },
 ): Promise<UsageLimitResult> {
-  const safeCost = resolveCreditCost(options?.action, cost);
-  let current = await ensureWeeklyRefill(supabaseAdmin, profile, options?.email);
-  const plan = resolvePlan(current, options?.email);
-  const check = checkUsageLimit(current, options?.email);
-
-  if (current.is_banned) {
-    return { ...check, allowed: false, remaining: current.credit_balance ?? 0 };
-  }
-
-  if (check.unlimited) {
-    await logUsage(supabaseAdmin, userId, options?.action ?? "generation", safeCost, {
-      ...options?.metadata,
-      plan,
-      unlimited: true,
-    });
-    return check;
-  }
-
-  const balance = current.credit_balance ?? 0;
-
-  if (balance < safeCost) {
-    return { ...check, allowed: false, remaining: balance };
-  }
-
-  const newBalance = balance - safeCost;
-  const nextUsed = (current.monthly_usage_count ?? 0) + safeCost;
-
-  const { data, error } = await supabaseAdmin
-    .from("profiles")
-    .update({
-      credit_balance: newBalance,
-      monthly_usage_count: nextUsed,
-    })
-    .eq("id", userId)
-    .select(PROFILE_SELECT)
-    .single();
-
-  if (error || !data) {
-    throw error ?? new Error("Profil nach Increment nicht gefunden");
-  }
-
-  await logUsage(supabaseAdmin, userId, options?.action ?? "generation", safeCost, {
-    ...options?.metadata,
-    plan,
+  const feature = options?.action ?? "generation";
+  return consumeCredits(supabaseAdmin, userId, {
+    feature,
+    cost: resolveFeatureCost(feature, cost),
+    metadata: options?.metadata,
+    email: options?.email,
+    idempotencyKey: options?.idempotencyKey,
   });
-
-  const snapshot = checkUsageLimit(data as ProfileUsageRow, options?.email);
-  return { ...snapshot, allowed: true };
 }
 
 /** Apply plan after Stripe subscription sync */
@@ -306,6 +193,7 @@ export async function applyPlanToProfile(
   stripeIds?: {
     customerId?: string | null;
     subscriptionId?: string | null;
+    periodEnd?: string | null;
   },
 ): Promise<void> {
   const isActive = subscriptionStatus === "active";
@@ -324,23 +212,27 @@ export async function applyPlanToProfile(
     update.stripe_subscription_id = stripeIds.subscriptionId;
   }
 
-  if (isActive && monthlyCredits !== null) {
-    update.credit_balance = monthlyCredits;
-    update.credits_reset_at = new Date().toISOString();
-  }
-
-  if (isActive && isUnlimitedPlan(plan)) {
-    update.credit_balance = 999999;
+  if (isActive) {
+    if (!isUnlimitedPlan(plan) && monthlyCredits !== null) {
+      update.credit_balance = monthlyCredits;
+      update.monthly_usage_count = 0;
+    }
+    update.credits_reset_at = stripeIds?.periodEnd ??
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    update.usage_reset_date = update.credits_reset_at;
   }
 
   if (!isActive && plan !== "founder") {
     update.plan = "free";
     update.is_pro = false;
-    update.credit_balance = Math.min(
-      MAX_FREE_CREDITS,
-      (await supabaseAdmin.from("profiles").select("credit_balance").eq("id", userId)
-        .maybeSingle()).data?.credit_balance ?? SIGNUP_CREDITS,
-    );
+    const freeAllowance = planMonthlyCredits("free") ?? SIGNUP_CREDITS;
+    const { data } = await supabaseAdmin
+      .from("profiles")
+      .select("credit_balance")
+      .eq("id", userId)
+      .maybeSingle();
+    const current = (data?.credit_balance as number | null) ?? SIGNUP_CREDITS;
+    update.credit_balance = Math.min(current, freeAllowance);
   }
 
   const { error } = await supabaseAdmin

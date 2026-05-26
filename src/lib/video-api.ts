@@ -54,6 +54,7 @@ export async function createVideoJob(
     description: trend.description,
     hook_text: trend.hookAnalysis?.hookText ?? trend.title,
     generation_id: generationId ?? undefined,
+    idempotency_key: generationId ? `video:${generationId}` : undefined,
     content_breakdown: trend.contentBreakdown,
     studio_duration: studio?.duration ?? trend.videoDuration,
     studio_style: studio?.style ?? trend.niche,

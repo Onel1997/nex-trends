@@ -13,10 +13,13 @@ export {
 } from './routes'
 
 import { SIDEBAR_ITEMS, type DashboardToolId } from './routes'
+import { planMonthlyCredits } from '@/lib/plans'
 
-export const SIGNUP_CREDITS = 10
-export const WEEKLY_REFILL_CREDITS = 5
-export const MAX_FREE_CREDITS = 15
+export const SIGNUP_CREDITS = planMonthlyCredits('free') ?? 25
+/** Monthly allowance for free tier (same as signup) */
+export const MAX_FREE_CREDITS = SIGNUP_CREDITS
+/** @deprecated Weekly refill removed — monthly reset via Postgres RPC */
+export const WEEKLY_REFILL_CREDITS = 0
 /** @deprecated Use SIGNUP_CREDITS */
 export const FREE_CREDITS = SIGNUP_CREDITS
 /** @deprecated Use MAX_FREE_CREDITS */

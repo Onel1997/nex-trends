@@ -14,7 +14,10 @@ import {
   safeProfilesSelect,
 } from "../_shared/admin-db.ts";
 import { KNOWN_ADMIN_ACTIONS, normalizeAdminAction } from "../_shared/admin-actions.ts";
-import { MAX_FREE_CREDITS, SIGNUP_CREDITS } from "../_shared/usage.ts";
+import { SIGNUP_CREDITS } from "../_shared/credits.ts";
+import { planMonthlyCredits } from "../_shared/plans.ts";
+
+const MAX_ADMIN_SET_CREDITS = planMonthlyCredits("studio") ?? 5000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -355,14 +358,14 @@ serve(async (req) => {
         if (fetchError) throw fetchError;
         const balance = current?.credit_balance ?? 0;
         updates.credit_balance = Math.min(
-          MAX_FREE_CREDITS,
+          MAX_ADMIN_SET_CREDITS,
           Math.max(0, balance + Math.floor(body.credit_delta)),
         );
       }
 
       if (typeof body.set_credits === "number") {
         updates.credit_balance = Math.min(
-          MAX_FREE_CREDITS,
+          MAX_ADMIN_SET_CREDITS,
           Math.max(0, Math.floor(body.set_credits)),
         );
       }
@@ -527,7 +530,7 @@ serve(async (req) => {
 
     if (action === "reset_credits_global") {
       const refillAmount = Math.min(
-        MAX_FREE_CREDITS,
+        MAX_ADMIN_SET_CREDITS,
         Math.max(0, Math.floor(Number(body.amount ?? SIGNUP_CREDITS))),
       );
 

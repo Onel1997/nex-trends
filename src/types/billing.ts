@@ -17,7 +17,11 @@ export type UsageLogRow = {
   id: string
   user_id: string
   action: string
+  feature?: string | null
   credits_used: number
+  balance_after?: number | null
+  idempotency_key?: string | null
+  workspace_id?: string | null
   metadata: Record<string, unknown>
   created_at: string
 }

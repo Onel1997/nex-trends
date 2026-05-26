@@ -1,17 +1,14 @@
 import { invokeEdgeFunction } from './edgeFunctions'
-import {
-  MAX_FREE_CREDITS,
-  SIGNUP_CREDITS,
-  FREE_MONTHLY_AI_LIMIT,
-} from './constants'
+import { SIGNUP_CREDITS, MAX_FREE_CREDITS } from './constants'
 import { getAdminUsageResult, isAdminEmail } from '@/lib/admin'
-import { hasProAccess, resolveUserPlan } from './subscription'
-import { isUnlimitedPlan, toolSlugToUsageAction } from '@/lib/plans'
+import { hasUnlimitedCredits, resolveUserPlan } from './subscription'
+import { planMonthlyCredits, toolSlugToUsageAction } from '@/lib/plans'
+import { checkCredits, consumeCredits } from '@/lib/credits/consume'
 import { supabase } from './supabase'
 import type { UserProfile } from '@/types/subscription'
-import type { UsageAction, UsageLimitResult } from '@/types/usage'
+import type { UsageLimitResult } from '@/types/usage'
 
-export { FREE_MONTHLY_AI_LIMIT, MAX_FREE_CREDITS, SIGNUP_CREDITS }
+export { MAX_FREE_CREDITS, SIGNUP_CREDITS }
 
 export function getUsageFromProfile(
   profile: UserProfile | null,
@@ -21,12 +18,13 @@ export function getUsageFromProfile(
     if (isAdminEmail(email)) {
       return getAdminUsageResult()
     }
+    const freeLimit = planMonthlyCredits('free') ?? SIGNUP_CREDITS
     return {
       allowed: false,
       unlimited: false,
       used: 0,
       remaining: 0,
-      limit: MAX_FREE_CREDITS,
+      limit: freeLimit,
       usageResetDate: null,
     }
   }
@@ -40,7 +38,7 @@ export function getUsageFromProfile(
 
   const plan = resolveUserPlan(profile, email)
 
-  if (isUnlimitedPlan(plan) && hasProAccess(profile)) {
+  if (hasUnlimitedCredits(profile, email)) {
     return {
       allowed: true,
       unlimited: true,
@@ -53,7 +51,7 @@ export function getUsageFromProfile(
   }
 
   const remaining = Math.max(0, profile.credit_balance ?? 0)
-  const limit = plan === 'creator' ? 50 : MAX_FREE_CREDITS
+  const limit = planMonthlyCredits(plan) ?? planMonthlyCredits('free') ?? SIGNUP_CREDITS
 
   return {
     allowed: remaining > 0,
@@ -66,18 +64,12 @@ export function getUsageFromProfile(
   }
 }
 
-async function invokeUsageLimit(
-  action: UsageAction,
-  extra?: Record<string, unknown>,
-): Promise<UsageLimitResult> {
-  return invokeEdgeFunction<UsageLimitResult>('usage-limit', { action, ...extra })
-}
-
+/** @deprecated Prefer checkCredits() from @/lib/credits */
 export async function checkUsageLimit(
   fallbackProfile?: UserProfile | null,
 ): Promise<UsageLimitResult> {
   try {
-    return await invokeUsageLimit('check')
+    return await checkCredits()
   } catch (err) {
     if (fallbackProfile) {
       return getUsageFromProfile(fallbackProfile)
@@ -98,17 +90,22 @@ export type UsageGenerationMeta = {
   output_url?: string
   error_message?: string
   skip_analytics_log?: boolean
+  idempotency_key?: string
 }
 
 export async function logGenerationUsage(
   meta: UsageGenerationMeta,
 ): Promise<string | null> {
   try {
-    const result = await invokeUsageLimit('log_generation', {
-      ...meta,
-      credits_used: meta.credits_used ?? 1,
-      status: meta.status ?? 'completed',
-    }) as UsageLimitResult & { generationId?: string | null }
+    const result = await invokeEdgeFunction<UsageLimitResult & { generationId?: string | null }>(
+      'usage-limit',
+      {
+        action: 'log_generation',
+        ...meta,
+        credits_used: meta.credits_used ?? 1,
+        status: meta.status ?? 'completed',
+      },
+    )
     return result.generationId ?? null
   } catch (err) {
     console.warn('[usage] logGenerationUsage failed', err)
@@ -116,18 +113,25 @@ export async function logGenerationUsage(
   }
 }
 
+/** Deduct credits via consume-credits edge function (atomic RPC). */
 export async function incrementUsage(
   fallbackProfile?: UserProfile | null,
   cost = 1,
   meta?: UsageGenerationMeta,
 ): Promise<UsageLimitResult> {
   try {
-    const actionId = meta?.tool ? toolSlugToUsageAction(meta.tool) : undefined
+    const actionId = meta?.tool ? toolSlugToUsageAction(meta.tool) : 'hook_generation'
 
-    return await invokeUsageLimit('increment', {
+    return await consumeCredits(actionId, {
       cost,
-      action_id: actionId,
-      ...meta,
+      tool: meta?.tool,
+      label: meta?.label,
+      niche: meta?.niche,
+      platform: meta?.platform,
+      prompt: meta?.prompt,
+      generation_type: meta?.generation_type,
+      skip_analytics_log: meta?.skip_analytics_log,
+      idempotency_key: meta?.idempotency_key,
     })
   } catch (err) {
     if (fallbackProfile) {

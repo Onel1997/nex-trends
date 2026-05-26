@@ -10,6 +10,8 @@ import {
   pollVideoProviderJob,
   startVideoProviderJob,
 } from "../_shared/video-provider.ts";
+import { consumeCredits } from "../_shared/credits.ts";
+import { ensureProfile } from "../_shared/usage.ts";
 import {
   checkPipelineEnv,
   getStorageBucket,
@@ -536,7 +538,37 @@ serve(async (req) => {
       ? body.generation_id
       : null;
 
-    logPipeline("queue", "create job", { trendId, userId: user.id })
+    await ensureProfile(supabaseAdmin, user.id, user.email);
+
+    const idempotencyKey = typeof body.idempotency_key === "string"
+      ? body.idempotency_key
+      : generationId
+      ? `video:${generationId}`
+      : undefined;
+
+    const creditResult = await consumeCredits(supabaseAdmin, user.id, {
+      feature: "ai_video",
+      metadata: {
+        trend_id: trendId,
+        generation_id: generationId,
+        title,
+      },
+      idempotencyKey,
+      email: user.email,
+    });
+
+    if (!creditResult.allowed) {
+      logPipeline("queue", "insufficient credits", { userId: user.id, trendId });
+      return new Response(
+        JSON.stringify({
+          ...creditResult,
+          error: creditResult.error ?? "insufficient_credits",
+        }),
+        { status: 402, headers: jsonHeaders },
+      );
+    }
+
+    logPipeline("queue", "create job", { trendId, userId: user.id, cost: creditResult.cost })
 
     let brief
     try {

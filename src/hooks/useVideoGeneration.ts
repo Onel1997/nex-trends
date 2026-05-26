@@ -4,6 +4,7 @@ import {
   type VideoGenerationResult,
   type VideoJobStatus,
 } from '@/lib/video-generation-pipeline'
+import { CREDIT_COSTS } from '@/lib/plans'
 import { trackGeneration, patchGeneration } from '@/lib/generation-tracking'
 import type { StudioCreateOptions } from '@/lib/ai-studio'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
@@ -73,7 +74,7 @@ export function useVideoGeneration() {
         niche: trend.niche,
         platform: trend.platform,
         prompt: trend.hookAnalysis?.hookText ?? trend.title,
-        credits_used: options?.consumeCredits ? 2 : 0,
+        credits_used: options?.consumeCredits ? CREDIT_COSTS.ai_video : 0,
       })
 
       const onStatus = (s: VideoJobStatus, msg?: string) => {

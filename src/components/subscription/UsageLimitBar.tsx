@@ -10,9 +10,9 @@ type UsageLimitBarProps = {
 }
 
 export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps) {
-  const { usage, hasProAccess, isAdmin } = useUsageLimit()
+  const { usage, isAdmin } = useUsageLimit()
 
-  if (hasProAccess || usage.unlimited) {
+  if (usage.unlimited) {
     return (
       <div
         className={cn(

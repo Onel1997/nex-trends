@@ -155,7 +155,7 @@ async function syncSubscription(
     userId,
     active ? plan : "free",
     active ? "active" : "inactive",
-    { customerId, subscriptionId },
+    { customerId, subscriptionId, periodEnd },
   );
 
   await supabase.from("profiles").update({

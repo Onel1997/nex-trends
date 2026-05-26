@@ -27,7 +27,6 @@ export {
   incrementUsage,
   getUsageFromProfile,
   formatUsageResetDate,
-  FREE_MONTHLY_AI_LIMIT,
   MAX_FREE_CREDITS,
   SIGNUP_CREDITS,
 } from './usage'

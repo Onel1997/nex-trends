@@ -13,7 +13,8 @@ import { getAdminUsageResult, isAdminEmail } from '@/lib/admin'
 import {
   clearProfileCache,
   getDefaultProfile,
-  hasPremiumAccess,
+  hasProAccess as profileHasProAccess,
+  hasUnlimitedCredits,
   readProfileCache,
   writeProfileCache,
 } from '@/lib/subscription'
@@ -297,7 +298,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const userPlan = normalizePlanId(
     isAdmin ? 'founder' : profile?.plan,
   )
-  const premiumAccess = hasPremiumAccess(profile, userEmail)
+  const paidProAccess = profileHasProAccess(profile)
+  const unlimitedCredits = hasUnlimitedCredits(profile, userEmail)
 
   const consumeUsage = useCallback(
     async (activity?: ConsumeUsageOptions): Promise<UsageLimitResult> => {
@@ -327,7 +329,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         return unlimited
       }
 
-      if (premiumAccess) {
+      if (unlimitedCredits) {
         if (activity) {
           logActivity(activity.tool, activity.label)
           void logGenerationUsage(generationMeta!)
@@ -382,7 +384,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         return { ...fallback, allowed: false }
       }
     },
-    [isAdmin, premiumAccess, profile, userEmail, session?.user?.id, showToast],
+    [isAdmin, unlimitedCredits, profile, userEmail, session?.user?.id, showToast],
   )
 
   useEffect(() => {
@@ -405,7 +407,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       isAuthLoading,
       isProfileLoading,
       isReady,
-      hasProAccess: premiumAccess,
+      hasProAccess: paidProAccess,
       userPlan,
       isAdmin,
       usage,
@@ -428,7 +430,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       isAuthLoading,
       isProfileLoading,
       isReady,
-      premiumAccess,
+      paidProAccess,
+      unlimitedCredits,
       userPlan,
       isAdmin,
       usage,
