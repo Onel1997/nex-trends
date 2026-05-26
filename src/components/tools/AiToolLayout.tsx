@@ -10,9 +10,16 @@ type AiToolLayoutProps = {
   description: string
   children: ReactNode
   className?: string
+  creditCost?: number
 }
 
-export function AiToolLayout({ title, description, children, className }: AiToolLayoutProps) {
+export function AiToolLayout({
+  title,
+  description,
+  children,
+  className,
+  creditCost = 1,
+}: AiToolLayoutProps) {
   const { hasProAccess, isAdmin, isCreditsLow, usage } = useUsageLimit()
   const remaining = usage.remaining ?? 0
   const limit = usage.limit ?? MAX_FREE_CREDITS
@@ -42,7 +49,7 @@ export function AiToolLayout({ title, description, children, className }: AiTool
           ) : (
             <span className="text-zinc-400">
               <span className="font-semibold tabular-nums text-violet-300">{remaining}</span>
-              <span className="text-zinc-600"> / {limit}</span> Credits · 1 pro Generierung
+              <span className="text-zinc-600"> / {limit}</span> Credits · {creditCost} pro Generierung
             </span>
           )}
         </div>

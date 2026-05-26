@@ -236,6 +236,7 @@ Anforderungen:
 Antworte NUR mit JSON: {"hooks":["hook1","hook2","hook3","hook4"]}`
 }
 
+/** @deprecated Production uses hook-generator edge function via @/lib/ai/hook-generator */
 export async function generateTrendHooks(input: GenerateHooksInput): Promise<string[]> {
   const niche = input.niche?.trim()
   if (!niche) throw new Error('Bitte wähle eine Nische oder gib ein Thema ein.')

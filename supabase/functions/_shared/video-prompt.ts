@@ -1,5 +1,7 @@
 /** Builds unique scene + hook prompts per generation (OpenAI when key present). */
 
+import { callOpenAIJson } from "./ai/openai-client.ts"
+
 export type VideoCreativeBrief = {
   scenePrompt: string
   hookText: string
@@ -111,47 +113,19 @@ export async function buildOpenAIBrief(input: {
     breakdown: input.contentBreakdown ?? {},
   })
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.92,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            `You create UNIQUE short-form video creative briefs for 9:16 portrait videos.
+  try {
+    const parsed = await callOpenAIJson<VideoCreativeBrief>({
+      systemPrompt:
+        `You create UNIQUE short-form video creative briefs for 9:16 portrait videos.
 Return JSON only: {"scenePrompt":"...","hookText":"...","captions":["line1","line2","line3","line4"],"pacing":"...","motionStyle":"...","visualMood":"..."}.
 scenePrompt must describe a never-before-used visual scene (no stock clichés). captions are on-screen text lines in German or English matching niche. Each generation must differ in scene, pacing, and motion.`,
-        },
-        { role: "user", content: userPayload },
-      ],
-    }),
-  })
-
-  if (!res.ok) {
-    const err = await res.text()
-    console.error("[video-prompt][prompt] OpenAI brief failed", {
-      status: res.status,
-      body: err.slice(0, 1500),
+      userMessage: userPayload,
+      temperature: 0.92,
+      jsonMode: true,
+      maxTokens: 900,
     })
-    return null
-  }
 
-  const data = await res.json() as {
-    choices?: Array<{ message?: { content?: string } }>
-  }
-  const raw = data.choices?.[0]?.message?.content?.trim()
-  if (!raw) return null
-
-  try {
-    const parsed = JSON.parse(raw) as VideoCreativeBrief
-    if (!parsed.scenePrompt || !parsed.hookText) return null
+    if (!parsed?.scenePrompt || !parsed?.hookText) return null
     parsed.captions = Array.isArray(parsed.captions)
       ? parsed.captions.filter((c) => typeof c === "string").slice(0, 6)
       : []
@@ -160,8 +134,8 @@ scenePrompt must describe a never-before-used visual scene (no stock clichés). 
       captionCount: parsed.captions.length,
     })
     return parsed
-  } catch (parseErr) {
-    console.error("[video-prompt][prompt] OpenAI JSON parse failed", parseErr)
+  } catch (err) {
+    console.error("[video-prompt][prompt] OpenAI brief failed", err)
     return null
   }
 }

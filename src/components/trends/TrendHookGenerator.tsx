@@ -1,12 +1,23 @@
 import { useState } from 'react'
-import { HookErrorState, HookResultsList } from '@/components/hooks/HookResultsList'
-import { HookStylePicker } from '@/components/hooks/HookStylePicker'
+import {
+  HookErrorState,
+  HookGeneratingSkeleton,
+  HookResultsList,
+} from '@/components/hooks/HookResultsList'
+import { SelectField } from '@/components/ui/SelectField'
 import { Button } from '@/components/ui/Button'
 import { BoltIcon, SparklesIcon } from '@/components/ui/icons'
 import { useToast } from '@/context/ToastContext'
-import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { generateTrendHooks, trendToHookInput, type TrendHookStyle } from '@/lib/openai'
+import { useHookGenerationFlow } from '@/hooks/useHookGenerationFlow'
+import { useSavedHooks } from '@/hooks/useSavedHooks'
 import { cn } from '@/lib'
+import {
+  HOOK_GENERATION_COST,
+  HOOK_PLATFORM_OPTIONS,
+  HOOK_TONE_OPTIONS,
+  type HookPlatform,
+  type HookTone,
+} from '@/types/ai-generation'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 type TrendHookGeneratorProps = {
@@ -16,39 +27,52 @@ type TrendHookGeneratorProps = {
 
 export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps) {
   const { showToast } = useToast()
-  const { requireCredits, consumeCreditAfterSuccess } = useUsageLimit()
-  const [style, setStyle] = useState<TrendHookStyle>('aggressive')
-  const [hooks, setHooks] = useState<string[]>([])
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { hooks, error, isGenerating, generate } = useHookGenerationFlow()
+  const { saveHook, isSaved, savedHooks } = useSavedHooks()
+  const [tone, setTone] = useState<HookTone>('aggressive')
+  const [platform, setPlatform] = useState<HookPlatform>(
+    (trend.platform as HookPlatform) || 'TikTok',
+  )
+  const [savingHook, setSavingHook] = useState<string | null>(null)
 
-  async function runGenerate(consumeCredit: boolean) {
-    setError(null)
-    setIsGenerating(true)
+  const savedHookTexts = new Set(savedHooks.map((h) => h.hook_text))
 
+  async function runGenerate(skipCreditCharge: boolean) {
+    const result = await generate(
+      {
+        topic: trend.niche?.trim() || trend.title,
+        tone,
+        platform,
+        context: trend.description,
+        trendTitle: trend.title,
+        referenceHook: trend.hookAnalysis?.hookText,
+      },
+      { skipCreditCharge },
+    )
+
+    if (result) {
+      showToast({
+        type: 'success',
+        title: `${result.hooks.length} Hooks generiert`,
+      })
+    }
+  }
+
+  async function handleSaveHook(hookText: string) {
+    if (isSaved(hookText)) return
+    setSavingHook(hookText)
     try {
-      if (consumeCredit && !requireCredits()) return
-
-      const generated = await generateTrendHooks(trendToHookInput(trend, style))
-      setHooks(generated)
-
-      if (consumeCredit) {
-        await consumeCreditAfterSuccess({
-          tool: 'Hook-Generator',
-          label: `Hooks: ${trend.title.slice(0, 30)}`,
-          niche: trend.niche,
-          platform: trend.platform,
-          prompt: trend.title,
-        })
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Generierung fehlgeschlagen. Bitte versuche es erneut.',
-      )
+      await saveHook({
+        hookText,
+        topic: trend.niche ?? trend.title,
+        tone,
+        platform,
+      })
+      showToast({ type: 'success', title: 'Hook gespeichert' })
+    } catch {
+      showToast({ type: 'error', title: 'Speichern fehlgeschlagen' })
     } finally {
-      setIsGenerating(false)
+      setSavingHook(null)
     }
   }
 
@@ -70,24 +94,53 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
         </h3>
       </div>
 
-      <HookStylePicker value={style} onChange={setStyle} disabled={isGenerating} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <SelectField
+          label="Ton"
+          value={tone}
+          onChange={(e) => setTone(e.target.value as HookTone)}
+          disabled={isGenerating}
+          options={HOOK_TONE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+        />
+        <SelectField
+          label="Plattform"
+          value={platform}
+          onChange={(e) => setPlatform(e.target.value as HookPlatform)}
+          disabled={isGenerating}
+          options={HOOK_PLATFORM_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+        />
+      </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Button
           variant="secondary"
           size="md"
           loading={isGenerating}
-          onClick={() => void runGenerate(hooks.length === 0)}
+          onClick={() => void runGenerate(hooks.length > 0)}
           className="w-full sm:w-auto"
         >
           <SparklesIcon className="size-4" aria-hidden />
-          {hooks.length > 0 ? 'Neu generieren' : 'Hooks generieren'}
+          {hooks.length > 0
+            ? 'Neu generieren'
+            : `Hooks generieren · ${HOOK_GENERATION_COST} Credits`}
         </Button>
       </div>
 
-      {error && <HookErrorState message={error} onRetry={() => void runGenerate(false)} />}
+      {error && (
+        <HookErrorState message={error} onRetry={() => void runGenerate(false)} />
+      )}
 
-      <HookResultsList hooks={hooks} onCopy={(text) => void copyHook(text)} />
+      {isGenerating && <HookGeneratingSkeleton count={5} />}
+
+      {!isGenerating && (
+        <HookResultsList
+          hooks={hooks}
+          onCopy={(text) => void copyHook(text)}
+          onSave={(text) => void handleSaveHook(text)}
+          savedHooks={savedHookTexts}
+          isSaving={savingHook}
+        />
+      )}
     </section>
   )
 }
