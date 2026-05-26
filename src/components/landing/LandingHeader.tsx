@@ -15,6 +15,7 @@ export function LandingHeader() {
 
   function handleNav(id: string) {
     setMobileOpen(false)
+    document.body.style.overflow = ''
     scrollToSection(id)
   }
 
@@ -98,6 +99,15 @@ export function LandingHeader() {
                 </button>
               </li>
             ))}
+            <li>
+              <button
+                type="button"
+                onClick={() => handleNav('login')}
+                className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-300 transition-smooth hover:bg-zinc-900/80 hover:text-white"
+              >
+                Anmelden
+              </button>
+            </li>
             <li className="pt-2">
               <GoogleSignInButton size="md" className="!w-full" />
             </li>

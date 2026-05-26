@@ -80,6 +80,7 @@ export function LandingSocialProof() {
           <BadgePill label="SOC 2 Ready" />
           <BadgePill label="Stripe Secure" />
           <BadgePill label="Google OAuth" />
+          <BadgePill label="Magic Link Login" />
           <BadgePill label="EU Hosting" />
         </div>
       </div>

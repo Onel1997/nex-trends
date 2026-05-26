@@ -1,5 +1,6 @@
 import { APP_NAME } from '@/lib'
 import { GoogleSignInButton } from '@/components/landing/GoogleSignInButton'
+import { EmailLoginForm } from '@/components/landing/EmailLoginForm'
 import { scrollToSection } from '@/lib/scroll'
 
 export function LandingLogin() {
@@ -30,12 +31,17 @@ export function LandingLogin() {
             Bereit, deinen Content zu skalieren?
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-zinc-400 sm:text-base">
-            Schließe dich 500+ Creators an. Melde dich mit Google an und starte in
+            Schließe dich 500+ Creators an. Melde dich mit Google oder E-Mail an und starte in
             30 Sekunden mit {APP_NAME} — Trend-Scouting & KI-Tools inklusive.
           </p>
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-8 flex flex-col items-center justify-center gap-4">
             <GoogleSignInButton label="Kostenlos mit Google starten" />
+
+            <p className="text-xs text-zinc-500">oder</p>
+
+            <EmailLoginForm />
+
             <button
               type="button"
               onClick={() => scrollToSection('pricing')}

@@ -6,9 +6,11 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { CheckoutHandler } from '@/components/app/CheckoutHandler'
 import { MaintenanceBanner } from '@/components/app/MaintenanceBanner'
 import { isAdminPath } from '@/lib/admin-navigation'
+import { isAuthCallbackPath } from '@/lib/auth'
 import LandingPage from '@/pages/LandingPage'
 import { HomePage } from '@/pages/HomePage'
 import { AdminPage } from '@/pages/AdminPage'
+import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
 
 function AppContent() {
   const { session, isAuthLoading } = useSubscription()
@@ -19,6 +21,10 @@ function AppContent() {
     window.addEventListener('popstate', syncRoute)
     return () => window.removeEventListener('popstate', syncRoute)
   }, [])
+
+  if (isAuthCallbackPath()) {
+    return <AuthCallbackPage />
+  }
 
   if (isAuthLoading) {
     return (

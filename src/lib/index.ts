@@ -30,5 +30,18 @@ export {
   MAX_FREE_CREDITS,
   SIGNUP_CREDITS,
 } from './usage'
-export { useSession, signInWithGoogle, getAppOrigin, getAuthRedirectUrl, scrollToLogin } from './auth'
+export {
+  useSession,
+  signInWithGoogle,
+  signInWithEmail,
+  getAppOrigin,
+  getAuthRedirectUrl,
+  getGoogleOAuthRedirectUrl,
+  AUTH_CALLBACK_PATH,
+  isAuthCallbackPath,
+  completeAuthCallback,
+  initializeAuthCallback,
+  formatAuthError,
+  scrollToLogin,
+} from './auth'
 export { openStripeCheckout, startStripeCheckoutFlow } from './stripe'

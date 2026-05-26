@@ -1,4 +1,5 @@
-import { signInWithGoogle } from '@/lib/auth'
+import { GoogleSignInButton } from '@/components/landing/GoogleSignInButton'
+import { EmailLoginForm } from '@/components/landing/EmailLoginForm'
 
 export default function AuthPage() {
   return (
@@ -9,13 +10,20 @@ export default function AuthPage() {
           Logge dich ein, um dein Marketing-Dashboard zu starten.
         </p>
 
-        <button
-          type="button"
-          onClick={() => signInWithGoogle()}
-          className="w-full rounded-lg bg-white py-3 font-semibold text-black transition-all duration-300 hover:bg-zinc-200"
-        >
-          Mit Google anmelden
-        </button>
+        <GoogleSignInButton
+          label="Mit Google anmelden"
+          variant="white"
+          size="md"
+          className="!w-full"
+        />
+
+        <p className="my-4 text-xs text-zinc-500">oder</p>
+
+        <EmailLoginForm
+          wrapperClassName="max-w-none"
+          inputClassName="rounded-lg bg-zinc-950"
+          buttonClassName="rounded-lg border border-zinc-700 bg-zinc-950 font-semibold hover:border-violet-500/50 hover:bg-zinc-800"
+        />
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import { isAdminPath } from './admin-navigation'
+import { isAuthCallbackPath } from './auth'
 import {
   DASHBOARD_BASE,
   getPathForTool,
@@ -112,7 +113,7 @@ export function syncLegacyToolQueryToPath(): void {
 
 /** Ensure authenticated users on `/` land on dashboard */
 export function ensureDashboardPath(): void {
-  if (isAdminPath()) return
+  if (isAdminPath() || isAuthCallbackPath()) return
   const path = window.location.pathname.replace(/\/$/, '') || '/'
   if (path === '/') {
     navigateToTool('dashboard', { replace: true })

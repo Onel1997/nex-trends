@@ -230,8 +230,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   useEffect(() => {
     let mounted = true
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    async function bootstrapAuth() {
+      const {
+        data: { session: initialSession },
+      } = await supabase.auth.getSession()
+
       if (!mounted) return
+
       setSession(initialSession)
       setIsAuthLoading(false)
 
@@ -242,7 +247,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         setUsage(getUsageFromProfile(null, null))
         clearProfileCache()
       }
-    })
+    }
+
+    void bootstrapAuth()
 
     const {
       data: { subscription },

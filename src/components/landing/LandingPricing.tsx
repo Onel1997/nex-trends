@@ -84,7 +84,7 @@ export function LandingPricing() {
             <FeatureList features={PRO_FEATURES} variant="pro" />
             <button
               type="button"
-              onClick={() => signInWithGoogle({ redirectPath: '/dashboard' })}
+              onClick={() => void signInWithGoogle()}
               className="mt-8 w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-fuchsia-900/30 transition-all duration-300 hover:from-fuchsia-500 hover:to-violet-500 hover:shadow-fuchsia-800/40"
             >
               Anmelden & Pro starten — {PRO_PRICE_LABEL}
