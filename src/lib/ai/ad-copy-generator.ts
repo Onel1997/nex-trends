@@ -1,4 +1,5 @@
 import { invokeEdgeFunction } from '@/lib/edgeFunctions'
+import { generateId } from '@/lib/utils'
 import { consumeCredits } from '@/lib/credits/consume'
 import { supabase } from '@/lib/supabase'
 import {
@@ -91,7 +92,7 @@ async function persistAdCopyLocally(
     throw new Error('Nicht authentifiziert.')
   }
 
-  const batchId = crypto.randomUUID()
+  const batchId = generateId()
   const insertRows = variantsToInsertRows(
     session.session.user.id,
     batchId,

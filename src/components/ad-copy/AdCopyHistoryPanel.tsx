@@ -154,6 +154,8 @@ type AdCopyHistoryPanelProps = {
   onSelect: (batch: AdCopyGenerationBatch) => void
   onRegenerate: (batch: AdCopyGenerationBatch) => void
   onRefresh?: () => void
+  emptyAction?: ReactNode
+  emptyHint?: string
   className?: string
 }
 
@@ -165,6 +167,8 @@ export function AdCopyHistoryPanel({
   onSelect,
   onRegenerate,
   onRefresh,
+  emptyAction,
+  emptyHint,
   className,
 }: AdCopyHistoryPanelProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -184,7 +188,9 @@ export function AdCopyHistoryPanel({
   }
 
   if (history.length === 0) {
-    return <AdCopyHistoryEmptyState className={className} />
+    return (
+      <AdCopyHistoryEmptyState action={emptyAction} hint={emptyHint} className={className} />
+    )
   }
 
   const groups = groupAdCopyHistoryByDate(history)
@@ -240,6 +246,7 @@ type AdCopySavedPanelProps = {
   emptyTitle?: string
   emptyDescription?: string
   emptyAction?: ReactNode
+  emptyHint?: string
   className?: string
 }
 
@@ -297,6 +304,7 @@ export function AdCopySavedPanel({
   emptyTitle,
   emptyDescription,
   emptyAction,
+  emptyHint,
   className,
 }: AdCopySavedPanelProps) {
   const [removingIds, setRemovingIds] = useState<Set<string>>(() => new Set())
@@ -349,6 +357,7 @@ export function AdCopySavedPanel({
         title={emptyTitle}
         description={emptyDescription}
         action={emptyAction}
+        hint={emptyHint}
         className={className}
       />
     )

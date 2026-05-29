@@ -1,8 +1,19 @@
+export type ActivityKind =
+  | 'hook'
+  | 'ad_copy'
+  | 'seo'
+  | 'audit'
+  | 'video'
+  | 'trend'
+  | 'saved'
+  | 'generic'
+
 export type ActivityItem = {
   id: string
   tool: string
   label: string
   timestamp: string
+  kind?: ActivityKind
 }
 
 export type WeeklyUsagePoint = {

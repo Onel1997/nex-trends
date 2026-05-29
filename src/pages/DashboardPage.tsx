@@ -40,12 +40,20 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
     if (!isLoading) refreshActivity()
   }, [isLoading, usage.used, savedHooks.length, refreshActivity])
 
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshActivity()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [refreshActivity])
+
   if (isLoading) {
     return <DashboardSkeleton />
   }
 
   return (
-    <div className="dashboard-os nex-os-polish nex-ambient relative mx-auto w-full min-w-0 max-w-6xl overflow-x-clip">
+    <div className="dashboard-os nex-os-polish nex-ambient dashboard-os--safe-pad relative mx-auto w-full min-w-0 max-w-6xl overflow-x-clip">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="nex-ambient__orb nex-ambient__orb--1" />
         <div className="nex-ambient__orb nex-ambient__orb--2" />

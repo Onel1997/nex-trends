@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useToast } from '@/context/ToastContext'
 import { copyToClipboard } from '@/lib/clipboard'
-import { getAdCopyRecentCopies, recordAdCopyCopy } from '@/lib/ad-copy-analytics'
-import { formatAdCopyForClipboard, getAdCopyVariantKey } from '@/lib/ad-copy-display'
-import type { AdCopyVariant } from '@/types/ad-copy-generation'
+import { getSeoTitleRecentCopies, recordSeoTitleCopy } from '@/lib/seo-title-analytics'
+import { formatSeoTitleForClipboard, getSeoTitleVariantKey } from '@/lib/seo-title-display'
+import type { SeoTitleVariant } from '@/types/seo-title-generation'
 
 const COPY_FEEDBACK_MS = 2200
 const COPY_COOLDOWN_MS = 700
 const COPY_TOAST_MS = 2000
 
-export function useAdCopyClipboard() {
+export function useSeoTitleClipboard() {
   const { showToast } = useToast()
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [copyToastVisible, setCopyToastVisible] = useState(false)
-  const [recentCopies, setRecentCopies] = useState(() => getAdCopyRecentCopies())
+  const [recentCopies, setRecentCopies] = useState(() => getSeoTitleRecentCopies())
   const copyTimerRef = useRef<number | null>(null)
   const copyToastTimerRef = useRef<number | null>(null)
   const cooldownRef = useRef<Map<string, number>>(new Map())
@@ -26,9 +26,9 @@ export function useAdCopyClipboard() {
   }, [])
 
   const copyVariant = useCallback(
-    async (variant: AdCopyVariant) => {
-      const key = getAdCopyVariantKey(variant)
-      const text = formatAdCopyForClipboard(variant)
+    async (variant: SeoTitleVariant) => {
+      const key = getSeoTitleVariantKey(variant)
+      const text = formatSeoTitleForClipboard(variant)
       const now = Date.now()
       const lastCopy = cooldownRef.current.get(key) ?? 0
       if (now - lastCopy < COPY_COOLDOWN_MS) return
@@ -44,7 +44,7 @@ export function useAdCopyClipboard() {
       if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current)
       copyTimerRef.current = window.setTimeout(() => setCopiedKey(null), COPY_FEEDBACK_MS)
 
-      const store = recordAdCopyCopy(variant.headline)
+      const store = recordSeoTitleCopy(variant.title)
       setRecentCopies(store.recentCopies)
 
       setCopyToastVisible(true)

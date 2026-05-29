@@ -13,6 +13,7 @@ export {
 } from '@/lib/landing-page-analyzer'
 
 import type { AdCopyPlatform, AdCopyTone, AdCopyVariant } from '@/types/ad-copy-generation'
+import type { SeoTitleGenerationRequest, SeoTitleVariant } from '@/types/seo-title-generation'
 
 function delay(ms = 800): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -89,26 +90,73 @@ export async function generateHooksPlaceholder(briefing: string): Promise<string
 5. „3 Sekunden. Ein Satz. ${topic} — so einfach war es noch nie."`
 }
 
-export async function generateSeoTitlesPlaceholder(briefing: string): Promise<string> {
+export async function generateSeoTitleVariantsPlaceholder(
+  request: SeoTitleGenerationRequest,
+): Promise<SeoTitleVariant[]> {
   await delay()
-  const topic = extractTopic(briefing)
+  const topic = extractTopic(request.briefing)
+  const keyword = request.keyword?.trim() || topic
+  const year = new Date().getFullYear()
 
-  return `━━ SEO TITLES · CTR-OPTIMIERT ━━
+  const templates: SeoTitleVariant[] = [
+    {
+      title: `${topic}: Der komplette Guide (${year})`,
+      seoScore: 88,
+      ctrScore: 84,
+      readabilityScore: 91,
+      keyword,
+      searchIntent: 'informational',
+    },
+    {
+      title: `${topic} — 7 Strategien, die wirklich funktionieren`,
+      seoScore: 85,
+      ctrScore: 86,
+      readabilityScore: 88,
+      keyword,
+      searchIntent: 'informational',
+    },
+    {
+      title: `Warum ${topic} gerade explodiert (Daten & Trends)`,
+      seoScore: 82,
+      ctrScore: 89,
+      readabilityScore: 85,
+      keyword,
+      searchIntent: 'commercial',
+    },
+    {
+      title: `${topic} für Anfänger: Von 0 auf Ergebnis in 90 Tagen`,
+      seoScore: 86,
+      ctrScore: 83,
+      readabilityScore: 90,
+      keyword,
+      searchIntent: 'transactional',
+    },
+    {
+      title: `${topic} vs. Alternativen: Ehrlicher Vergleich ${year}`,
+      seoScore: 84,
+      ctrScore: 87,
+      readabilityScore: 86,
+      keyword,
+      searchIntent: 'commercial',
+    },
+  ]
 
-1. ${topic}: Der komplette Guide (2026)
-   └ 52 Zeichen · Intent: Informational
+  return templates.map((t) => ({
+    ...t,
+    title: t.title.slice(0, 70),
+  }))
+}
 
-2. ${topic} — 7 Strategien, die wirklich funktionieren
-   └ 48 Zeichen · Intent: How-to
-
-3. Warum ${topic} gerade explodiert (Daten & Trends)
-   └ 47 Zeichen · Intent: Trend / News
-
-4. ${topic} für Anfänger: Von 0 auf 10K in 90 Tagen
-   └ 49 Zeichen · Intent: Beginner
-
-5. ${topic} vs. Alternativen: Ehrlicher Vergleich
-   └ 44 Zeichen · Intent: Commercial
-
-Tipps: Zahl + Jahr + Klarheit erhöhen CTR um ~15–25 % in SERP-Tests.`
+/** @deprecated Use generateSeoTitleVariantsPlaceholder */
+export async function generateSeoTitlesPlaceholder(briefing: string): Promise<string> {
+  const variants = await generateSeoTitleVariantsPlaceholder({
+    briefing,
+    platform: 'Google Search',
+  })
+  return variants
+    .map(
+      (v, i) =>
+        `${i + 1}. ${v.title}\n   └ ${v.title.length} Zeichen · SEO ${v.seoScore} · CTR ${v.ctrScore}`,
+    )
+    .join('\n\n')
 }

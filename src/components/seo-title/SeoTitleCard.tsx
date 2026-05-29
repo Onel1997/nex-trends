@@ -9,25 +9,20 @@ import {
   TrashIcon,
 } from '@/components/ui/icons'
 import {
-  AD_HEADLINE_LIMIT,
-  AD_HEADLINE_OPTIMAL,
-  AD_PRIMARY_LIMIT,
-  AD_PRIMARY_OPTIMAL,
-  formatAdCopyDate,
-  getAdCharCountClass,
-  getAdCharState,
-  getAdCopyPlatformLabel,
-  getAdCopyToneLabel,
-  getAdCopyTotalChars,
-  getCtaLabel,
-} from '@/lib/ad-copy-display'
+  formatSeoTitleDate,
+  getScoreBadgeClass,
+  getSeoIntentLabel,
+  getSeoPlatformLabel,
+  getSeoTitleCharCountClass,
+  getSeoTitleCharLabel,
+  getSeoTitleCharState,
+} from '@/lib/seo-title-display'
 import { cn } from '@/lib'
-import type { AdCopyVariant } from '@/types/ad-copy-generation'
+import type { SeoTitleVariant } from '@/types/seo-title-generation'
 
-export type AdCopyCardProps = {
-  variant: AdCopyVariant
+export type SeoTitleCardProps = {
+  variant: SeoTitleVariant
   index?: number
-  tone?: string | null
   platform?: string | null
   saved?: boolean
   saving?: boolean
@@ -46,10 +41,18 @@ export type AdCopyCardProps = {
   animationDelayMs?: number
 }
 
-export const AdCopyCard = memo(function AdCopyCard({
+function ScoreBadge({ label, score }: { label: string; score: number }) {
+  return (
+    <span className={cn('seo-score-badge', getScoreBadgeClass(score))} title={label}>
+      <span className="seo-score-badge__label">{label}</span>
+      <span className="seo-score-badge__value tabular-nums">{score}</span>
+    </span>
+  )
+}
+
+export const SeoTitleCard = memo(function SeoTitleCard({
   variant,
   index,
-  tone,
   platform,
   saved = false,
   saving = false,
@@ -66,22 +69,20 @@ export const AdCopyCard = memo(function AdCopyCard({
   savedAt,
   className,
   animationDelayMs = 0,
-}: AdCopyCardProps) {
-  const headlineState = getAdCharState(variant.headline.length, AD_HEADLINE_OPTIMAL, AD_HEADLINE_LIMIT)
-  const primaryState = getAdCharState(variant.primaryText.length, AD_PRIMARY_OPTIMAL, AD_PRIMARY_LIMIT)
-  const totalChars = getAdCopyTotalChars(variant)
-  const toneLabel = getAdCopyToneLabel(tone)
-  const platformLabel = getAdCopyPlatformLabel(platform)
-  const ctaLabel = getCtaLabel(variant.cta)
+}: SeoTitleCardProps) {
+  const charLen = variant.title.length
+  const charState = getSeoTitleCharState(charLen)
+  const platformLabel = getSeoPlatformLabel(platform)
+  const intentLabel = getSeoIntentLabel(variant.searchIntent)
 
   return (
     <article
       className={cn(
-        'ad-copy-card overflow-hidden px-4 py-4 sm:px-5 sm:py-[1.35rem]',
-        saved && 'ad-copy-card--saved',
-        copied && 'ad-copy-card--copied',
+        'seo-title-card overflow-hidden px-4 py-4 sm:px-5 sm:py-[1.35rem]',
+        saved && 'seo-title-card--saved',
+        copied && 'seo-title-card--copied',
         justSaved && 'animate-save-glow border-amber-400/35',
-        removing && 'ad-copy-card--removing',
+        removing && 'seo-title-card--removing',
         className,
       )}
       style={
@@ -90,23 +91,19 @@ export const AdCopyCard = memo(function AdCopyCard({
           : undefined
       }
     >
-      <div className="ad-copy-card__glow" aria-hidden />
+      <div className="seo-title-card__glow" aria-hidden />
 
       <div className="relative">
         <div className="flex items-start justify-between gap-3">
           {showIndex && typeof index === 'number' ? (
             <span
-              className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-full',
-                'bg-violet-500/12 text-[11px] font-bold tabular-nums text-violet-300/95',
-                'ring-1 ring-violet-500/20',
-              )}
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-cyan-500/10 text-[11px] font-bold tabular-nums text-cyan-300/95 ring-1 ring-cyan-500/20"
               aria-hidden
             >
               {index + 1}
             </span>
           ) : (
-            <span className="sr-only">Ad Copy</span>
+            <span className="sr-only">SEO Titel</span>
           )}
 
           {(onToggleSave || onCopy) && (
@@ -126,26 +123,16 @@ export const AdCopyCard = memo(function AdCopyCard({
                     justSaved && 'animate-bookmark-save',
                     saved && 'ad-copy-bookmark-btn--saved',
                   )}
-                  aria-label={
-                    saved ? 'Ad aus Gespeichert entfernen' : `Ad ${(index ?? 0) + 1} speichern`
-                  }
+                  aria-label={saved ? 'Titel entfernen' : `Titel ${(index ?? 0) + 1} speichern`}
                   aria-pressed={saved}
                 >
                   {saved ? (
-                    <BookmarkFilledIcon
-                      className={cn(
-                        'size-[17px]',
-                        justSaved
-                          ? 'drop-shadow-[0_0_12px_rgba(245,158,11,0.65)]'
-                          : 'drop-shadow-[0_0_6px_rgba(245,158,11,0.45)]',
-                      )}
-                    />
+                    <BookmarkFilledIcon className="size-[17px] drop-shadow-[0_0_6px_rgba(245,158,11,0.45)]" />
                   ) : (
                     <BookmarkIcon className="size-[17px]" />
                   )}
                 </button>
               )}
-
               {onCopy && (
                 <button
                   type="button"
@@ -158,7 +145,7 @@ export const AdCopyCard = memo(function AdCopyCard({
                       : 'text-zinc-500 hover:bg-violet-500/12 hover:text-violet-200',
                     copyDisabled && !copied && 'opacity-50',
                   )}
-                  aria-label={copied ? 'Kopiert' : `Ad ${(index ?? 0) + 1} kopieren`}
+                  aria-label={copied ? 'Kopiert' : `Titel ${(index ?? 0) + 1} kopieren`}
                 >
                   {copied ? (
                     <CheckIcon className="size-[17px] animate-fade-in-scale" />
@@ -171,45 +158,29 @@ export const AdCopyCard = memo(function AdCopyCard({
           )}
         </div>
 
-        <div className="mt-3.5 min-w-0 space-y-3 sm:mt-4 sm:space-y-3.5">
-          <h3 className="break-words text-[15px] font-semibold leading-[1.35] tracking-tight text-zinc-50 sm:text-[1.05rem] sm:leading-snug">
-            {variant.headline}
-          </h3>
+        <h3 className="mt-3.5 break-words text-[15px] font-semibold leading-[1.4] tracking-tight text-zinc-50 sm:mt-4 sm:text-[1.05rem] sm:leading-snug">
+          {variant.title}
+        </h3>
 
-          <p className="break-words text-[0.9rem] leading-[1.55] text-zinc-400/95 sm:text-[15px] sm:leading-relaxed">
-            {variant.primaryText}
-          </p>
-
-          <p className="break-words text-sm font-medium leading-snug text-violet-200/90">
-            <span className="mr-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-violet-400/75">
-              CTA
-            </span>
-            {variant.cta}
-          </p>
+        <div className="mt-3.5 flex flex-wrap gap-1.5 sm:mt-4">
+          <ScoreBadge label="SEO" score={variant.seoScore} />
+          <ScoreBadge label="CTR" score={variant.ctrScore} />
+          <ScoreBadge label="Lesbar" score={variant.readabilityScore} />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-1.5 sm:mt-[1.125rem]">
-          {toneLabel && <span className="hook-badge hook-badge--tone">{toneLabel}</span>}
-          {platformLabel && (
-            <span className="hook-badge hook-badge--platform">{platformLabel}</span>
-          )}
-          {ctaLabel && <span className="hook-badge hook-badge--platform">{ctaLabel}</span>}
+        <div className="mt-4 flex flex-wrap items-center gap-1.5">
+          <span className="hook-badge hook-badge--tone">{variant.keyword}</span>
+          {intentLabel && <span className="hook-badge hook-badge--platform">{intentLabel}</span>}
+          {platformLabel && <span className="hook-badge hook-badge--platform">{platformLabel}</span>}
           <span
-            className={cn('hook-badge hook-badge--chars', getAdCharCountClass(headlineState))}
-            title="Headline Zeichen"
+            className={cn('hook-badge hook-badge--chars', getSeoTitleCharCountClass(charState))}
+            title="Zeichenlänge"
           >
-            H {variant.headline.length}/{AD_HEADLINE_LIMIT}
+            {charLen} Z · {getSeoTitleCharLabel(charState)}
           </span>
-          <span
-            className={cn('hook-badge hook-badge--chars', getAdCharCountClass(primaryState))}
-            title="Primary Text Zeichen"
-          >
-            P {variant.primaryText.length}/{AD_PRIMARY_LIMIT}
-          </span>
-          <span className="hook-badge hook-badge--chars text-zinc-500">Σ {totalChars}</span>
           {savedAt && variantType === 'saved' && (
             <span className="text-[10px] font-medium text-zinc-600">
-              {formatAdCopyDate(savedAt, 'relative')}
+              {formatSeoTitleDate(savedAt, 'relative')}
             </span>
           )}
         </div>
@@ -247,4 +218,4 @@ export const AdCopyCard = memo(function AdCopyCard({
   )
 })
 
-AdCopyCard.displayName = 'AdCopyCard'
+SeoTitleCard.displayName = 'SeoTitleCard'

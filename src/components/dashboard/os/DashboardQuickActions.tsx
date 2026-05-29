@@ -59,17 +59,18 @@ function QuickActionButton({
       onClick={() => onNavigate(action.id)}
       className={cn(
         'dashboard-os-quick-action nex-card-interactive group relative h-full w-full overflow-hidden text-left',
-        'rounded-[var(--dash-radius)] border border-zinc-800/55 bg-zinc-950/50 p-3 sm:p-3.5',
-        'min-h-[5.5rem] touch-manipulation',
+        'rounded-[var(--dash-radius)] border border-zinc-800/55 bg-zinc-950/50 p-3.5 sm:p-4',
+        'min-h-[5.75rem] touch-manipulation',
       )}
     >
       <div
         className={cn(
-          'pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-br opacity-80',
+          'dashboard-os-quick-action__gradient pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-br opacity-80',
           action.accent,
         )}
         aria-hidden
       />
+      <div className="dashboard-os-quick-action__glow pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
       <div className="relative flex min-h-[4.75rem] flex-col sm:min-h-[5rem]">
         <span className="flex size-9 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-300 transition-smooth group-hover:border-violet-500/35 group-hover:bg-violet-500/15">
           <Icon className="size-4" aria-hidden />

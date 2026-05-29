@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib'
 
 type AnimatedCounterProps = {
@@ -10,7 +10,7 @@ type AnimatedCounterProps = {
   loading?: boolean
 }
 
-export function AnimatedCounter({
+function AnimatedCounterInner({
   value,
   duration = 900,
   suffix = '',
@@ -36,13 +36,17 @@ export function AnimatedCounter({
       else prev.current = end
     }
 
-    requestAnimationFrame(tick)
+    const frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
   }, [value, duration, loading])
 
   if (loading) {
     return (
       <span
-        className={cn('inline-block h-8 w-14 animate-shimmer rounded-lg bg-zinc-800/60', className)}
+        className={cn(
+          'dashboard-os-counter-skeleton inline-block h-7 w-14 animate-shimmer rounded-lg bg-zinc-800/60 sm:h-8',
+          className,
+        )}
         aria-hidden
       />
     )
@@ -56,3 +60,5 @@ export function AnimatedCounter({
     </span>
   )
 }
+
+export const AnimatedCounter = memo(AnimatedCounterInner)

@@ -1,4 +1,6 @@
 import { DashboardCarousel, DashboardCarouselItem } from '@/components/dashboard/os/DashboardCarousel'
+import { DashboardEmptyIllustration } from '@/components/dashboard/os/DashboardEmptyIllustration'
+import { DashboardOnboardingEmpty } from '@/components/dashboard/os/DashboardOnboardingEmpty'
 import { DashboardSubsectionHeader } from '@/components/dashboard/os/DashboardSubsectionHeader'
 import { SafeMediaThumb } from '@/components/dashboard/os/SafeMediaThumb'
 import {
@@ -219,14 +221,25 @@ export function DashboardLibrarySection({
           onViewAll={() => onNavigate('saved-trends')}
         />
         {trendPreview.length === 0 ? (
-          <button
-            type="button"
-            onClick={() => onNavigate('trend-intelligence')}
-            className="dashboard-os-btn dashboard-os-btn-secondary dashboard-os-empty-cta flex w-full items-center justify-center gap-2 rounded-[var(--dash-radius)] border border-dashed px-3 py-3 text-[10px] text-zinc-500"
-          >
-            <TrendingUpIcon className="size-3.5 text-violet-500/60" />
-            Save your first trend
-          </button>
+          <DashboardOnboardingEmpty
+            compact
+            illustration={
+              <DashboardEmptyIllustration variant="trends" className="mx-auto max-w-[130px]" />
+            }
+            title="Noch keine Trends"
+            description="Speichere Trends aus Trend Intelligence — sie erscheinen hier."
+            action={
+              <button
+                type="button"
+                onClick={() => onNavigate('trend-intelligence')}
+                className="dashboard-os-btn dashboard-os-btn-secondary inline-flex h-9 items-center gap-2 rounded-[var(--dash-radius)] px-4 text-[10px] touch-manipulation"
+              >
+                <TrendingUpIcon className="size-3.5 text-violet-400" aria-hidden />
+                Ersten Trend speichern
+              </button>
+            }
+            className="border border-dashed border-zinc-800/50"
+          />
         ) : (
           <ul className="flex flex-col gap-1">
             {trendPreview.map((trend) => (
@@ -252,14 +265,25 @@ export function DashboardLibrarySection({
             </DashboardCarousel>
           </div>
         ) : videoPreview.length === 0 ? (
-          <button
-            type="button"
-            onClick={() => onNavigate('ai-studio')}
-            className="dashboard-os-btn dashboard-os-btn-secondary dashboard-os-empty-cta flex w-full items-center justify-center gap-2 rounded-[var(--dash-radius)] border border-dashed px-3 py-3 text-[10px] text-zinc-500"
-          >
-            <ClapperboardIcon className="size-3.5 text-violet-500/60" />
-            Generate your first reel
-          </button>
+          <DashboardOnboardingEmpty
+            compact
+            illustration={
+              <DashboardEmptyIllustration variant="videos" className="mx-auto max-w-[130px]" />
+            }
+            title="Noch keine AI Videos"
+            description="Erstelle dein erstes Reel im AI Studio — fertige Clips landen hier."
+            action={
+              <button
+                type="button"
+                onClick={() => onNavigate('ai-studio')}
+                className="dashboard-os-btn dashboard-os-btn-primary inline-flex h-9 items-center gap-2 rounded-[var(--dash-radius)] px-4 text-[10px] touch-manipulation"
+              >
+                <ClapperboardIcon className="size-3.5" aria-hidden />
+                Erstes Video generieren
+              </button>
+            }
+            className="border border-dashed border-zinc-800/50"
+          />
         ) : (
           <div className="dashboard-os-carousel-fade dashboard-os-video-rail">
             <DashboardCarousel className="dashboard-os-video-carousel">

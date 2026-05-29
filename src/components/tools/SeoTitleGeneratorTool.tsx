@@ -1,58 +1,58 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
-  AdCopyErrorState,
-  AdCopyGeneratingSkeleton,
-  AdCopyGenerationMeta,
-  AdCopyGenerationProgress,
-  AdCopyResultsList,
-} from '@/components/ad-copy/AdCopyResultsList'
+  SeoTitleErrorState,
+  SeoTitleGeneratingSkeleton,
+  SeoTitleGenerationMeta,
+  SeoTitleGenerationProgress,
+  SeoTitleResultsList,
+} from '@/components/seo-title/SeoTitleResultsList'
 import {
-  AdCopyHistoryPanel,
-  AdCopySavedPanel,
-  AdCopyTabRefreshButton,
-} from '@/components/ad-copy/AdCopyHistoryPanel'
-import { AdCopyCopyToast } from '@/components/ad-copy/AdCopyCopyToast'
+  SeoTitleHistoryPanel,
+  SeoTitleSavedPanel,
+  SeoTitleTabRefreshButton,
+} from '@/components/seo-title/SeoTitleHistoryPanel'
+import { SeoTitleCopyToast } from '@/components/seo-title/SeoTitleCopyToast'
 import {
-  AdCopyEmptyStateAction,
-  AdCopyResultsEmptyState,
-} from '@/components/ad-copy/AdCopyEmptyStates'
-import { AdCopyInsightsBar } from '@/components/ad-copy/AdCopyInsightsBar'
+  SeoTitleEmptyStateAction,
+  SeoTitleResultsEmptyState,
+} from '@/components/seo-title/SeoTitleEmptyStates'
+import { SeoTitleInsightsBar } from '@/components/seo-title/SeoTitleInsightsBar'
 import { AiToolLayout } from '@/components/tools/AiToolLayout'
 import { UsageLimitWarning } from '@/components/subscription/UsageLimitWarning'
 import { Button } from '@/components/ui/Button'
-import { Textarea } from '@/components/ui/Input'
+import { Input, Textarea } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
 import {
   ArrowPathIcon,
   BoltIcon,
   BookmarkIcon,
   ClockIcon,
-  SparklesIcon,
+  MagnifyingGlassIcon,
 } from '@/components/ui/icons'
 import { useToast } from '@/context/ToastContext'
-import { useAdCopyClipboard } from '@/hooks/useAdCopyClipboard'
-import { useAdCopyGenerationFlow } from '@/hooks/useAdCopyGenerationFlow'
-import { useAdCopyHistory } from '@/hooks/useAdCopyHistory'
-import { useAdCopyInsights } from '@/hooks/useAdCopyInsights'
-import { useSavedAdCopy } from '@/hooks/useSavedAdCopy'
+import { useSeoTitleClipboard } from '@/hooks/useSeoTitleClipboard'
+import { useSeoTitleGenerationFlow } from '@/hooks/useSeoTitleGenerationFlow'
+import { useSeoTitleHistory } from '@/hooks/useSeoTitleHistory'
+import { useSeoTitleInsights } from '@/hooks/useSeoTitleInsights'
+import { useSavedSeoTitles } from '@/hooks/useSavedSeoTitles'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { recordAdCopyGeneration } from '@/lib/ad-copy-analytics'
+import { recordSeoTitleGeneration } from '@/lib/seo-title-analytics'
 import { cn } from '@/lib'
 import {
-  AD_COPY_GENERATION_COST,
-  AD_COPY_PLATFORM_OPTIONS,
-  AD_COPY_TONE_OPTIONS,
-  type AdCopyGenerationBatch,
-  type AdCopyPlatform,
-  type AdCopyTone,
-  type AdCopyVariantWithId,
-} from '@/types/ad-copy-generation'
+  SEO_SEARCH_INTENT_OPTIONS,
+  SEO_TITLE_GENERATION_COST,
+  SEO_TITLE_PLATFORM_OPTIONS,
+  type SeoSearchIntent,
+  type SeoTitleGenerationBatch,
+  type SeoTitlePlatform,
+  type SeoTitleVariantWithId,
+} from '@/types/seo-title-generation'
 
 type TabId = 'results' | 'history' | 'saved'
 
 const JUST_SAVED_MS = 900
 
-export function AdCopyGeneratorTool() {
+export function SeoTitleGeneratorTool() {
   const { showToast } = useToast()
   const { hasProAccess, isUsageLimitReached, unlimited } = useUsageLimit()
   const {
@@ -64,28 +64,29 @@ export function AdCopyGeneratorTool() {
     generate,
     loadFromHistory,
     updateVariantSaved,
-  } = useAdCopyGenerationFlow()
+  } = useSeoTitleGenerationFlow()
   const {
     history,
     isLoading: historyLoading,
     error: historyError,
     refresh: refreshHistory,
-  } = useAdCopyHistory()
+  } = useSeoTitleHistory()
   const {
-    savedAds,
+    savedTitles,
     isLoading: savedLoading,
     error: savedError,
     toggleSave,
-    removeSavedAd,
+    removeSavedTitle,
     refresh: refreshSaved,
-  } = useSavedAdCopy()
+  } = useSavedSeoTitles()
 
-  const { copiedKey, copyVariant, recentCopies, copyToastVisible } = useAdCopyClipboard()
-  const { mostSavedTone, savedCount } = useAdCopyInsights(savedAds)
+  const { copiedKey, copyVariant, recentCopies, copyToastVisible } = useSeoTitleClipboard()
+  const { mostSavedIntent, savedCount } = useSeoTitleInsights(savedTitles)
 
   const [briefing, setBriefing] = useState('')
-  const [tone, setTone] = useState<AdCopyTone>('aggressive')
-  const [platform, setPlatform] = useState<AdCopyPlatform>('Meta Ads')
+  const [keyword, setKeyword] = useState('')
+  const [platform, setPlatform] = useState<SeoTitlePlatform>('Google Search')
+  const [searchIntent, setSearchIntent] = useState<SeoSearchIntent>('informational')
   const [activeTab, setActiveTab] = useState<TabId>('results')
   const [savingId, setSavingId] = useState<string | null>(null)
   const [justSavedId, setJustSavedId] = useState<string | null>(null)
@@ -94,12 +95,12 @@ export function AdCopyGeneratorTool() {
   const isRegenerating = isGenerating && variants.length > 0
 
   const savedVariantIds = useMemo(
-    () => new Set(savedAds.map((a) => a.id)),
-    [savedAds],
+    () => new Set(savedTitles.map((t) => t.id)),
+    [savedTitles],
   )
 
-  const displayTone = generation?.tone ?? tone
   const displayPlatform = generation?.platform ?? platform
+  const displayKeyword = generation?.keyword ?? keyword
 
   const generationIndex = useMemo(() => {
     if (!generation?.id) return undefined
@@ -110,52 +111,71 @@ export function AdCopyGeneratorTool() {
   const handleGenerate = useCallback(
     async (
       skipCreditCharge = false,
-      overrides?: Partial<{ briefing: string; tone: AdCopyTone; platform: AdCopyPlatform }>,
+      overrides?: Partial<{
+        briefing: string
+        keyword: string
+        platform: SeoTitlePlatform
+        searchIntent: SeoSearchIntent
+      }>,
     ) => {
       if (!canGenerate && !overrides?.briefing) return
       if (isGenerating) return
 
       const request = {
         briefing: (overrides?.briefing ?? briefing).trim(),
-        tone: overrides?.tone ?? tone,
+        keyword: (overrides?.keyword ?? keyword).trim() || undefined,
         platform: overrides?.platform ?? platform,
+        searchIntent: overrides?.searchIntent ?? searchIntent,
       }
 
       const result = await generate(request, { skipCreditCharge })
 
       if (result) {
-        recordAdCopyGeneration(request.briefing, skipCreditCharge)
+        recordSeoTitleGeneration(request.briefing, skipCreditCharge)
         showToast({
           type: 'success',
           title: skipCreditCharge
-            ? 'Ad Copy neu generiert'
-            : `${result.variants.length} Ad Copy Varianten generiert`,
+            ? 'SEO-Titel neu generiert'
+            : `${result.variants.length} SEO-Titel generiert`,
           message:
-            skipCreditCharge || unlimited ? undefined : `${AD_COPY_GENERATION_COST} Credits verbraucht`,
+            skipCreditCharge || unlimited ? undefined : `${SEO_TITLE_GENERATION_COST} Credits verbraucht`,
         })
         setActiveTab('results')
         void refreshHistory()
       }
     },
-    [canGenerate, isGenerating, generate, briefing, tone, platform, showToast, unlimited, refreshHistory],
+    [
+      canGenerate,
+      isGenerating,
+      generate,
+      briefing,
+      keyword,
+      platform,
+      searchIntent,
+      showToast,
+      unlimited,
+      refreshHistory,
+    ],
   )
 
   const handleRegenerateFromHistory = useCallback(
-    (batch: AdCopyGenerationBatch) => {
+    (batch: SeoTitleGenerationBatch) => {
       setBriefing(batch.briefing)
-      setTone(batch.tone as AdCopyTone)
-      setPlatform(batch.platform as AdCopyPlatform)
+      setKeyword(batch.keyword)
+      setPlatform(batch.platform as SeoTitlePlatform)
+      setSearchIntent((batch.search_intent as SeoSearchIntent) || 'informational')
       void handleGenerate(true, {
         briefing: batch.briefing,
-        tone: batch.tone as AdCopyTone,
-        platform: batch.platform as AdCopyPlatform,
+        keyword: batch.keyword,
+        platform: batch.platform as SeoTitlePlatform,
+        searchIntent: (batch.search_intent as SeoSearchIntent) || 'informational',
       })
     },
     [handleGenerate],
   )
 
   const handleToggleSave = useCallback(
-    async (variant: AdCopyVariantWithId) => {
+    async (variant: SeoTitleVariantWithId) => {
       setSavingId(variant.id)
       try {
         const action = await toggleSave(variant)
@@ -166,7 +186,7 @@ export function AdCopyGeneratorTool() {
         }
         showToast({
           type: 'success',
-          title: action === 'saved' ? 'Ad gespeichert' : 'Aus Favoriten entfernt',
+          title: action === 'saved' ? 'Titel gespeichert' : 'Aus Favoriten entfernt',
         })
         void refreshSaved()
       } catch {
@@ -178,10 +198,10 @@ export function AdCopyGeneratorTool() {
     [toggleSave, updateVariantSaved, showToast, refreshSaved],
   )
 
-  const tabs: { id: TabId; label: string; icon: typeof SparklesIcon; count?: number }[] = [
-    { id: 'results', label: 'Ergebnisse', icon: SparklesIcon },
+  const tabs: { id: TabId; label: string; icon: typeof MagnifyingGlassIcon; count?: number }[] = [
+    { id: 'results', label: 'Ergebnisse', icon: MagnifyingGlassIcon },
     { id: 'history', label: 'Verlauf', icon: ClockIcon, count: history.length || undefined },
-    { id: 'saved', label: 'Gespeichert', icon: BookmarkIcon, count: savedAds.length || undefined },
+    { id: 'saved', label: 'Gespeichert', icon: BookmarkIcon, count: savedTitles.length || undefined },
   ]
 
   const generateButtons = (
@@ -195,10 +215,10 @@ export function AdCopyGeneratorTool() {
         onClick={() => void handleGenerate(false)}
         className="min-h-12 sm:flex-1"
       >
-        <SparklesIcon className="size-4" aria-hidden />
+        <MagnifyingGlassIcon className="size-4" aria-hidden />
         {isGenerating && !isRegenerating
           ? 'Generiert …'
-          : `Ad Copy generieren · ${AD_COPY_GENERATION_COST} Credits`}
+          : `SEO-Titel generieren · ${SEO_TITLE_GENERATION_COST} Credits`}
       </Button>
       {variants.length > 0 && (
         <Button
@@ -219,47 +239,66 @@ export function AdCopyGeneratorTool() {
 
   return (
     <AiToolLayout
-      title="AI Ad Copy Generator"
-      description="Erstelle werbetaugliche Headlines, Primary Text und CTAs für Paid Social — 5 conversion-starke Varianten pro Generierung."
-      creditCost={AD_COPY_GENERATION_COST}
+      title="SEO Title Generator"
+      description="CTR-optimierte Titel für Blogposts, Landing Pages und SERP — mit SEO-Score, Lesbarkeit und Suchintention."
+      creditCost={SEO_TITLE_GENERATION_COST}
       className="nex-tool-surface"
     >
       <div className="glass-card overflow-x-hidden p-4 sm:p-7">
         <label
-          htmlFor="ad-copy-briefing"
+          htmlFor="seo-title-briefing"
           className="mb-2.5 block text-xs font-semibold uppercase tracking-widest text-zinc-600"
         >
-          Briefing
+          Keyword / Thema
         </label>
         <Textarea
-          id="ad-copy-briefing"
+          id="seo-title-briefing"
           value={briefing}
           onChange={(e) => setBriefing(e.target.value)}
-          rows={4}
-          placeholder="z. B. Friseursalon in München, Fokus Balayage, Zielgruppe Frauen 25–40, Ziel: Terminbuchungen"
+          rows={3}
+          placeholder="z. B. nachhaltige Mode, capsule wardrobe, Zielgruppe Gen Z"
           disabled={isGenerating}
         />
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <SelectField
-            label="Ton"
-            value={tone}
-            onChange={(e) => setTone(e.target.value as AdCopyTone)}
+        <div className="mt-4">
+          <label
+            htmlFor="seo-title-keyword"
+            className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-600"
+          >
+            Fokus-Keyword (optional)
+          </label>
+          <Input
+            id="seo-title-keyword"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="z. B. capsule wardrobe"
             disabled={isGenerating}
-            options={AD_COPY_TONE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-            hint={AD_COPY_TONE_OPTIONS.find((o) => o.value === tone)?.desc}
           />
+        </div>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <SelectField
             label="Plattform"
             value={platform}
-            onChange={(e) => setPlatform(e.target.value as AdCopyPlatform)}
+            onChange={(e) => setPlatform(e.target.value as SeoTitlePlatform)}
             disabled={isGenerating}
-            options={AD_COPY_PLATFORM_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+            options={SEO_TITLE_PLATFORM_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          />
+          <SelectField
+            label="Suchintention"
+            value={searchIntent}
+            onChange={(e) => setSearchIntent(e.target.value as SeoSearchIntent)}
+            disabled={isGenerating}
+            options={SEO_SEARCH_INTENT_OPTIONS.map((o) => ({
+              value: o.value,
+              label: o.label,
+            }))}
+            hint={SEO_SEARCH_INTENT_OPTIONS.find((o) => o.value === searchIntent)?.desc}
           />
         </div>
 
         <p className="mt-4 mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-600">
-          <BoltIcon className="size-3.5 text-violet-400/80" aria-hidden />
+          <BoltIcon className="size-3.5 text-cyan-400/80" aria-hidden />
           AI Generierung
         </p>
 
@@ -270,17 +309,17 @@ export function AdCopyGeneratorTool() {
 
       <div
         className={cn(
-          'hook-mobile-sticky-actions fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800/80 bg-zinc-950/95 p-3 backdrop-blur-xl transition-smooth sm:hidden',
+          'hook-mobile-sticky-actions fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800/80 bg-zinc-950/95 p-3 backdrop-blur-xl sm:hidden',
           'pb-[max(0.875rem,env(safe-area-inset-bottom,0px))]',
         )}
       >
         <div className="flex flex-col gap-2">{generateButtons}</div>
       </div>
 
-      <AdCopyCopyToast visible={copyToastVisible} />
+      <SeoTitleCopyToast visible={copyToastVisible} />
 
       <section
-        className="ad-copy-results-section mt-6 overflow-x-hidden pb-[max(7.5rem,calc(5.5rem+env(safe-area-inset-bottom,0px)))] sm:pb-2"
+        className="seo-title-results-section mt-6 overflow-x-hidden pb-[max(7.5rem,calc(5.5rem+env(safe-area-inset-bottom,0px)))] sm:pb-2"
         aria-busy={isGenerating}
       >
         <div className="sticky top-0 z-10 -mx-1 mb-4 flex flex-wrap items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/92 px-1 pb-3 backdrop-blur-lg">
@@ -306,16 +345,15 @@ export function AdCopyGeneratorTool() {
               )}
             </button>
           ))}
-
           {activeTab === 'history' && (
-            <AdCopyTabRefreshButton
+            <SeoTitleTabRefreshButton
               onRefresh={() => void refreshHistory()}
               loading={historyLoading}
               className="ml-auto"
             />
           )}
           {activeTab === 'saved' && (
-            <AdCopyTabRefreshButton
+            <SeoTitleTabRefreshButton
               onRefresh={() => void refreshSaved()}
               loading={savedLoading}
               className="ml-auto"
@@ -328,20 +366,20 @@ export function AdCopyGeneratorTool() {
             {isUsageLimitReached && !hasProAccess && !unlimited ? (
               <UsageLimitWarning />
             ) : error ? (
-              <AdCopyErrorState
+              <SeoTitleErrorState
                 message={error}
                 onRetry={() => void handleGenerate(variants.length > 0)}
               />
             ) : (
               <>
-                <AdCopyInsightsBar
+                <SeoTitleInsightsBar
                   recentCopies={recentCopies}
-                  mostSavedTone={mostSavedTone}
+                  mostSavedIntent={mostSavedIntent}
                   savedCount={savedCount}
                 />
 
                 {isGenerating && (
-                  <AdCopyGenerationProgress
+                  <SeoTitleGenerationProgress
                     isRegenerating={isRegenerating}
                     step={status === 'checking' ? 'checking' : 'generating'}
                     active={isGenerating}
@@ -349,9 +387,9 @@ export function AdCopyGeneratorTool() {
                 )}
 
                 {generation && variants.length > 0 && !isGenerating && (
-                  <AdCopyGenerationMeta
+                  <SeoTitleGenerationMeta
                     briefing={generation.briefing}
-                    tone={generation.tone}
+                    keyword={displayKeyword}
                     platform={generation.platform}
                     createdAt={generation.created_at}
                     variantCount={variants.length}
@@ -360,12 +398,11 @@ export function AdCopyGeneratorTool() {
                 )}
 
                 {isGenerating && !isRegenerating ? (
-                  <AdCopyGeneratingSkeleton count={5} />
+                  <SeoTitleGeneratingSkeleton count={5} />
                 ) : variants.length > 0 ? (
                   <>
-                    <AdCopyResultsList
+                    <SeoTitleResultsList
                       variants={variants}
-                      tone={displayTone}
                       platform={displayPlatform}
                       onCopy={copyVariant}
                       onToggleSave={handleToggleSave}
@@ -377,15 +414,15 @@ export function AdCopyGeneratorTool() {
                     />
                     {isRegenerating && (
                       <div className="mt-4">
-                        <AdCopyGeneratingSkeleton count={3} />
+                        <SeoTitleGeneratingSkeleton count={3} />
                       </div>
                     )}
                   </>
                 ) : !isGenerating ? (
-                  <AdCopyResultsEmptyState
-                    hint="Briefing oben ausfüllen und auf Generieren tippen."
+                  <SeoTitleResultsEmptyState
+                    hint="Thema oben eingeben und auf Generieren tippen."
                     action={
-                      <AdCopyEmptyStateAction
+                      <SeoTitleEmptyStateAction
                         label="Jetzt generieren"
                         onClick={() => void handleGenerate(false)}
                       />
@@ -399,27 +436,28 @@ export function AdCopyGeneratorTool() {
 
         {activeTab === 'history' && (
           <div key="history" className="animate-fade-in">
-            <AdCopyHistoryPanel
+            <SeoTitleHistoryPanel
               history={history}
               isLoading={historyLoading}
               error={historyError}
               activeId={generation?.id}
               onRefresh={() => void refreshHistory()}
               emptyAction={
-                <AdCopyEmptyStateAction
-                  label="Erste Ad generieren"
+                <SeoTitleEmptyStateAction
+                  label="Erste Titel generieren"
                   onClick={() => {
                     setActiveTab('results')
                     void handleGenerate(false)
                   }}
                 />
               }
-              emptyHint="Generierungen erscheinen hier automatisch nach jeder AI-Anfrage."
+              emptyHint="Generierungen erscheinen hier nach jeder AI-Anfrage."
               onSelect={(row) => {
                 loadFromHistory(row)
                 setBriefing(row.briefing)
-                setTone(row.tone as AdCopyTone)
-                setPlatform(row.platform as AdCopyPlatform)
+                setKeyword(row.keyword)
+                setPlatform(row.platform as SeoTitlePlatform)
+                setSearchIntent((row.search_intent as SeoSearchIntent) || 'informational')
                 setActiveTab('results')
                 showToast({ type: 'success', title: 'Generierung geladen' })
               }}
@@ -430,25 +468,25 @@ export function AdCopyGeneratorTool() {
 
         {activeTab === 'saved' && (
           <div key="saved" className="animate-fade-in">
-            <AdCopySavedPanel
-              ads={savedAds}
+            <SeoTitleSavedPanel
+              titles={savedTitles}
               isLoading={savedLoading}
               error={savedError}
               copiedKey={copiedKey}
               onRefresh={() => void refreshSaved()}
               emptyAction={
-                <AdCopyEmptyStateAction
+                <SeoTitleEmptyStateAction
                   label="Zu den Ergebnissen"
                   onClick={() => setActiveTab('results')}
                 />
               }
-              emptyHint="Speichere Ads aus dem Ergebnis-Tab mit dem Lesezeichen."
+              emptyHint="Speichere Titel mit dem Lesezeichen im Ergebnis-Tab."
               onCopy={copyVariant}
               onRemove={async (id) => {
                 try {
-                  await removeSavedAd(id)
+                  await removeSavedTitle(id)
                   updateVariantSaved(id, false)
-                  showToast({ type: 'success', title: 'Ad entfernt' })
+                  showToast({ type: 'success', title: 'Titel entfernt' })
                 } catch {
                   showToast({ type: 'error', title: 'Entfernen fehlgeschlagen' })
                 }

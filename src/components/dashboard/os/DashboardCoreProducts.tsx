@@ -90,7 +90,7 @@ function DashboardCoreProductsInner({ onNavigate }: DashboardCoreProductsProps) 
           </div>
         </article>
 
-        <div className="dashboard-os-module-grid grid grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2">
+        <div className="dashboard-os-module-grid grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5">
           {SECONDARY.map((product) => {
             const route = getRouteConfig(product.id)
             const Icon = product.icon
@@ -99,7 +99,7 @@ function DashboardCoreProductsInner({ onNavigate }: DashboardCoreProductsProps) 
             return (
               <article
                 key={product.id}
-                className="dashboard-os-module-card dashboard-os-module-surface nex-card-interactive group flex h-full min-h-[7rem] flex-col rounded-[var(--dash-radius)] sm:min-h-[7.25rem]"
+                className="dashboard-os-module-card dashboard-os-module-surface nex-card-interactive group flex h-full min-h-[7.5rem] flex-col rounded-[var(--dash-radius)] sm:min-h-[8rem]"
               >
                 <div className="flex flex-1 flex-col p-2.5">
                   <div className="flex items-start justify-between gap-1.5">
@@ -131,7 +131,7 @@ function DashboardCoreProductsInner({ onNavigate }: DashboardCoreProductsProps) 
                   <button
                     type="button"
                     onClick={() => onNavigate(product.id)}
-                    className="dashboard-os-btn dashboard-os-btn-secondary btn-press dashboard-os-module-cta mt-2 h-8 w-full rounded-[var(--dash-radius)] text-[10px] font-medium"
+                    className="dashboard-os-btn dashboard-os-btn-secondary btn-press dashboard-os-module-cta mt-auto h-9 w-full rounded-[var(--dash-radius)] text-[10px] font-medium min-h-9"
                   >
                     Open
                   </button>

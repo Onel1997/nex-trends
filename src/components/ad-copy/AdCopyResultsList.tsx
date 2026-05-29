@@ -1,10 +1,18 @@
 import { memo, useCallback } from 'react'
 import { AdCopyCard } from '@/components/ad-copy/AdCopyCard'
 import { Button } from '@/components/ui/Button'
+import { useRotatingLabel } from '@/hooks/useRotatingLabel'
 import { coerceErrorMessage } from '@/lib/ai/parse-ad-copy-response'
 import { getAdCopyVariantKey } from '@/lib/ad-copy-display'
 import { cn } from '@/lib'
 import type { AdCopyVariant, AdCopyVariantWithId } from '@/types/ad-copy-generation'
+
+const AD_COPY_GEN_STEPS = [
+  'Zielgruppe wird analysiert …',
+  'Hooks werden generiert …',
+  'Conversion Copy wird geschrieben …',
+  'CTA wird optimiert …',
+] as const
 
 type AdCopyResultItemProps = {
   variant: AdCopyVariantWithId
@@ -170,16 +178,22 @@ export function AdCopyPanelError({ message, onRetry, className }: {
 export function AdCopyGenerationProgress({
   isRegenerating = false,
   step,
+  active = true,
 }: {
   isRegenerating?: boolean
   step?: 'checking' | 'generating'
+  active?: boolean
 }) {
+  const rotatingStep = useRotatingLabel(AD_COPY_GEN_STEPS, active && step === 'generating')
+
   const label =
     step === 'checking'
       ? 'Credits werden geprüft …'
       : isRegenerating
         ? 'Neue Ad Copy wird generiert …'
-        : '5 Ad Copy Varianten werden erstellt …'
+        : step === 'generating'
+          ? rotatingStep
+          : '5 Ad Copy Varianten werden erstellt …'
 
   return (
     <div
@@ -187,45 +201,59 @@ export function AdCopyGenerationProgress({
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center gap-3">
-        <div className="hook-gen-progress__bar flex-1">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+        <div className="hook-gen-progress__bar w-full flex-1">
           <div className="absolute inset-y-0 w-2/5 animate-progress-indeterminate rounded-full bg-gradient-to-r from-violet-500/30 via-violet-400 to-fuchsia-400/90" />
         </div>
-        <p className="shrink-0 text-xs font-medium text-violet-200/95">{label}</p>
+        <p
+          key={label}
+          className="ad-copy-gen-step shrink-0 text-xs font-medium text-violet-200/95 sm:max-w-[52%] sm:text-right"
+        >
+          {label}
+        </p>
       </div>
     </div>
   )
 }
 
+const AdCopySkeletonCard = memo(function AdCopySkeletonCard({ index }: { index: number }) {
+  return (
+    <div
+      className="ad-copy-skeleton-card ad-copy-stagger-item animate-shimmer min-h-[11.5rem] px-4 py-4 sm:min-h-[12rem] sm:px-5 sm:py-5"
+      style={{ animationDelay: `${index * 80}ms` }}
+      aria-hidden
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="size-8 shrink-0 rounded-full bg-zinc-800/70" />
+        <div className="flex gap-1.5">
+          <div className="size-10 rounded-xl bg-zinc-800/45" />
+          <div className="size-10 rounded-xl bg-zinc-800/45" />
+        </div>
+      </div>
+      <div className="mt-3 space-y-2.5">
+        <div className="h-[1.125rem] w-[88%] rounded-lg bg-zinc-800/70" />
+        <div className="h-4 w-full rounded-lg bg-zinc-800/55" />
+        <div className="h-4 w-[94%] rounded-lg bg-zinc-800/45" />
+        <div className="h-4 w-[78%] rounded-lg bg-zinc-800/38" />
+        <div className="h-4 w-[42%] rounded-lg bg-violet-900/35" />
+        <div className="flex flex-wrap gap-1.5 pt-2">
+          <div className="h-5 w-14 rounded-md bg-zinc-800/35" />
+          <div className="h-5 w-16 rounded-md bg-zinc-800/35" />
+          <div className="h-5 w-12 rounded-md bg-zinc-800/30" />
+          <div className="h-5 w-10 rounded-md bg-zinc-800/28" />
+        </div>
+      </div>
+    </div>
+  )
+})
+
 export function AdCopyGeneratingSkeleton({ count = 5 }: { count?: number }) {
   const visible = Math.min(count, 5)
 
   return (
-    <div className="ad-copy-feed">
+    <div className="ad-copy-feed" aria-busy="true" aria-label="Ad Copy wird generiert">
       {Array.from({ length: visible }).map((_, i) => (
-        <div
-          key={i}
-          className="ad-copy-skeleton-card ad-copy-stagger-item animate-shimmer px-4 py-4 sm:px-5 sm:py-5"
-          style={{ animationDelay: `${i * 80}ms` }}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="size-8 shrink-0 rounded-full bg-zinc-800/70" />
-            <div className="flex gap-1.5">
-              <div className="size-10 rounded-xl bg-zinc-800/45" />
-              <div className="size-10 rounded-xl bg-zinc-800/45" />
-            </div>
-          </div>
-          <div className="mt-3 space-y-2.5">
-            <div className="h-4 w-full rounded-lg bg-zinc-800/65" />
-            <div className="h-4 w-[94%] rounded-lg bg-zinc-800/50" />
-            <div className="h-4 w-[72%] rounded-lg bg-zinc-800/40" />
-            <div className="flex gap-2 pt-1">
-              <div className="h-5 w-14 rounded-md bg-zinc-800/35" />
-              <div className="h-5 w-16 rounded-md bg-zinc-800/35" />
-              <div className="h-5 w-12 rounded-md bg-zinc-800/30" />
-            </div>
-          </div>
-        </div>
+        <AdCopySkeletonCard key={i} index={i} />
       ))}
       <p className="py-1 text-center text-xs font-medium text-violet-400/80 animate-pulse-soft">
         AI generiert Ad Copy …

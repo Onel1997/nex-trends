@@ -49,7 +49,8 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
   const displayScore = stats.avgTrendScore
 
   return (
-    <section className="dashboard-os-hero dashboard-os-card glass-premium relative overflow-hidden rounded-[var(--dash-radius-lg)] border border-violet-500/12 p-2 sm:p-3">
+    <section className="dashboard-os-hero dashboard-os-card glass-premium relative overflow-hidden rounded-[var(--dash-radius-lg)] border border-violet-500/15 p-3 sm:p-4">
+      <div className="dashboard-os-hero__shimmer pointer-events-none absolute inset-0" aria-hidden />
       <div className="dashboard-os-hero__glow pointer-events-none absolute inset-0" aria-hidden />
       <div className="dashboard-os-hero__mesh pointer-events-none absolute inset-0" aria-hidden />
       <div className="dashboard-os-hero__particles pointer-events-none absolute inset-0" aria-hidden>
@@ -58,20 +59,20 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
         ))}
       </div>
 
-      <div className="relative space-y-2 sm:space-y-2.5">
-        <div className="flex items-center gap-2">
+      <div className="relative space-y-3 sm:space-y-3.5">
+        <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-violet-400">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-violet-400/95">
                 NexTrends AI OS
               </p>
               <AiPulseIndicator label="Live" size="sm" />
             </div>
-            <h1 className="mt-1 text-lg font-semibold tracking-tight text-white sm:text-xl">
-              Hallo, <span className="text-violet-300">{firstName}</span>
+            <h1 className="mt-1.5 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              Hallo, <span className="bg-gradient-to-r from-violet-200 to-fuchsia-300/90 bg-clip-text text-transparent">{firstName}</span>
             </h1>
-            <p className="mt-0.5 line-clamp-2 text-[11px] leading-relaxed text-zinc-400 sm:text-xs">
-              Creator command center — trends, reels, and AI tools in one workspace.
+            <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-zinc-400/95 sm:text-xs">
+              Dein Creator Command Center — Trends, Reels und AI-Tools in einem Workspace.
             </p>
           </div>
 
@@ -80,27 +81,27 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
           </div>
         </div>
 
-        <div className="dashboard-os-hero__status flex items-center justify-between gap-2 rounded-[var(--dash-radius)] border border-zinc-800/50 bg-zinc-950/60 px-2 py-1.5 backdrop-blur-md">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="dashboard-os-live-dot relative flex size-2 shrink-0">
-              <span className="absolute inline-flex size-full rounded-full bg-emerald-400/35 dashboard-os-live-dot__ping" />
-              <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+        <div className="dashboard-os-hero__status flex items-center justify-between gap-2 rounded-[var(--dash-radius)] border border-emerald-500/15 bg-zinc-950/70 px-2.5 py-2 backdrop-blur-md">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="dashboard-os-live-dot relative flex size-2.5 shrink-0">
+              <span className="absolute inline-flex size-full rounded-full bg-emerald-400/40 dashboard-os-live-dot__ping" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.65)]" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-[10px] font-medium text-emerald-400 sm:text-[11px]">
-                All systems operational
+              <p className="truncate text-[10px] font-semibold text-emerald-300/95 sm:text-[11px]">
+                Alle Systeme aktiv
               </p>
               <p className="truncate text-[9px] text-zinc-500">
-                AI engines ready · Low latency
+                AI Engines bereit · Niedrige Latenz
               </p>
             </div>
           </div>
-          <span className="shrink-0 text-xs text-zinc-600" aria-hidden>
-            ›
+          <span className="dashboard-os-hero__status-pill shrink-0 rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-violet-300/90">
+            Online
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
           {STAT_CARDS.map((card, i) => {
             const Icon = card.icon
             let value = 0

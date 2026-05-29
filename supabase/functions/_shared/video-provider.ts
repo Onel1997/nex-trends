@@ -1,5 +1,7 @@
 /** AI video providers: Replicate (Minimax) primary, Luma fallback. */
 
+import { generateId } from "./generate-id.ts";
+
 export type ProviderJobStatus = "starting" | "processing" | "succeeded" | "failed" | "canceled"
 
 export type ProviderJob = {
@@ -66,7 +68,7 @@ async function startReplicate(
   })
 
   return {
-    id: data.id ?? crypto.randomUUID(),
+    id: data.id ?? generateId(),
     provider: "replicate",
     status: mapReplicateStatus(data.status),
     outputUrl: typeof output === "string" ? output : undefined,
@@ -165,7 +167,7 @@ async function startLuma(
   }
 
   return {
-    id: data.id ?? crypto.randomUUID(),
+    id: data.id ?? generateId(),
     provider: "luma",
     status: mapLumaStatus(data.state),
     outputUrl: data.assets?.video,
@@ -217,7 +219,7 @@ export async function startVideoProviderJob(
   if (luma) return luma
 
   return {
-    id: `synthetic-${crypto.randomUUID()}`,
+    id: `synthetic-${generateId()}`,
     provider: "synthetic",
     status: "succeeded",
     outputUrl: undefined,

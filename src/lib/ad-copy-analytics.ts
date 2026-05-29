@@ -99,3 +99,7 @@ export function recordAdCopyGeneration(briefing?: string, isRegenerate = false):
 export function getAdCopyRecentCopies(): AdCopyRecentCopy[] {
   return readStore().recentCopies
 }
+
+export function getAdCopyAnalyticsEvents(): AdCopyAnalyticsEvent[] {
+  return readStore().events
+}

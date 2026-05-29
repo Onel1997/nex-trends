@@ -2,10 +2,21 @@ export function cn(...classes: (string | false | null | undefined)[]): string {
   return classes.filter(Boolean).join(' ')
 }
 
-/** Cross-browser ID — crypto.randomUUID when available, else Date.now + Math.random. */
+/**
+ * Cross-runtime unique ID.
+ * Uses crypto.randomUUID when available; otherwise timestamp + random (Safari / SSR safe).
+ */
 export function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
+  try {
+    const c =
+      typeof globalThis !== 'undefined'
+        ? (globalThis as { crypto?: Crypto }).crypto
+        : undefined
+    if (c && typeof c.randomUUID === 'function') {
+      return c.randomUUID()
+    }
+  } catch {
+    /* crypto unavailable or blocked */
   }
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`
 }

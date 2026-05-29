@@ -58,8 +58,17 @@ function DashboardMetricCardInner({
         )}
       </p>
 
+      {typeof value === 'number' && value > 0 && label.toLowerCase().includes('credit') ? (
+        <div className="dashboard-os-metric-progress mt-2 h-1 overflow-hidden rounded-full bg-zinc-800/80">
+          <div
+            className="dashboard-os-metric-progress__fill h-full rounded-full bg-gradient-to-r from-violet-600/80 to-fuchsia-500/70"
+            style={{ width: `${Math.min(100, value)}%` }}
+          />
+        </div>
+      ) : null}
+
       {sub ? (
-        <p className="mt-1 line-clamp-2 text-[9px] leading-snug text-zinc-500 sm:text-[10px]">
+        <p className="mt-1.5 line-clamp-2 text-[9px] leading-snug text-zinc-500 sm:text-[10px]">
           {sub}
         </p>
       ) : null}

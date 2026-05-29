@@ -2,13 +2,13 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
 import { callOpenAI } from "../_shared/ai/openai-client.ts";
 import {
-  buildAdCopySystemPrompt,
-  buildAdCopyUserMessage,
-  parseAdCopyResponse,
-  validateAdCopyInput,
-  type AdCopyGenerationInput,
-  type AdCopyItem,
-} from "../_shared/ai/prompts/ad-copy.ts";
+  buildSeoTitleSystemPrompt,
+  buildSeoTitleUserMessage,
+  parseSeoTitleResponse,
+  validateSeoTitleInput,
+  type SeoTitleGenerationInput,
+  type SeoTitleItem,
+} from "../_shared/ai/prompts/seo-title.ts";
 import {
   checkRateLimit,
   rateLimitHeaders,
@@ -20,32 +20,38 @@ import { generateId } from "../_shared/generate-id.ts";
 
 type Action = "generate" | "history" | "health";
 
-type AdCopyRow = {
+type SeoTitleRow = {
   id: string;
   user_id: string;
   generation_batch_id: string;
   briefing: string;
-  tone: string;
+  keyword: string;
   platform: string;
-  headline: string;
-  primary_text: string;
-  cta: string;
+  search_intent: string;
+  title_text: string;
+  seo_score: number;
+  ctr_score: number;
+  readability_score: number;
   character_count: number;
   is_saved: boolean;
   created_at: string;
 };
 
-type AdCopyBatch = {
+type SeoTitleBatch = {
   id: string;
   briefing: string;
-  tone: string;
+  keyword: string;
   platform: string;
+  search_intent: string;
   created_at: string;
   variants: Array<{
     id: string;
-    headline: string;
-    primaryText: string;
-    cta: string;
+    title: string;
+    seoScore: number;
+    ctrScore: number;
+    readabilityScore: number;
+    keyword: string;
+    searchIntent: string;
     character_count: number;
     is_saved: boolean;
   }>;
@@ -63,12 +69,26 @@ function jsonResponse(
   });
 }
 
-function charCount(ad: AdCopyItem): number {
-  return ad.headline.length + ad.primaryText.length + ad.cta.length;
+function charCount(item: SeoTitleItem): number {
+  return item.title.length;
 }
 
-function groupRowsIntoBatches(rows: AdCopyRow[]): AdCopyBatch[] {
-  const byBatch = new Map<string, AdCopyRow[]>();
+function rowToVariant(row: SeoTitleRow) {
+  return {
+    id: row.id,
+    title: row.title_text,
+    seoScore: row.seo_score,
+    ctrScore: row.ctr_score,
+    readabilityScore: row.readability_score,
+    keyword: row.keyword,
+    searchIntent: row.search_intent,
+    character_count: row.character_count,
+    is_saved: row.is_saved,
+  };
+}
+
+function groupRowsIntoBatches(rows: SeoTitleRow[]): SeoTitleBatch[] {
+  const byBatch = new Map<string, SeoTitleRow[]>();
 
   for (const row of rows) {
     const batchId = row.generation_batch_id || row.id;
@@ -77,7 +97,7 @@ function groupRowsIntoBatches(rows: AdCopyRow[]): AdCopyBatch[] {
     byBatch.set(batchId, list);
   }
 
-  const batches: AdCopyBatch[] = [];
+  const batches: SeoTitleBatch[] = [];
 
   for (const [batchId, batchRows] of byBatch) {
     const sorted = [...batchRows].sort(
@@ -87,17 +107,11 @@ function groupRowsIntoBatches(rows: AdCopyRow[]): AdCopyBatch[] {
     batches.push({
       id: batchId,
       briefing: first.briefing,
-      tone: first.tone,
+      keyword: first.keyword,
       platform: first.platform,
+      search_intent: first.search_intent,
       created_at: first.created_at,
-      variants: sorted.map((row) => ({
-        id: row.id,
-        headline: row.headline,
-        primaryText: row.primary_text,
-        cta: row.cta,
-        character_count: row.character_count,
-        is_saved: row.is_saved,
-      })),
+      variants: sorted.map(rowToVariant),
     });
   }
 
@@ -106,7 +120,7 @@ function groupRowsIntoBatches(rows: AdCopyRow[]): AdCopyBatch[] {
   );
 }
 
-function batchFromRows(rows: AdCopyRow[]): AdCopyBatch | null {
+function batchFromRows(rows: SeoTitleRow[]): SeoTitleBatch | null {
   if (rows.length === 0) return null;
   return groupRowsIntoBatches(rows)[0] ?? null;
 }
@@ -161,23 +175,16 @@ serve(async (req) => {
         ok: true,
         openai: Boolean(openaiKey),
         model,
-        ...(openaiKey ? {} : {
-          error:
-            "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
-        }),
       });
     }
 
     if (action === "history") {
-      const batchLimit = Math.min(
-        Math.max(Number(body.limit) || 20, 1),
-        50,
-      );
+      const batchLimit = Math.min(Math.max(Number(body.limit) || 20, 1), 50);
 
       const { data, error } = await supabaseAdmin
-        .from("generated_ad_copy")
+        .from("generated_seo_titles")
         .select(
-          "id, user_id, generation_batch_id, briefing, tone, platform, headline, primary_text, cta, character_count, is_saved, created_at",
+          "id, user_id, generation_batch_id, briefing, keyword, platform, search_intent, title_text, seo_score, ctr_score, readability_score, character_count, is_saved, created_at",
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
@@ -185,7 +192,7 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      const generations = groupRowsIntoBatches((data ?? []) as AdCopyRow[]).slice(
+      const generations = groupRowsIntoBatches((data ?? []) as SeoTitleRow[]).slice(
         0,
         batchLimit,
       );
@@ -201,125 +208,111 @@ serve(async (req) => {
     if (!rateCheck.allowed) {
       return jsonResponse(
         req,
-        {
-          error: rateCheck.reason,
-          retryAfterMs: rateCheck.retryAfterMs,
-        },
+        { error: rateCheck.reason, retryAfterMs: rateCheck.retryAfterMs },
         429,
         rateLimitHeaders(rateCheck.retryAfterMs),
       );
     }
 
-    const input: AdCopyGenerationInput = {
+    const input: SeoTitleGenerationInput = {
       briefing: typeof body.briefing === "string" ? body.briefing : "",
-      tone: typeof body.tone === "string" ? body.tone : "aggressive",
-      platform: typeof body.platform === "string" ? body.platform : "Meta Ads",
+      keyword: typeof body.keyword === "string" ? body.keyword : "",
+      platform: typeof body.platform === "string" ? body.platform : "Google Search",
+      searchIntent: typeof body.searchIntent === "string"
+        ? body.searchIntent
+        : typeof body.search_intent === "string"
+          ? body.search_intent
+          : "informational",
     };
 
-    const validationError = validateAdCopyInput(input);
+    const validationError = validateSeoTitleInput(input);
     if (validationError) {
       return jsonResponse(req, { error: validationError }, 400);
     }
 
     const openaiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
     if (!openaiKey) {
-      console.error("[ad-copy-generator] OPENAI_API_KEY missing");
       return jsonResponse(req, {
-        error:
-          "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
+        error: "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard.",
         step: "env",
       }, 503);
     }
 
-    const systemPrompt = buildAdCopySystemPrompt(input.tone, input.platform);
-    const userMessage = buildAdCopyUserMessage(input);
-
-    console.log("[ad-copy-generator] generating", {
-      userId: user.id,
-      briefing: input.briefing.slice(0, 40),
-      tone: input.tone,
-      platform: input.platform,
-      model: Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-4o-mini",
-    });
+    const systemPrompt = buildSeoTitleSystemPrompt(
+      input.platform,
+      input.searchIntent ?? "informational",
+    );
+    const userMessage = buildSeoTitleUserMessage(input);
 
     let rawContent: string;
     try {
       rawContent = await callOpenAI({
         systemPrompt,
         userMessage,
-        temperature: 0.72,
+        temperature: 0.68,
         jsonMode: true,
       });
     } catch (openAiErr) {
-      logEdgeError("ad-copy-generator", openAiErr, { phase: "openai" });
-      return jsonResponse(req, {
-        error: formatEdgeError(openAiErr),
-        step: "openai",
-      }, 502);
+      logEdgeError("seo-title-generator", openAiErr, { phase: "openai" });
+      return jsonResponse(req, { error: formatEdgeError(openAiErr), step: "openai" }, 502);
     }
 
-    let ads: AdCopyItem[];
+    let titles: SeoTitleItem[];
     try {
-      ads = parseAdCopyResponse(rawContent, 5);
+      titles = parseSeoTitleResponse(rawContent, 5);
     } catch (parseErr) {
-      logEdgeError("ad-copy-generator", parseErr, {
-        phase: "parse",
-        rawPreview: rawContent.slice(0, 400),
-      });
-      return jsonResponse(req, {
-        error: formatEdgeError(parseErr),
-        step: "parse",
-      }, 502);
+      logEdgeError("seo-title-generator", parseErr, { phase: "parse" });
+      return jsonResponse(req, { error: formatEdgeError(parseErr), step: "parse" }, 502);
     }
-
-    console.log("[ad-copy-generator] parsed ads", { count: ads.length });
 
     const batchId = generateId();
-    const insertRows = ads.map((ad) => ({
+    const keywordDefault = input.keyword?.trim() || input.briefing.trim().slice(0, 40);
+
+    const insertRows = titles.map((item) => ({
       user_id: user.id,
       generation_batch_id: batchId,
       briefing: input.briefing.trim(),
-      tone: input.tone,
+      keyword: item.keyword || keywordDefault,
       platform: input.platform,
-      headline: ad.headline,
-      primary_text: ad.primaryText,
-      cta: ad.cta,
-      character_count: charCount(ad),
+      search_intent: item.searchIntent,
+      title_text: item.title,
+      seo_score: item.seoScore,
+      ctr_score: item.ctrScore,
+      readability_score: item.readabilityScore,
+      character_count: charCount(item),
       is_saved: false,
     }));
 
     const { data: savedRows, error: insertError } = await supabaseAdmin
-      .from("generated_ad_copy")
+      .from("generated_seo_titles")
       .insert(insertRows)
       .select(
-        "id, user_id, generation_batch_id, briefing, tone, platform, headline, primary_text, cta, character_count, is_saved, created_at",
+        "id, user_id, generation_batch_id, briefing, keyword, platform, search_intent, title_text, seo_score, ctr_score, readability_score, character_count, is_saved, created_at",
       );
 
     if (insertError) {
-      logEdgeError("ad-copy-generator", insertError, { phase: "save" });
+      logEdgeError("seo-title-generator", insertError, { phase: "save" });
       return jsonResponse(req, {
         error: `Speichern fehlgeschlagen: ${formatEdgeError(insertError)}`,
         step: "storage",
-        variants: ads,
+        variants: titles,
       }, 500);
     }
 
-    const generation = batchFromRows((savedRows ?? []) as AdCopyRow[]);
+    const generation = batchFromRows((savedRows ?? []) as SeoTitleRow[]);
 
     return jsonResponse(req, {
-      variants: generation?.variants ?? ads.map((ad, index) => ({
+      variants: generation?.variants ?? titles.map((item, index) => ({
         id: `unsaved-${index}`,
-        headline: ad.headline,
-        primaryText: ad.primaryText,
-        cta: ad.cta,
-        character_count: charCount(ad),
+        ...item,
+        character_count: charCount(item),
         is_saved: false,
       })),
       generation,
       rows: savedRows ?? [],
     });
   } catch (err) {
-    logEdgeError("ad-copy-generator", err);
+    logEdgeError("seo-title-generator", err);
     return jsonResponse(req, { error: formatEdgeError(err) }, 500);
   }
 });

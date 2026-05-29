@@ -23,6 +23,7 @@ import {
   corsHeadersFor,
   defaultJsonHeaders as jsonHeaders,
 } from "../_shared/cors.ts";
+import { generateId } from "../_shared/generate-id.ts";
 
 type Action = "create" | "poll" | "history" | "retry" | "health" | "library" | "delete";
 
@@ -398,7 +399,7 @@ serve(async (req) => {
           niche: row.metadata?.niche,
           platform: row.metadata?.platform,
           hookText: row.hook_text,
-          generationNonce: crypto.randomUUID(),
+          generationNonce: generateId(),
         });
 
         const providerJob = await startVideoProviderJob(
@@ -569,14 +570,14 @@ serve(async (req) => {
     let brief
     try {
       brief = await resolveVideoBrief({
-        trendId: trendId || crypto.randomUUID(),
+        trendId: trendId || generateId(),
         title,
         niche: body.niche,
         platform: body.platform,
         description: body.description,
         hookText: body.hook_text,
         contentBreakdown: body.content_breakdown,
-        generationNonce: crypto.randomUUID(),
+        generationNonce: generateId(),
       })
       logPipeline("prompt", "brief ready", {
         hookText: brief.hookText.slice(0, 80),
