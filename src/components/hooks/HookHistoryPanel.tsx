@@ -1,4 +1,4 @@
-import { memo, useState, type ReactNode, type SVGProps } from 'react'
+import { memo, useCallback, useState, type ReactNode, type SVGProps } from 'react'
 import { HookCard } from '@/components/hooks/HookCard'
 import { HookPanelError } from '@/components/hooks/HookResultsList'
 import { Button } from '@/components/ui/Button'
@@ -235,6 +235,7 @@ const SavedHookItem = memo(function SavedHookItem({
   index,
   copied,
   copyDisabled,
+  removing,
   onCopy,
   onRemove,
   onRegenerate,
@@ -243,6 +244,7 @@ const SavedHookItem = memo(function SavedHookItem({
   index: number
   copied: boolean
   copyDisabled: boolean
+  removing: boolean
   onCopy: () => void
   onRemove: () => void
   onRegenerate?: () => void
@@ -257,6 +259,7 @@ const SavedHookItem = memo(function SavedHookItem({
       savedAt={hook.saved_at}
       copied={copied}
       copyDisabled={copyDisabled}
+      removing={removing}
       animationDelayMs={index * 40}
       onCopy={onCopy}
       onRemove={onRemove}
@@ -264,6 +267,8 @@ const SavedHookItem = memo(function SavedHookItem({
     />
   )
 })
+
+const REMOVE_ANIM_MS = 240
 
 export function HookSavedPanel({
   hooks,
@@ -279,13 +284,39 @@ export function HookSavedPanel({
   emptyAction,
   className,
 }: HookSavedPanelProps) {
+  const [removingIds, setRemovingIds] = useState<Set<string>>(() => new Set())
+
+  const handleRemove = useCallback(
+    async (id: string) => {
+      let shouldRun = false
+      setRemovingIds((prev) => {
+        if (prev.has(id)) return prev
+        shouldRun = true
+        return new Set(prev).add(id)
+      })
+      if (!shouldRun) return
+
+      await new Promise((resolve) => window.setTimeout(resolve, REMOVE_ANIM_MS))
+      try {
+        await onRemove(id)
+      } finally {
+        setRemovingIds((prev) => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+      }
+    },
+    [onRemove],
+  )
+
   if (isLoading) {
     return (
       <div className={cn('space-y-3.5 overflow-x-hidden', className)}>
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="animate-shimmer h-36 w-full rounded-2xl border border-zinc-800/50 bg-zinc-950/60"
+            className="hook-skeleton-card animate-shimmer h-36 w-full"
             style={{ animationDelay: `${i * 80}ms` }}
           />
         ))}
@@ -311,14 +342,15 @@ export function HookSavedPanel({
   return (
     <ul className={cn('space-y-3.5 overflow-x-hidden sm:space-y-4', className)}>
       {hooks.map((hook, index) => (
-        <li key={hook.id}>
+        <li key={hook.id} className="hook-stagger-item min-w-0" style={{ animationDelay: `${index * 40}ms` }}>
           <SavedHookItem
             hook={hook}
             index={index}
             copied={copiedHook === hook.hook_text}
             copyDisabled={copiedHook != null && copiedHook !== hook.hook_text}
+            removing={removingIds.has(hook.id)}
             onCopy={() => onCopy(hook.hook_text)}
-            onRemove={() => onRemove(hook.id)}
+            onRemove={() => void handleRemove(hook.id)}
             onRegenerate={onRegenerate ? () => onRegenerate(hook) : undefined}
           />
         </li>

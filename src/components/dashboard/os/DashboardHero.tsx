@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { AnimatedCounter } from '@/components/dashboard/os/AnimatedCounter'
 import { DashboardAiEngineVisual } from '@/components/dashboard/os/DashboardAiEngineVisual'
 import { AiPulseIndicator } from '@/components/ui/AiPulseIndicator'
@@ -43,7 +44,7 @@ const STAT_CARDS = [
   },
 ]
 
-export function DashboardHero({ user, stats }: DashboardHeroProps) {
+function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
   const firstName = user?.name.split(' ')[0] ?? 'Creator'
   const displayScore = stats.avgTrendScore
 
@@ -57,7 +58,7 @@ export function DashboardHero({ user, stats }: DashboardHeroProps) {
         ))}
       </div>
 
-      <div className="relative space-y-1.5">
+      <div className="relative space-y-2 sm:space-y-2.5">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
@@ -99,7 +100,7 @@ export function DashboardHero({ user, stats }: DashboardHeroProps) {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-1 sm:gap-1.5">
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
           {STAT_CARDS.map((card, i) => {
             const Icon = card.icon
             let value = 0
@@ -163,3 +164,5 @@ export function DashboardHero({ user, stats }: DashboardHeroProps) {
     </section>
   )
 }
+
+export const DashboardHero = memo(DashboardHeroInner)

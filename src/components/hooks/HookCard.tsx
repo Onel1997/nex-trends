@@ -25,6 +25,7 @@ export type HookCardProps = {
   platform?: string | null
   saved?: boolean
   saving?: boolean
+  removing?: boolean
   copied?: boolean
   copyDisabled?: boolean
   justSaved?: boolean
@@ -46,6 +47,7 @@ export const HookCard = memo(function HookCard({
   platform,
   saved = false,
   saving = false,
+  removing = false,
   copied = false,
   copyDisabled = false,
   justSaved = false,
@@ -67,34 +69,30 @@ export const HookCard = memo(function HookCard({
   return (
     <article
       className={cn(
-        'hook-card group relative overflow-hidden rounded-2xl border',
-        'bg-gradient-to-br from-zinc-950/95 to-zinc-900/50',
-        'p-4 sm:p-5 transition-all duration-300 ease-out',
-        'hover:-translate-y-0.5 hover:border-violet-500/35',
-        'hover:shadow-[0_8px_40px_-12px_rgba(139,92,246,0.45)]',
-        saved && 'border-amber-500/25 shadow-[0_0_28px_-14px_rgba(245,158,11,0.35)]',
+        'hook-card group p-4 sm:p-5',
+        saved && 'hook-card--saved',
         justSaved && 'animate-save-glow border-amber-400/40',
-        !saved && 'border-zinc-800/70',
-        'animate-fade-in',
+        removing && 'hook-card--removing',
         className,
       )}
-      style={{ animationDelay: `${animationDelayMs}ms`, animationFillMode: 'backwards' }}
+      style={
+        animationDelayMs > 0
+          ? { animationDelay: `${animationDelayMs}ms`, animationFillMode: 'backwards' }
+          : undefined
+      }
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        aria-hidden
-      >
+      <div className="hook-card__glow" aria-hidden>
         <div className="absolute -right-10 -top-10 size-32 rounded-full bg-violet-500/12 blur-3xl" />
         <div className="absolute -bottom-8 -left-8 size-24 rounded-full bg-fuchsia-500/8 blur-2xl" />
       </div>
 
-      <div className="relative flex flex-col gap-3.5 sm:flex-row sm:items-start sm:gap-4">
+      <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
         {showIndex && typeof index === 'number' && (
           <span
             className={cn(
               'flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-9',
               'bg-violet-500/15 text-xs font-bold tabular-nums text-violet-300',
-              'ring-1 ring-violet-500/25 transition-smooth group-hover:bg-violet-500/20',
+              'ring-1 ring-violet-500/25 transition-smooth group-hover:bg-violet-500/22 group-hover:ring-violet-500/35',
             )}
             aria-hidden
           >
@@ -103,14 +101,12 @@ export const HookCard = memo(function HookCard({
         )}
 
         <div className="min-w-0 flex-1">
-          <p className="break-words text-[15px] font-medium leading-[1.55] text-zinc-50 sm:text-base sm:leading-relaxed">
+          <p className="break-words text-[15px] font-medium leading-[1.55] tracking-tight text-zinc-50 sm:text-base sm:leading-relaxed">
             {hook}
           </p>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {toneLabel && (
-              <span className="hook-badge hook-badge--tone">{toneLabel}</span>
-            )}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {toneLabel && <span className="hook-badge hook-badge--tone">{toneLabel}</span>}
             {platformLabel && (
               <span className="hook-badge hook-badge--platform">{platformLabel}</span>
             )}
@@ -118,7 +114,7 @@ export const HookCard = memo(function HookCard({
               {hook.length}/{HOOK_CHAR_LIMIT}
             </span>
             {savedAt && variant === 'saved' && (
-              <span className="text-[10px] font-medium text-zinc-600">
+              <span className="text-[10px] font-medium text-zinc-500">
                 {formatHookDate(savedAt, 'relative')}
               </span>
             )}
@@ -139,7 +135,9 @@ export const HookCard = memo(function HookCard({
                 saving && 'opacity-50',
                 saved && !saving && 'animate-bookmark-pop',
               )}
-              aria-label={saved ? 'Hook aus Gespeichert entfernen' : `Hook ${(index ?? 0) + 1} speichern`}
+              aria-label={
+                saved ? 'Hook aus Gespeichert entfernen' : `Hook ${(index ?? 0) + 1} speichern`
+              }
               aria-pressed={saved}
             >
               {saved ? (
@@ -158,7 +156,7 @@ export const HookCard = memo(function HookCard({
               className={cn(
                 'hook-action-btn flex-1 sm:flex-none',
                 copied
-                  ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/25'
+                  ? 'hook-action-btn--copied'
                   : 'text-zinc-500 hover:bg-violet-500/15 hover:text-violet-200',
                 copyDisabled && !copied && 'opacity-50',
               )}
@@ -169,18 +167,20 @@ export const HookCard = memo(function HookCard({
               ) : (
                 <CopyIcon className="size-[18px]" />
               )}
+              <span className="sr-only">{copied ? 'Kopiert' : 'Kopieren'}</span>
             </button>
           )}
         </div>
       </div>
 
       {variant === 'saved' && (onRegenerate || onRemove) && (
-        <div className="relative mt-3.5 flex flex-col gap-2 border-t border-zinc-800/60 pt-3.5 sm:flex-row">
+        <div className="relative mt-3.5 flex flex-col gap-2 border-t border-zinc-800/55 pt-3.5 sm:flex-row">
           {onRegenerate && (
             <Button
               variant="secondary"
               size="sm"
               onClick={onRegenerate}
+              disabled={removing}
               className="min-h-11 flex-1 sm:min-h-9"
             >
               <ArrowPathIcon className="size-3.5" aria-hidden />
@@ -192,10 +192,11 @@ export const HookCard = memo(function HookCard({
               variant="ghost"
               size="sm"
               onClick={onRemove}
+              disabled={removing}
               className="min-h-11 flex-1 sm:min-h-9"
             >
               <TrashIcon className="size-3.5" aria-hidden />
-              Entfernen
+              {removing ? 'Entfernen …' : 'Entfernen'}
             </Button>
           )}
         </div>

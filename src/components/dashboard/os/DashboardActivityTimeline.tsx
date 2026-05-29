@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
+import { DashboardOnboardingEmpty } from '@/components/dashboard/os/DashboardOnboardingEmpty'
 import { DashboardSubsectionHeader } from '@/components/dashboard/os/DashboardSubsectionHeader'
 import { AiPulseIndicator } from '@/components/ui/AiPulseIndicator'
 import {
@@ -10,9 +11,8 @@ import {
   SparklesIcon,
   TrendingUpIcon,
 } from '@/components/ui/icons'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { useDashboardData } from '@/hooks/useDashboardData'
 import type { ActivityItem } from '@/types/dashboard'
+import type { DashboardRouteId } from '@/lib/routes'
 import { cn } from '@/lib'
 
 const MAX_VISIBLE = 5
@@ -20,6 +20,11 @@ const MAX_VISIBLE = 5
 type ActivityVisual = {
   Icon: typeof SparklesIcon
   chip: string
+}
+
+type DashboardActivityTimelineProps = {
+  activities: ActivityItem[]
+  onNavigate?: (tool: DashboardRouteId) => void
 }
 
 function getActivityVisual(tool: string, label: string): ActivityVisual {
@@ -61,7 +66,7 @@ function formatRelativeTime(iso: string): string {
   return `${days}d`
 }
 
-function ActivityTimelineNode({
+const ActivityTimelineNode = memo(function ActivityTimelineNode({
   item,
   isLatest,
   isLast,
@@ -81,10 +86,12 @@ function ActivityTimelineNode({
             'relative z-[1] flex size-[0.4375rem] rounded-full',
             isLatest ? 'bg-emerald-400 ring-2 ring-emerald-500/25' : 'bg-zinc-600',
           )}
-        >
-        </span>
+        />
         {!isLast ? (
-          <span className="dashboard-os-timeline__line mt-1.5 w-px flex-1 min-h-[1.75rem]" aria-hidden />
+          <span
+            className="dashboard-os-timeline__line mt-1.5 w-px flex-1 min-h-[1.75rem]"
+            aria-hidden
+          />
         ) : null}
       </div>
 
@@ -121,10 +128,12 @@ function ActivityTimelineNode({
       </article>
     </li>
   )
-}
+})
 
-export function DashboardActivityTimeline() {
-  const { activities } = useDashboardData()
+function DashboardActivityTimelineInner({
+  activities,
+  onNavigate,
+}: DashboardActivityTimelineProps) {
   const [expanded, setExpanded] = useState(false)
   const visible = expanded ? activities : activities.slice(0, MAX_VISIBLE)
   const hasMore = activities.length > MAX_VISIBLE
@@ -132,7 +141,7 @@ export function DashboardActivityTimeline() {
   return (
     <section className="dashboard-os-section dashboard-os-section--embedded">
       <DashboardSubsectionHeader
-        title="AI Activity Feed"
+        title="Recent Activity"
         action={
           <div className="flex shrink-0 items-center gap-2">
             <AiPulseIndicator label="Live" size="sm" />
@@ -150,12 +159,23 @@ export function DashboardActivityTimeline() {
       />
 
       {activities.length === 0 ? (
-        <EmptyState
-          size="compact"
-          variant="premium"
-          title="No activity yet"
-          description="Generate a video or save a trend — your feed updates here."
-          icon={<SparklesIcon className="size-5 text-violet-400/80" aria-hidden />}
+        <DashboardOnboardingEmpty
+          compact
+          title="Your activity feed is empty"
+          description="Generate hooks, save favorites, or run an AI tool — everything shows up here."
+          icon={<BoltIcon className="size-5 text-violet-400/85" aria-hidden />}
+          action={
+            onNavigate ? (
+              <button
+                type="button"
+                onClick={() => onNavigate('hook')}
+                className="dashboard-os-btn dashboard-os-btn-primary inline-flex h-9 items-center justify-center rounded-[var(--dash-radius)] px-4 text-[11px]"
+              >
+                Generate your first hooks
+              </button>
+            ) : undefined
+          }
+          className="nex-glass-panel rounded-[var(--dash-radius)] border border-zinc-800/45"
         />
       ) : (
         <div className="dashboard-os-timeline nex-glass-panel rounded-[var(--dash-radius)] border border-zinc-800/45 p-2.5 sm:p-2">
@@ -174,3 +194,5 @@ export function DashboardActivityTimeline() {
     </section>
   )
 }
+
+export const DashboardActivityTimeline = memo(DashboardActivityTimelineInner)

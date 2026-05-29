@@ -73,20 +73,26 @@ export function TrendsGridSkeleton() {
 
 export function DashboardSkeleton() {
   return (
-    <div className="dashboard-os nex-os-polish mx-auto max-w-6xl flex flex-col gap-4 sm:gap-5">
-      <Skeleton className="h-44 w-full rounded-[var(--dash-radius-lg)] sm:h-52" />
-      <div className="flex gap-3 overflow-hidden">
+    <div className="dashboard-os nex-os-polish mx-auto max-w-6xl flex flex-col gap-3 sm:gap-4">
+      <Skeleton className="h-44 w-full rounded-[var(--dash-radius-lg)] sm:h-48" />
+      <div className="flex gap-2 overflow-hidden sm:gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 min-w-[11rem] shrink-0 rounded-2xl" />
+          <Skeleton key={i} className="h-[5.5rem] min-w-[9.5rem] shrink-0 rounded-[var(--dash-radius)] sm:min-w-[11rem]" />
         ))}
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Skeleton className="h-56 rounded-2xl md:col-span-2" />
-        <Skeleton className="h-56 rounded-2xl" />
-        <Skeleton className="h-56 rounded-2xl" />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-[var(--dash-radius)]" />
+        ))}
       </div>
-      <Skeleton className="h-48 w-full rounded-2xl" />
-      <Skeleton className="h-40 w-full rounded-2xl" />
+      <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
+        <Skeleton className="h-40 rounded-[var(--dash-radius-lg)] sm:col-span-3 sm:h-44" />
+        <Skeleton className="h-28 rounded-[var(--dash-radius)]" />
+        <Skeleton className="h-28 rounded-[var(--dash-radius)]" />
+        <Skeleton className="h-28 rounded-[var(--dash-radius)]" />
+      </div>
+      <Skeleton className="h-52 w-full rounded-[var(--dash-radius-lg)]" />
+      <Skeleton className="h-36 w-full rounded-[var(--dash-radius-lg)]" />
     </div>
   )
 }

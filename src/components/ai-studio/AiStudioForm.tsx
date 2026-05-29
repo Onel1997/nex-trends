@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Input'
 import { SparklesIcon } from '@/components/ui/icons'
+import { formControlSelectClassName } from '@/lib/form-field-styles'
 import { cn } from '@/lib'
 import {
   DEFAULT_STUDIO_FORM,
@@ -124,7 +125,7 @@ export function AiStudioForm({
               patch({ platform: e.target.value as AiStudioFormValues['platform'] })
             }
             disabled={loading}
-            className="w-full rounded-xl border border-zinc-800/80 bg-zinc-950/80 px-4 py-2.5 text-sm text-zinc-100 transition-smooth focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/15"
+            className={cn(formControlSelectClassName, 'pr-4')}
           >
             {STUDIO_PLATFORMS.map((p) => (
               <option key={p} value={p}>
@@ -141,7 +142,7 @@ export function AiStudioForm({
               patch({ style: e.target.value as AiStudioFormValues['style'] })
             }
             disabled={loading}
-            className="w-full rounded-xl border border-zinc-800/80 bg-zinc-950/80 px-4 py-2.5 text-sm text-zinc-100 transition-smooth focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/15"
+            className={cn(formControlSelectClassName, 'pr-4')}
           >
             {STUDIO_STYLES.map((s) => (
               <option key={s} value={s}>

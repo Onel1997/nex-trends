@@ -51,7 +51,7 @@ const HookResultItem = memo(function HookResultItem({
       copied={copied}
       copyDisabled={copyDisabled}
       justSaved={justSaved}
-      animationDelayMs={index * 45}
+      animationDelayMs={0}
       onCopy={handleCopy}
       onToggleSave={onToggleSave ? handleToggleSave : undefined}
     />
@@ -72,7 +72,7 @@ type HookResultsListProps = {
   className?: string
 }
 
-export function HookResultsList({
+export const HookResultsList = memo(function HookResultsList({
   hooks,
   onCopy,
   onToggleSave,
@@ -96,13 +96,17 @@ export function HookResultsList({
   return (
     <ol
       className={cn(
-        'grid gap-3.5 overflow-x-hidden sm:gap-4',
-        dimmed && 'pointer-events-none opacity-35 transition-opacity duration-500',
+        'grid w-full min-w-0 max-w-full gap-3.5 overflow-x-hidden sm:gap-4',
+        dimmed && 'pointer-events-none opacity-30 transition-opacity duration-500',
         className,
       )}
     >
       {displayHooks.map((hook, index) => (
-        <li key={`${index}-${hook.slice(0, 32)}`}>
+        <li
+          key={`${index}-${hook.slice(0, 32)}`}
+          className="hook-stagger-item min-w-0 max-w-full"
+          style={{ animationDelay: `${index * 50}ms` }}
+        >
           <HookResultItem
             hook={hook}
             index={index}
@@ -120,7 +124,7 @@ export function HookResultsList({
       ))}
     </ol>
   )
-}
+})
 
 type HookErrorStateProps = {
   message: string
@@ -185,12 +189,16 @@ export function HookGenerationProgress({
         : '10 virale Hooks werden erstellt …'
 
   return (
-    <div className="mb-4 overflow-hidden rounded-xl border border-violet-500/25 bg-violet-500/[0.07] px-4 py-3.5">
+    <div
+      className="hook-gen-progress mb-4 overflow-hidden px-4 py-3.5"
+      role="status"
+      aria-live="polite"
+    >
       <div className="flex items-center gap-3">
-        <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-800/80">
+        <div className="hook-gen-progress__bar flex-1">
           <div className="absolute inset-y-0 w-2/5 animate-progress-indeterminate rounded-full bg-gradient-to-r from-violet-500/30 via-violet-400 to-fuchsia-400/90" />
         </div>
-        <p className="shrink-0 text-xs font-medium text-violet-200/90">{label}</p>
+        <p className="shrink-0 text-xs font-medium text-violet-200/95">{label}</p>
       </div>
     </div>
   )
@@ -204,7 +212,7 @@ export function HookGeneratingSkeleton({ count = 10 }: { count?: number }) {
       {Array.from({ length: visible }).map((_, i) => (
         <div
           key={i}
-          className="animate-shimmer rounded-2xl border border-zinc-800/50 bg-zinc-950/60 p-4 sm:p-5"
+          className="hook-skeleton-card animate-shimmer p-4 sm:p-5"
           style={{ animationDelay: `${i * 90}ms` }}
         >
           <div className="flex gap-3.5">

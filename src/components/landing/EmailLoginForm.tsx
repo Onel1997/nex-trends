@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { signInWithEmail } from '@/lib/auth'
+import { formControlClassName } from '@/lib/form-field-styles'
 import { cn } from '@/lib'
 
 type EmailLoginFormProps = {
@@ -56,10 +57,7 @@ export function EmailLoginForm({
         }}
         placeholder="E-Mail eingeben"
         autoComplete="email"
-        className={cn(
-          'w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white outline-none',
-          inputClassName,
-        )}
+        className={cn(formControlClassName, 'min-h-11 border-zinc-700 bg-zinc-900 py-3', inputClassName)}
       />
 
       <button

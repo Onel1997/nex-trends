@@ -30,7 +30,7 @@ export function EmptyState({
       className={cn(
         'flex flex-col items-center justify-center text-center',
         isPremium
-          ? 'rounded-3xl border border-violet-500/15 bg-gradient-to-b from-violet-500/[0.06] to-zinc-900/30 px-5 py-12 shadow-[0_0_60px_-24px_rgba(139,92,246,0.35)] backdrop-blur-sm sm:px-8 sm:py-16'
+          ? 'rounded-2xl border border-violet-500/18 bg-gradient-to-b from-violet-500/[0.08] via-zinc-950/40 to-zinc-900/25 px-5 py-10 shadow-[0_0_60px_-24px_rgba(139,92,246,0.38)] backdrop-blur-md sm:rounded-3xl sm:px-8 sm:py-14'
           : 'rounded-2xl border border-dashed border-zinc-800/80 bg-zinc-900/20 backdrop-blur-sm',
         !isPremium && (size === 'default' ? 'px-6 py-16' : 'px-4 py-10'),
         className,

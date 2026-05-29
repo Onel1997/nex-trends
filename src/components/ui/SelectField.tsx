@@ -1,8 +1,6 @@
 import type { SelectHTMLAttributes } from 'react'
+import { formControlSelectClassName } from '@/lib/form-field-styles'
 import { cn } from '@/lib'
-
-const selectStyles =
-  'w-full appearance-none rounded-xl border border-zinc-800/80 bg-zinc-950/80 px-4 py-2.5 text-sm text-zinc-100 transition-smooth focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50'
 
 type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label: string
@@ -29,7 +27,7 @@ export function SelectField({
         {label}
       </label>
       <div className="relative">
-        <select id={fieldId} className={cn(selectStyles, 'pr-10')} {...props}>
+        <select id={fieldId} className={cn(formControlSelectClassName, 'pr-10')} {...props}>
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}

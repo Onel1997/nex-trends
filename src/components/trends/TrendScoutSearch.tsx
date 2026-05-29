@@ -117,7 +117,6 @@ export function TrendScoutSearch({
             onKeyDown={handleKeyDown}
             disabled={disabled || isSearching}
             placeholder="Nische, Hashtag oder Creator suchen …"
-            inputClassName="text-base sm:text-sm"
           />
         </label>
         <Button

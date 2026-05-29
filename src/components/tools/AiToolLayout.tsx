@@ -25,7 +25,7 @@ export function AiToolLayout({
   const limit = usage.limit ?? MAX_FREE_CREDITS
 
   return (
-    <div className={cn('mx-auto max-w-3xl animate-fade-in', className)}>
+    <div className={cn('mx-auto w-full min-w-0 max-w-3xl animate-fade-in', className)}>
       <header className="mb-6 sm:mb-8">
         <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-violet-400/90">
           <SparklesIcon className="size-3.5" aria-hidden />

@@ -304,6 +304,7 @@ export function HookGeneratorTool() {
       title="Hook Generator"
       description="Scroll-stoppende Hooks für Reels, TikToks und Ads — 10 virale Scroll-Stopper pro Generierung, optimiert für die ersten 3 Sekunden."
       creditCost={HOOK_GENERATION_COST}
+      className="nex-tool-surface"
     >
       {sessionTrends.length > 0 && (
         <section className="mb-5 overflow-x-hidden">
@@ -383,25 +384,29 @@ export function HookGeneratorTool() {
       {/* Sticky generate bar — mobile only */}
       <div
         className={cn(
-          'fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800/80 bg-zinc-950/95 p-3 backdrop-blur-xl sm:hidden',
+          'hook-mobile-sticky-actions fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800/80 bg-zinc-950/95 p-3 backdrop-blur-xl transition-smooth sm:hidden',
           'pb-[max(0.75rem,env(safe-area-inset-bottom))]',
         )}
       >
         <div className="flex flex-col gap-2">{generateButtons}</div>
       </div>
 
-      <section className="mt-6 overflow-x-hidden pb-28 sm:pb-0">
-        <div className="sticky top-0 z-10 -mx-1 mb-4 flex flex-wrap items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/90 px-1 pb-3 backdrop-blur-md">
+      <section
+        className="mt-6 overflow-x-hidden pb-28 sm:pb-2"
+        aria-busy={isGenerating}
+      >
+        <div className="sticky top-0 z-10 -mx-1 mb-4 flex flex-wrap items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/92 px-1 pb-3 backdrop-blur-lg">
           {tabs.map(({ id, label, icon: Icon, count }) => (
             <button
               key={id}
               type="button"
+              disabled={isGenerating && id !== activeTab}
               onClick={() => setActiveTab(id)}
               className={cn(
-                'inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-smooth touch-manipulation',
-                activeTab === id
-                  ? 'bg-violet-500/15 text-violet-200 ring-1 ring-violet-500/20'
-                  : 'text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-300',
+                'hook-tab inline-flex items-center gap-1.5',
+                activeTab === id && 'hook-tab--active',
+                activeTab !== id && 'text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-300',
+                isGenerating && id !== activeTab && 'opacity-40',
               )}
             >
               <Icon className="size-3.5" aria-hidden />
@@ -431,7 +436,7 @@ export function HookGeneratorTool() {
         </div>
 
         {activeTab === 'results' && (
-          <div className="animate-fade-in">
+          <div key="results" className="animate-fade-in">
             {isUsageLimitReached && !hasProAccess && !unlimited ? (
               <UsageLimitWarning />
             ) : error ? (
@@ -503,6 +508,7 @@ export function HookGeneratorTool() {
         )}
 
         {activeTab === 'history' && (
+          <div key="history" className="animate-fade-in">
           <HookHistoryPanel
             history={history}
             isLoading={historyLoading}
@@ -516,9 +522,11 @@ export function HookGeneratorTool() {
             }}
             onRegenerate={handleRegenerateFromHistory}
           />
+          </div>
         )}
 
         {activeTab === 'saved' && (
+          <div key="saved" className="animate-fade-in">
           <HookSavedPanel
             hooks={savedHooks}
             isLoading={savedLoading}
@@ -535,6 +543,7 @@ export function HookGeneratorTool() {
               }
             }}
           />
+          </div>
         )}
       </section>
     </AiToolLayout>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useMobileKeyboardViewport } from '@/hooks/useMobileKeyboardViewport'
 import { SubscriptionProvider } from '@/context/SubscriptionContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { Spinner } from '@/components/ui/Spinner'
@@ -48,6 +49,8 @@ function AppContent() {
 }
 
 export default function App() {
+  useMobileKeyboardViewport()
+
   return (
     <ToastProvider>
       <SubscriptionProvider>

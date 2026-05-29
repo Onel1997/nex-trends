@@ -67,7 +67,7 @@ export function LandingShowcase() {
                 readOnly
                 rows={3}
                 defaultValue={PLACEHOLDER}
-                className="w-full resize-none rounded-lg border border-zinc-800 bg-black/50 px-4 py-3.5 text-sm leading-relaxed text-zinc-300 placeholder:text-zinc-600 transition-all duration-300 focus:border-violet-500/40 focus:outline-none focus:ring-2 focus:ring-violet-500/15"
+                className="nex-form-control w-full resize-none rounded-lg border border-zinc-800 bg-black/50 px-4 py-3.5 text-base leading-relaxed text-zinc-300 placeholder:text-zinc-600 transition-all duration-300 focus:border-violet-500/40 focus:outline-none focus:ring-2 focus:ring-violet-500/15 sm:text-sm"
               />
             </div>
 

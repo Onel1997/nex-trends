@@ -1,5 +1,17 @@
 /** Placeholder AI responses — swap for OpenAI when API keys are configured */
 
+export type {
+  LandingAuditCategory,
+  LandingAuditResult,
+  LandingInputKind,
+  BusinessType,
+} from '@/lib/landing-page-analyzer'
+
+export {
+  analyzeLandingPagePlaceholder,
+  analyzeLandingPageContent,
+} from '@/lib/landing-page-analyzer'
+
 function delay(ms = 800): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -78,68 +90,4 @@ export async function generateSeoTitlesPlaceholder(briefing: string): Promise<st
    └ 44 Zeichen · Intent: Commercial
 
 Tipps: Zahl + Jahr + Klarheit erhöhen CTR um ~15–25 % in SERP-Tests.`
-}
-
-export type LandingAuditCategory = {
-  name: string
-  score: number
-  note: string
-}
-
-export type LandingAuditResult = {
-  overallScore: number
-  categories: LandingAuditCategory[]
-  strengths: string[]
-  improvements: string[]
-  quickWins: string[]
-}
-
-export async function analyzeLandingPagePlaceholder(
-  input: string,
-): Promise<LandingAuditResult> {
-  await delay(1000)
-  const topic = extractTopic(input)
-  const hash = topic.length + (input.includes('http') ? 12 : 0)
-  const base = 62 + (hash % 28)
-
-  return {
-    overallScore: Math.min(94, base + 4),
-    categories: [
-      {
-        name: 'Clarity',
-        score: Math.min(95, base + 8),
-        note: 'Value Proposition erkennbar, Hero könnte schärfer sein.',
-      },
-      {
-        name: 'CTA',
-        score: Math.min(92, base - 2),
-        note: 'Primärer CTA vorhanden — Kontrast & Wording optimierbar.',
-      },
-      {
-        name: 'Trust',
-        score: Math.min(90, base - 5),
-        note: 'Social Proof fehlt oder zu weit unten.',
-      },
-      {
-        name: 'Mobile UX',
-        score: Math.min(88, base - 8),
-        note: `Thumb-Zone & Scroll-Length für ${topic} prüfen.`,
-      },
-    ],
-    strengths: [
-      `Klares Thema „${topic}" in den ersten 5 Sekunden.`,
-      'Visuelle Hierarchie grundsätzlich sauber.',
-      'Ladegefühl wirkt modern (geschätzt).',
-    ],
-    improvements: [
-      'Above-the-fold: eine einzige Hauptaktion, kein CTA-Wettbewerb.',
-      'Testimonials oder Logos direkt unter dem Hero.',
-      'FAQ-Block für Einwandbehandlung vor dem Footer.',
-    ],
-    quickWins: [
-      'Headline auf Outcome umstellen (nicht Feature).',
-      'CTA-Button: Kontrast +15 %, Copy „Kostenlos starten".',
-      'Sticky Mobile CTA nach 40 % Scroll.',
-    ],
-  }
 }

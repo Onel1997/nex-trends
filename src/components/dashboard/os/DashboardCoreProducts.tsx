@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { DashboardAiEngineVisual } from '@/components/dashboard/os/DashboardAiEngineVisual'
 import { DashboardSectionHeading } from '@/components/dashboard/os/DashboardSectionHeading'
@@ -16,7 +17,7 @@ const SECONDARY = PRODUCTS.filter((p) => !p.featured)
 
 const FLAGSHIP_FEATURES = ['Hooks', 'Captions', 'Voiceover', 'Templates'] as const
 
-export function DashboardCoreProducts({ onNavigate }: DashboardCoreProductsProps) {
+function DashboardCoreProductsInner({ onNavigate }: DashboardCoreProductsProps) {
   const flagshipRoute = getRouteConfig(FLAGSHIP.id)
 
   return (
@@ -143,3 +144,5 @@ export function DashboardCoreProducts({ onNavigate }: DashboardCoreProductsProps
     </section>
   )
 }
+
+export const DashboardCoreProducts = memo(DashboardCoreProductsInner)

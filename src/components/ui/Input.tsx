@@ -1,8 +1,9 @@
 import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
+import {
+  formControlClassName,
+  formControlTextareaClassName,
+} from '@/lib/form-field-styles'
 import { cn } from '@/lib'
-
-const fieldStyles =
-  'w-full rounded-xl border border-zinc-800/80 bg-zinc-950/80 px-4 text-sm leading-relaxed text-zinc-100 placeholder:text-zinc-600 transition-smooth focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50'
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   inputClassName?: string
@@ -10,19 +11,17 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
 
 export function Input({ className, inputClassName, ...props }: InputProps) {
   return (
-    <input className={cn(fieldStyles, 'min-h-11 py-2.5', className, inputClassName)} {...props} />
+    <input
+      className={cn(formControlClassName, 'min-h-11 py-2.5', className, inputClassName)}
+      {...props}
+    />
   )
 }
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement>
 
 export function Textarea({ className, ...props }: TextareaProps) {
-  return (
-    <textarea
-      className={cn(fieldStyles, 'resize-none px-4 py-3', className)}
-      {...props}
-    />
-  )
+  return <textarea className={cn(formControlTextareaClassName, className)} {...props} />
 }
 
 export function InputWithIcon({
@@ -37,7 +36,11 @@ export function InputWithIcon({
         {icon}
       </span>
       <input
-        className={cn(fieldStyles, 'min-h-12 py-3 pl-11 pr-4 sm:min-h-11', inputClassName)}
+        className={cn(
+          formControlClassName,
+          'min-h-12 py-3 pl-11 pr-4 sm:min-h-11 sm:py-2.5',
+          inputClassName,
+        )}
         {...props}
       />
     </div>

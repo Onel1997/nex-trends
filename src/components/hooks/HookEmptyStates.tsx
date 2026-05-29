@@ -69,7 +69,7 @@ export function HookEmptyStateAction({
   onClick: () => void
 }) {
   return (
-    <Button variant="secondary" size="md" onClick={onClick} className="min-h-11">
+    <Button variant="secondary" size="md" onClick={onClick} className="min-h-11 px-5">
       <SparklesIcon className="size-4" aria-hidden />
       {label}
     </Button>

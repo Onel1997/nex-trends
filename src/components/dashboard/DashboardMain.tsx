@@ -82,10 +82,10 @@ export function DashboardMain({ activeTool, onSelectTool }: DashboardMainProps) 
 
       <div
         className={cn(
-          'relative mx-auto w-full px-4 sm:px-6 lg:px-8',
+          'relative mx-auto w-full',
           isDashboard
-            ? 'min-w-0 pt-1 pb-4 sm:pt-3 sm:pb-6 lg:pt-4 lg:pb-8'
-            : 'min-w-0 py-5 pb-6 sm:py-6 sm:pb-8 lg:py-8',
+            ? 'nex-page-pad min-w-0 pt-2 pb-5 sm:pt-3 sm:pb-6 lg:pt-4 lg:pb-8'
+            : 'nex-page-pad min-w-0 py-5 pb-6 sm:py-6 sm:pb-8 lg:py-8',
           immersive
             ? 'max-w-6xl xl:max-w-7xl 2xl:max-w-[1680px]'
             : 'max-w-7xl',
