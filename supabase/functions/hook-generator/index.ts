@@ -14,6 +14,7 @@ import {
 } from "../_shared/ai/rate-limit.ts";
 import { ensureProfile } from "../_shared/usage.ts";
 import { corsHeadersFor, jsonHeadersFor } from "../_shared/cors.ts";
+import { formatEdgeError, logEdgeError } from "../_shared/errors.ts";
 
 type Action = "generate" | "history" | "health";
 
@@ -73,8 +74,17 @@ serve(async (req) => {
     }
 
     if (action === "health") {
-      const hasKey = Boolean(Deno.env.get("OPENAI_API_KEY")?.trim());
-      return jsonResponse(req, { ok: true, openai: hasKey });
+      const openaiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
+      const model = Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-4o-mini";
+      return jsonResponse(req, {
+        ok: true,
+        openai: Boolean(openaiKey),
+        model,
+        ...(openaiKey ? {} : {
+          error:
+            "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
+        }),
+      });
     }
 
     if (action === "history") {
@@ -128,6 +138,16 @@ serve(async (req) => {
       return jsonResponse(req, { error: validationError }, 400);
     }
 
+    const openaiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
+    if (!openaiKey) {
+      console.error("[hook-generator] OPENAI_API_KEY missing");
+      return jsonResponse(req, {
+        error:
+          "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
+        step: "env",
+      }, 503);
+    }
+
     const systemPrompt = buildHookSystemPrompt(input.tone, input.platform);
     const userMessage = buildHookUserMessage(input);
 
@@ -136,16 +156,40 @@ serve(async (req) => {
       topic: input.topic.slice(0, 40),
       tone: input.tone,
       platform: input.platform,
+      model: Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-4o-mini",
     });
 
-    const rawContent = await callOpenAI({
-      systemPrompt,
-      userMessage,
-      temperature: 0.75,
-      jsonMode: true,
-    });
+    let rawContent: string;
+    try {
+      rawContent = await callOpenAI({
+        systemPrompt,
+        userMessage,
+        temperature: 0.75,
+        jsonMode: true,
+      });
+    } catch (openAiErr) {
+      logEdgeError("hook-generator", openAiErr, { phase: "openai" });
+      return jsonResponse(req, {
+        error: formatEdgeError(openAiErr),
+        step: "openai",
+      }, 502);
+    }
 
-    const hooks = parseHooksResponse(rawContent, 10);
+    let hooks: string[];
+    try {
+      hooks = parseHooksResponse(rawContent, 10);
+    } catch (parseErr) {
+      logEdgeError("hook-generator", parseErr, {
+        phase: "parse",
+        rawPreview: rawContent.slice(0, 400),
+      });
+      return jsonResponse(req, {
+        error: formatEdgeError(parseErr),
+        step: "parse",
+      }, 502);
+    }
+
+    console.log("[hook-generator] parsed hooks", { count: hooks.length });
 
     const { data: saved, error: insertError } = await supabaseAdmin
       .from("generated_hooks")
@@ -160,8 +204,12 @@ serve(async (req) => {
       .single();
 
     if (insertError) {
-      console.error("[hook-generator] save failed", insertError);
-      throw insertError;
+      logEdgeError("hook-generator", insertError, { phase: "save" });
+      return jsonResponse(req, {
+        error: `Speichern fehlgeschlagen: ${formatEdgeError(insertError)}`,
+        step: "storage",
+        hooks,
+      }, 500);
     }
 
     return jsonResponse(req, {
@@ -169,8 +217,7 @@ serve(async (req) => {
       generation: saved,
     });
   } catch (err) {
-    console.error("[hook-generator] FEHLER:", err);
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonResponse(req, { error: message }, 500);
+    logEdgeError("hook-generator", err);
+    return jsonResponse(req, { error: formatEdgeError(err) }, 500);
   }
 });

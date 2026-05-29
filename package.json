@@ -16,7 +16,8 @@
     "deploy:functions": "supabase functions deploy admin-api usage-limit track-event consume-credits hook-generator generate-video create-checkout-session create-portal-session stripe-webhook",
     "deploy:hooks": "supabase functions deploy hook-generator consume-credits",
     "deploy:video": "supabase functions deploy generate-video",
-    "verify:functions": "node scripts/verify-edge-functions.mjs"
+    "verify:functions": "node scripts/verify-edge-functions.mjs",
+    "test:hook-generator": "node scripts/test-hook-generator.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",

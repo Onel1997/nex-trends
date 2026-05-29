@@ -29,16 +29,21 @@ export function useHookGenerationFlow() {
   const [status, setStatus] = useState<HookGenerationStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const requestIdRef = useRef(0)
+  const inFlightRef = useRef(false)
 
   const generate = useCallback(
     async (
       request: HookGenerationRequest,
       options?: { skipCreditCharge?: boolean },
     ) => {
+      if (inFlightRef.current) return null
+
       const requestId = ++requestIdRef.current
+      inFlightRef.current = true
       setError(null)
 
       if (!options?.skipCreditCharge && !requireCredits()) {
+        inFlightRef.current = false
         return null
       }
 
@@ -79,6 +84,10 @@ export function useHookGenerationFlow() {
 
         setStatus('error')
         return null
+      } finally {
+        if (requestId === requestIdRef.current) {
+          inFlightRef.current = false
+        }
       }
     },
     [requireCredits, refreshUsage, openUpgradeModal, unlimited],

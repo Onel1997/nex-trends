@@ -6,12 +6,42 @@ export type OpenAIChatOptions = {
   maxTokens?: number;
 };
 
+function buildChatBody(options: OpenAIChatOptions) {
+  const model =
+    Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-4o-mini";
+
+  const body: Record<string, unknown> = {
+    model,
+    temperature: options.temperature ?? 0.7,
+    max_tokens: options.maxTokens ?? 2048,
+    messages: [
+      { role: "system", content: options.systemPrompt },
+      { role: "user", content: options.userMessage },
+    ],
+  };
+
+  if (options.jsonMode) {
+    body.response_format = { type: "json_object" };
+  }
+
+  return body;
+}
+
 async function requestOpenAI(body: Record<string, unknown>) {
   const apiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
 
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY fehlt.");
+    throw new Error(
+      "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
+    );
   }
+
+  const model = typeof body.model === "string" ? body.model : "unknown";
+  console.log("[openai-client] request", {
+    model,
+    jsonMode: body.response_format != null,
+    messageCount: Array.isArray(body.messages) ? body.messages.length : 0,
+  });
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -27,13 +57,20 @@ async function requestOpenAI(body: Record<string, unknown>) {
     let detail = errText;
     try {
       const parsed = JSON.parse(errText) as {
-        error?: { message?: string };
+        error?: { message?: string; type?: string; code?: string };
       };
-      detail = parsed.error?.message ?? errText;
+      const apiErr = parsed.error;
+      detail = apiErr?.message ??
+        (apiErr?.code ? `${apiErr.code}` : errText);
     } catch {
       /* use raw text */
     }
-    throw new Error(`OpenAI API Fehler: ${detail}`);
+    console.error("[openai-client] API error", {
+      status: response.status,
+      model,
+      detail: detail.slice(0, 500),
+    });
+    throw new Error(`OpenAI API Fehler (${response.status}): ${detail}`);
   }
 
   return await response.json();
@@ -42,33 +79,19 @@ async function requestOpenAI(body: Record<string, unknown>) {
 export async function callOpenAI(
   options: OpenAIChatOptions,
 ): Promise<string> {
-  const model =
-    Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-4o-mini";
-
-  const data = await requestOpenAI({
-    model,
-    temperature: options.temperature ?? 0.7,
-    max_tokens: options.maxTokens ?? 2048,
-    response_format: options.jsonMode
-      ? { type: "json_object" }
-      : undefined,
-    messages: [
-      {
-        role: "system",
-        content: options.systemPrompt,
-      },
-      {
-        role: "user",
-        content: options.userMessage,
-      },
-    ],
-  });
+  const data = await requestOpenAI(buildChatBody(options));
 
   const content =
     data?.choices?.[0]?.message?.content?.trim();
 
   if (!content) {
-    throw new Error("Keine Antwort von OpenAI.");
+    const finishReason = data?.choices?.[0]?.finish_reason;
+    console.error("[openai-client] empty content", { finishReason });
+    throw new Error(
+      finishReason
+        ? `Keine Antwort von OpenAI (finish_reason: ${finishReason}).`
+        : "Keine Antwort von OpenAI.",
+    );
   }
 
   return content;

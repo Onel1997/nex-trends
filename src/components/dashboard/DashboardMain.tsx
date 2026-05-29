@@ -24,7 +24,7 @@ function renderPage(activeTool: DashboardToolId, onSelectTool: (tool: DashboardT
     case 'trend-intelligence':
       return <TrendIntelligencePage />
     case 'saved-trends':
-      return <SavedTrendsPage />
+      return <SavedTrendsPage onNavigate={onSelectTool} />
     case 'ai-studio':
       return <AiStudioPage />
     case 'my-videos':

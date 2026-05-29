@@ -1,15 +1,19 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   HookErrorState,
   HookGeneratingSkeleton,
+  HookGenerationProgress,
   HookResultsList,
 } from '@/components/hooks/HookResultsList'
+import { HookResultsEmptyState } from '@/components/hooks/HookEmptyStates'
 import { SelectField } from '@/components/ui/SelectField'
 import { Button } from '@/components/ui/Button'
-import { BoltIcon, SparklesIcon } from '@/components/ui/icons'
+import { ArrowPathIcon, BoltIcon, SparklesIcon } from '@/components/ui/icons'
 import { useToast } from '@/context/ToastContext'
+import { useHookClipboard } from '@/hooks/useHookClipboard'
 import { useHookGenerationFlow } from '@/hooks/useHookGenerationFlow'
 import { useSavedHooks } from '@/hooks/useSavedHooks'
+import { recordHookGeneration } from '@/lib/hook-analytics'
 import { cn } from '@/lib'
 import {
   HOOK_GENERATION_COST,
@@ -25,68 +29,83 @@ type TrendHookGeneratorProps = {
   className?: string
 }
 
+const JUST_SAVED_MS = 900
+
 export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps) {
   const { showToast } = useToast()
-  const { hooks, error, isGenerating, generate } = useHookGenerationFlow()
-  const { saveHook, isSaved, savedHooks } = useSavedHooks()
+  const { hooks, generation, status, error, isGenerating, generate } = useHookGenerationFlow()
+  const { savedHooks, toggleSave } = useSavedHooks()
+  const { copiedHook, copyHook } = useHookClipboard()
+
   const [tone, setTone] = useState<HookTone>('aggressive')
   const [platform, setPlatform] = useState<HookPlatform>(
     (trend.platform as HookPlatform) || 'TikTok',
   )
   const [savingHook, setSavingHook] = useState<string | null>(null)
+  const [justSavedHook, setJustSavedHook] = useState<string | null>(null)
 
   const savedHookTexts = new Set(savedHooks.map((h) => h.hook_text))
+  const isRegenerating = isGenerating && hooks.length > 0
+  const displayTone = generation?.tone ?? tone
+  const displayPlatform = generation?.platform ?? platform
 
-  async function runGenerate(skipCreditCharge: boolean) {
-    const result = await generate(
-      {
-        topic: trend.niche?.trim() || trend.title,
-        tone,
-        platform,
-        context: trend.description,
-        trendTitle: trend.title,
-        referenceHook: trend.hookAnalysis?.hookText,
-      },
-      { skipCreditCharge },
-    )
+  const runGenerate = useCallback(
+    async (skipCreditCharge: boolean) => {
+      if (isGenerating) return
 
-    if (result) {
-      showToast({
-        type: 'success',
-        title: `${result.hooks.length} Hooks generiert`,
-      })
-    }
-  }
+      const result = await generate(
+        {
+          topic: trend.niche?.trim() || trend.title,
+          tone,
+          platform,
+          context: trend.description,
+          trendTitle: trend.title,
+          referenceHook: trend.hookAnalysis?.hookText,
+        },
+        { skipCreditCharge },
+      )
 
-  async function handleSaveHook(hookText: string) {
-    if (isSaved(hookText)) return
-    setSavingHook(hookText)
-    try {
-      await saveHook({
-        hookText,
-        topic: trend.niche ?? trend.title,
-        tone,
-        platform,
-      })
-      showToast({ type: 'success', title: 'Hook gespeichert' })
-    } catch {
-      showToast({ type: 'error', title: 'Speichern fehlgeschlagen' })
-    } finally {
-      setSavingHook(null)
-    }
-  }
+      if (result) {
+        recordHookGeneration(trend.title, skipCreditCharge)
+        showToast({
+          type: 'success',
+          title: skipCreditCharge ? 'Hooks neu generiert' : `${result.hooks.length} Hooks generiert`,
+        })
+      }
+    },
+    [isGenerating, generate, trend, tone, platform, showToast],
+  )
 
-  async function copyHook(text: string) {
-    try {
-      await navigator.clipboard.writeText(text)
-      showToast({ type: 'success', title: 'Hook kopiert' })
-    } catch {
-      showToast({ type: 'error', title: 'Kopieren fehlgeschlagen' })
-    }
-  }
+  const handleToggleSave = useCallback(
+    async (hookText: string) => {
+      setSavingHook(hookText)
+      try {
+        const action = await toggleSave({
+          hookText,
+          generationId: generation?.id,
+          topic: trend.niche ?? trend.title,
+          tone: displayTone,
+          platform: displayPlatform,
+        })
+        if (action === 'saved') {
+          setJustSavedHook(hookText)
+          window.setTimeout(() => setJustSavedHook(null), JUST_SAVED_MS)
+        }
+        showToast({
+          type: 'success',
+          title: action === 'saved' ? 'Hook gespeichert' : 'Aus Favoriten entfernt',
+        })
+      } catch {
+        showToast({ type: 'error', title: 'Speichern fehlgeschlagen' })
+      } finally {
+        setSavingHook(null)
+      }
+    },
+    [toggleSave, generation, trend, displayTone, displayPlatform, showToast],
+  )
 
   return (
-    <section className={cn('space-y-4', className)}>
+    <section className={cn('space-y-4 overflow-x-hidden', className)}>
       <div className="flex items-center gap-2">
         <BoltIcon className="size-4 text-violet-400" aria-hidden />
         <h3 className="text-xs font-semibold uppercase tracking-widest text-violet-400/90">
@@ -111,35 +130,65 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
         />
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Button
-          variant="secondary"
-          size="md"
-          loading={isGenerating}
-          onClick={() => void runGenerate(hooks.length > 0)}
-          className="w-full sm:w-auto"
-        >
+      <Button
+        variant="secondary"
+        size="md"
+        fullWidth
+        loading={isGenerating}
+        disabled={isGenerating}
+        onClick={() => void runGenerate(hooks.length > 0)}
+        className="min-h-12"
+      >
+        {hooks.length > 0 ? (
+          <ArrowPathIcon className="size-4" aria-hidden />
+        ) : (
           <SparklesIcon className="size-4" aria-hidden />
-          {hooks.length > 0
-            ? 'Neu generieren'
-            : `Hooks generieren · ${HOOK_GENERATION_COST} Credits`}
-        </Button>
-      </div>
+        )}
+        {hooks.length > 0
+          ? 'Neu generieren'
+          : `Hooks generieren · ${HOOK_GENERATION_COST} Credits`}
+      </Button>
 
       {error && (
-        <HookErrorState message={error} onRetry={() => void runGenerate(false)} />
+        <HookErrorState
+          message={error}
+          onRetry={() => void runGenerate(hooks.length > 0)}
+        />
       )}
 
-      {isGenerating && <HookGeneratingSkeleton count={5} />}
-
-      {!isGenerating && (
-        <HookResultsList
-          hooks={hooks}
-          onCopy={(text) => void copyHook(text)}
-          onSave={(text) => void handleSaveHook(text)}
-          savedHooks={savedHookTexts}
-          isSaving={savingHook}
+      {isGenerating && (
+        <HookGenerationProgress
+          isRegenerating={isRegenerating}
+          step={status === 'checking' ? 'checking' : 'generating'}
         />
+      )}
+
+      {isGenerating && !isRegenerating && <HookGeneratingSkeleton count={5} />}
+
+      {!isGenerating && hooks.length === 0 && !error && (
+        <HookResultsEmptyState />
+      )}
+
+      {hooks.length > 0 && (
+        <div className="relative">
+          <HookResultsList
+            hooks={hooks}
+            tone={displayTone}
+            platform={displayPlatform}
+            onCopy={copyHook}
+            onToggleSave={handleToggleSave}
+            savedHooks={savedHookTexts}
+            isSaving={savingHook}
+            justSavedHook={justSavedHook}
+            copiedHook={copiedHook}
+            dimmed={isRegenerating}
+          />
+          {isRegenerating && (
+            <div className="mt-3">
+              <HookGeneratingSkeleton count={2} />
+            </div>
+          )}
+        </div>
       )}
     </section>
   )

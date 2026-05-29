@@ -39,6 +39,16 @@ function mapEdgeError(err: unknown, statusHint?: number): AiGenerationError {
   if (message.toLowerCase().includes('openai') || message.toLowerCase().includes('api')) {
     return { code: 'provider', message }
   }
+  if (message.includes('OPENAI_API_KEY')) {
+    return {
+      code: 'provider',
+      message:
+        'OPENAI_API_KEY fehlt auf dem Server. Im Supabase Dashboard unter Edge Functions → Secrets setzen und hook-generator neu deployen.',
+    }
+  }
+  if (message.toLowerCase().includes('speichern fehlgeschlagen')) {
+    return { code: 'provider', message }
+  }
   if (
     message.includes('nicht erreichbar') ||
     message.includes('nicht deployed') ||
