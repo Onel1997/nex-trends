@@ -33,6 +33,22 @@ export type ConsumeCreditsOptions = {
   email?: string | null;
 };
 
+function formatRpcError(value: unknown): string {
+  if (value == null) return "unknown_error";
+  if (typeof value === "string") return value;
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (typeof record.message === "string") return record.message;
+    if (typeof record.error === "string") return record.error;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return "unknown_error";
+    }
+  }
+  return String(value);
+}
+
 function mapRpcToResult(
   row: Record<string, unknown>,
   email?: string | null,
@@ -71,7 +87,7 @@ function mapRpcToResult(
     bonusCredits: Number(row.bonusCredits ?? 0),
     cost: row.cost != null ? Number(row.cost) : undefined,
     logId: row.logId != null ? String(row.logId) : undefined,
-    error: row.error != null ? String(row.error) : undefined,
+    error: row.error != null ? formatRpcError(row.error) : undefined,
   };
 }
 

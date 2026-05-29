@@ -49,16 +49,16 @@ export function DashboardLayout({
         aria-label="Close menu"
         onClick={() => setMobileOpen(false)}
         className={cn(
-          'fixed inset-0 z-40 bg-black/55 backdrop-blur-[12px] transition-[opacity,backdrop-filter] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden',
-          mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0 backdrop-blur-none',
+          'mobile-drawer-backdrop fixed inset-0 z-40 bg-black/55 transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden',
+          mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       />
 
       <div
         className={cn(
           'fixed inset-y-0 left-0 z-50 w-[min(100%,17.5rem)]',
-          'transition-[transform,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform',
-          'lg:static lg:z-auto lg:w-[17.5rem] lg:translate-x-0 lg:transition-none lg:will-change-auto',
+          'transition-[transform,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+          'lg:static lg:z-auto lg:w-[17.5rem] lg:translate-x-0 lg:transition-none',
           mobileOpen
             ? 'translate-x-0 shadow-[4px_0_48px_-8px_rgba(0,0,0,0.65)]'
             : '-translate-x-full',

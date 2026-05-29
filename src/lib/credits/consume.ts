@@ -1,4 +1,5 @@
 import { invokeEdgeFunction } from '@/lib/edgeFunctions'
+import { coerceErrorMessage } from '@/lib/ai/parse-hooks-response'
 import {
   CREDIT_COSTS,
   toolSlugToUsageAction,
@@ -8,14 +9,63 @@ import type { CreditConsumeResult, ConsumeCreditsPayload } from '@/types/credits
 
 type ConsumeCreditsAction = 'check' | 'consume'
 
+function parseCreditConsumeResult(payload: unknown): CreditConsumeResult {
+  if (typeof payload === 'string') {
+    try {
+      return parseCreditConsumeResult(JSON.parse(payload) as unknown)
+    } catch {
+      throw new Error('Ungültige Antwort von consume-credits.')
+    }
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Leere Antwort von consume-credits.')
+  }
+
+  const body = payload as Record<string, unknown>
+
+  if (typeof body.error === 'string' && !('allowed' in body)) {
+    throw new Error(body.error)
+  }
+
+  if (typeof body.allowed !== 'boolean') {
+    throw new Error(
+      coerceErrorMessage(body.error) ||
+        'Ungültige consume-credits Antwort (allowed fehlt).',
+    )
+  }
+
+  return {
+    allowed: body.allowed,
+    unlimited: body.unlimited === true,
+    used: Number(body.used ?? 0),
+    remaining:
+      body.remaining === null || body.remaining === undefined
+        ? null
+        : Number(body.remaining),
+    limit:
+      body.limit === null || body.limit === undefined ? null : Number(body.limit),
+    usageResetDate:
+      body.usageResetDate != null ? String(body.usageResetDate) : null,
+    plan: body.plan != null ? (String(body.plan) as CreditConsumeResult['plan']) : undefined,
+    bonusCredits:
+      body.bonusCredits != null ? Number(body.bonusCredits) : undefined,
+    cost: body.cost != null ? Number(body.cost) : undefined,
+    logId: body.logId != null ? String(body.logId) : undefined,
+    error: body.error != null ? coerceErrorMessage(body.error) : undefined,
+  }
+}
+
 async function invokeConsumeCredits(
   action: ConsumeCreditsAction,
   payload: Record<string, unknown>,
 ): Promise<CreditConsumeResult> {
-  return invokeEdgeFunction<CreditConsumeResult>('consume-credits', {
-    action,
-    ...payload,
-  })
+  const raw = await invokeEdgeFunction<unknown>(
+    'consume-credits',
+    { action, ...payload },
+    { okStatuses: [402] },
+  )
+  return parseCreditConsumeResult(raw)
 }
 
 /** Server-authoritative balance check (runs monthly reset RPC). */

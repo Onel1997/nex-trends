@@ -24,7 +24,16 @@ async function requestOpenAI(body: Record<string, unknown>) {
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`OpenAI API Fehler: ${errText}`);
+    let detail = errText;
+    try {
+      const parsed = JSON.parse(errText) as {
+        error?: { message?: string };
+      };
+      detail = parsed.error?.message ?? errText;
+    } catch {
+      /* use raw text */
+    }
+    throw new Error(`OpenAI API Fehler: ${detail}`);
   }
 
   return await response.json();

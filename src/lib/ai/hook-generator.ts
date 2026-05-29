@@ -1,5 +1,11 @@
 import { invokeEdgeFunction } from '@/lib/edgeFunctions'
 import { consumeCredits } from '@/lib/credits/consume'
+import {
+  coerceErrorMessage,
+  normalizeGeneratedHooksRow,
+  normalizeHooksList,
+  parseHookGeneratorPayload,
+} from '@/lib/ai/parse-hooks-response'
 import { CREDIT_COSTS } from '@/lib/plans'
 import type {
   AiGenerationError,
@@ -16,7 +22,7 @@ type HookHistoryResponse = {
 }
 
 function mapEdgeError(err: unknown, statusHint?: number): AiGenerationError {
-  const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
+  const message = coerceErrorMessage(err)
 
   if (message.includes('402') || message.toLowerCase().includes('credit')) {
     return { code: 'insufficient_credits', message: 'Nicht genug Credits für diese Generierung.' }
@@ -33,8 +39,15 @@ function mapEdgeError(err: unknown, statusHint?: number): AiGenerationError {
   if (message.toLowerCase().includes('openai') || message.toLowerCase().includes('api')) {
     return { code: 'provider', message }
   }
+  if (
+    message.includes('nicht erreichbar') ||
+    message.includes('nicht deployed') ||
+    message.toLowerCase().includes('failed to fetch')
+  ) {
+    return { code: 'unknown', message }
+  }
 
-  return { code: 'unknown', message }
+  return { code: 'unknown', message: coerceErrorMessage(message) }
 }
 
 /**
@@ -61,14 +74,14 @@ export async function generateHooksWithCredits(
     if (!creditResult.allowed) {
       const err: AiGenerationError = {
         code: 'insufficient_credits',
-        message: creditResult.error ?? 'Nicht genug Credits.',
+        message: coerceErrorMessage(creditResult.error ?? 'Nicht genug Credits.'),
       }
       throw err
     }
   }
 
   try {
-    const result = await invokeEdgeFunction<HookGeneratorResponse>('hook-generator', {
+    const raw = await invokeEdgeFunction<HookGeneratorResponse>('hook-generator', {
       action: 'generate',
       topic: request.topic,
       tone: request.tone,
@@ -78,13 +91,18 @@ export async function generateHooksWithCredits(
       referenceHook: request.referenceHook,
     })
 
-    if (!result.hooks?.length) {
-      throw { code: 'provider', message: 'Keine Hooks generiert.' } satisfies AiGenerationError
+    const parsed = parseHookGeneratorPayload(raw)
+
+    if (!parsed.generation) {
+      throw {
+        code: 'provider',
+        message: 'Hooks generiert, aber Speicherung fehlgeschlagen.',
+      } satisfies AiGenerationError
     }
 
     return {
-      hooks: result.hooks,
-      generation: result.generation,
+      hooks: normalizeHooksList(parsed.hooks),
+      generation: normalizeGeneratedHooksRow(parsed.generation),
     }
   } catch (err) {
     if (typeof err === 'object' && err !== null && 'code' in err) {
@@ -101,7 +119,12 @@ export async function fetchHookGenerationHistory(
     action: 'history',
     limit,
   })
-  return result.generations ?? []
+
+  if (result.error) {
+    throw new Error(coerceErrorMessage(result.error))
+  }
+
+  return (result.generations ?? []).map(normalizeGeneratedHooksRow)
 }
 
 export function isAiGenerationError(err: unknown): err is AiGenerationError {

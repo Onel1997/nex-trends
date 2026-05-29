@@ -13,33 +13,31 @@ import {
   rateLimitHeaders,
 } from "../_shared/ai/rate-limit.ts";
 import { ensureProfile } from "../_shared/usage.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
-const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+import { corsHeadersFor, jsonHeadersFor } from "../_shared/cors.ts";
 
 type Action = "generate" | "history" | "health";
 
-function jsonResponse(body: unknown, status = 200, extraHeaders?: HeadersInit) {
+function jsonResponse(
+  req: Request,
+  body: unknown,
+  status = 200,
+  extraHeaders?: HeadersInit,
+) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...jsonHeaders, ...extraHeaders },
+    headers: { ...jsonHeadersFor(req), ...extraHeaders },
   });
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeadersFor(req) });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return jsonResponse({ error: "Nicht authentifiziert" }, 401);
+      return jsonResponse(req, { error: "Nicht authentifiziert" }, 401);
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -61,7 +59,7 @@ serve(async (req) => {
     } = await supabaseAuth.auth.getUser(token);
 
     if (authError || !user?.id) {
-      return jsonResponse({ error: "User nicht gefunden" }, 401);
+      return jsonResponse(req, { error: "User nicht gefunden" }, 401);
     }
 
     const body = await req.json().catch(() => ({}));
@@ -71,12 +69,12 @@ serve(async (req) => {
     const profile = await ensureProfile(supabaseAdmin, user.id, user.email);
 
     if (profile.is_banned) {
-      return jsonResponse({ error: "Account gesperrt" }, 403);
+      return jsonResponse(req, { error: "Account gesperrt" }, 403);
     }
 
     if (action === "health") {
       const hasKey = Boolean(Deno.env.get("OPENAI_API_KEY")?.trim());
-      return jsonResponse({ ok: true, openai: hasKey });
+      return jsonResponse(req, { ok: true, openai: hasKey });
     }
 
     if (action === "history") {
@@ -94,16 +92,17 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      return jsonResponse({ generations: data ?? [] });
+      return jsonResponse(req, { generations: data ?? [] });
     }
 
     if (action !== "generate") {
-      return jsonResponse({ error: "Ungültige action" }, 400);
+      return jsonResponse(req, { error: "Ungültige action" }, 400);
     }
 
     const rateCheck = checkRateLimit(user.id);
     if (!rateCheck.allowed) {
       return jsonResponse(
+        req,
         {
           error: rateCheck.reason,
           retryAfterMs: rateCheck.retryAfterMs,
@@ -126,7 +125,7 @@ serve(async (req) => {
 
     const validationError = validateHookInput(input);
     if (validationError) {
-      return jsonResponse({ error: validationError }, 400);
+      return jsonResponse(req, { error: validationError }, 400);
     }
 
     const systemPrompt = buildHookSystemPrompt(input.tone, input.platform);
@@ -165,13 +164,13 @@ serve(async (req) => {
       throw insertError;
     }
 
-    return jsonResponse({
+    return jsonResponse(req, {
       hooks,
       generation: saved,
     });
   } catch (err) {
     console.error("[hook-generator] FEHLER:", err);
     const message = err instanceof Error ? err.message : String(err);
-    return jsonResponse({ error: message }, 500);
+    return jsonResponse(req, { error: message }, 500);
   }
 });

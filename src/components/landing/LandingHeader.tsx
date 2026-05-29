@@ -84,7 +84,7 @@ export function LandingHeader() {
 
       {mobileOpen && (
         <nav
-          className="border-t border-zinc-800/50 bg-zinc-950/95 px-4 py-4 backdrop-blur-xl md:hidden animate-fade-in"
+          className="glass-subtle border-t border-zinc-800/50 px-4 py-4 md:hidden animate-fade-in"
           aria-label="Mobile Navigation"
         >
           <ul className="space-y-1">

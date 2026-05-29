@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { AuthError, Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { isLocalSupabaseUrl, supabase } from '@/lib/supabase'
 import { scrollToSection } from '@/lib/scroll'
 
 export type AuthActionResult = {
@@ -49,6 +49,18 @@ export function getAuthRedirectUrl(path = '/'): string {
   }
 }
 
+function isPkceVerifierMissingError(error: AuthError | null): boolean {
+  const msg = error?.message?.toLowerCase() ?? ''
+  return msg.includes('pkce') && msg.includes('verifier')
+}
+
+async function getActiveSession(): Promise<Session | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  return session
+}
+
 /** Strip OAuth query params after session exchange on the callback route. */
 export function cleanAuthParamsFromUrl(): void {
   if (typeof window === 'undefined') return
@@ -83,11 +95,13 @@ export function cleanAuthParamsFromUrl(): void {
   }
 }
 
-/**
- * Exchange PKCE OAuth code on /auth/callback.
- */
-export async function completeAuthCallback(): Promise<AuthActionResult> {
-  if (typeof window === 'undefined') {
+/** Dedupes concurrent callback handling (e.g. React Strict Mode). */
+let authCallbackInFlight: Promise<AuthActionResult> | null = null
+
+async function runAuthCallbackExchange(): Promise<AuthActionResult> {
+  const existingSession = await getActiveSession()
+  if (existingSession) {
+    cleanAuthParamsFromUrl()
     return { error: null, message: null }
   }
 
@@ -118,10 +132,39 @@ export async function completeAuthCallback(): Promise<AuthActionResult> {
   cleanAuthParamsFromUrl()
 
   if (error) {
+    if (isPkceVerifierMissingError(error)) {
+      const sessionAfterRace = await getActiveSession()
+      if (sessionAfterRace) {
+        return { error: null, message: null }
+      }
+    }
     return { error, message: formatAuthError(error) }
   }
 
   return { error: null, message: null }
+}
+
+/**
+ * Exchange PKCE OAuth code on /auth/callback.
+ * Idempotent: skips exchange when a session already exists.
+ */
+export function completeAuthCallback(): Promise<AuthActionResult> {
+  if (typeof window === 'undefined') {
+    return Promise.resolve({ error: null, message: null })
+  }
+
+  if (!authCallbackInFlight) {
+    authCallbackInFlight = runAuthCallbackExchange().finally(() => {
+      authCallbackInFlight = null
+    })
+  }
+
+  return authCallbackInFlight
+}
+
+/** Dashboard path after successful OAuth — used by the callback page. */
+export function getPostAuthRedirectPath(): string {
+  return '/dashboard'
 }
 
 /** @deprecated Use completeAuthCallback on /auth/callback only. */
@@ -152,6 +195,9 @@ export function formatAuthError(error: AuthError | Error | null): string {
   if (msg.includes('otp') && msg.includes('expired')) {
     return 'Der Login-Link ist abgelaufen. Bitte einen neuen anfordern.'
   }
+  if (msg.includes('provider is not enabled') || msg.includes('unsupported provider')) {
+    return 'Google-Anmeldung ist nicht aktiv. VITE_SUPABASE_URL muss auf das gehostete Supabase-Projekt zeigen (nicht 127.0.0.1:54321).'
+  }
 
   return error.message || 'Anmeldung fehlgeschlagen. Bitte erneut versuchen.'
 }
@@ -177,6 +223,15 @@ export function useSession() {
 }
 
 export async function signInWithGoogle(): Promise<AuthActionResult> {
+  if (isLocalSupabaseUrl()) {
+    const message =
+      'Google-Anmeldung erfordert das gehostete Supabase-Projekt. Setze VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY in .env (siehe .env.example).'
+    return {
+      error: { message, name: 'AuthConfigError', status: 400 } as AuthError,
+      message,
+    }
+  }
+
   const redirectTo = getGoogleOAuthRedirectUrl()
 
   const { error } = await supabase.auth.signInWithOAuth({

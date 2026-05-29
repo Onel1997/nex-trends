@@ -1,24 +1,55 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '@/components/ui/Spinner'
-import { completeAuthCallback, formatAuthError } from '@/lib/auth'
-import { getPathForTool } from '@/lib/routes'
+import {
+  completeAuthCallback,
+  formatAuthError,
+  getPostAuthRedirectPath,
+} from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 export function AuthCallbackPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const redirectStarted = useRef(false)
 
   useEffect(() => {
     let mounted = true
 
+    function redirectToDashboard() {
+      if (redirectStarted.current) return
+      redirectStarted.current = true
+      window.location.replace(getPostAuthRedirectPath())
+    }
+
     async function handleCallback() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!mounted) return
+
+      if (session) {
+        redirectToDashboard()
+        return
+      }
+
       const { error, message } = await completeAuthCallback()
       if (!mounted) return
 
       if (error) {
+        const {
+          data: { session: sessionAfterError },
+        } = await supabase.auth.getSession()
+        if (!mounted) return
+
+        if (sessionAfterError) {
+          redirectToDashboard()
+          return
+        }
+
         setErrorMessage(message ?? formatAuthError(error))
         return
       }
 
-      window.location.replace(getPathForTool('dashboard'))
+      redirectToDashboard()
     }
 
     void handleCallback()

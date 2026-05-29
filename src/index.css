@@ -3338,3 +3338,227 @@ body {
     animation: none;
   }
 }
+
+/* ── Mobile / touch: lighter glass, simpler glows (desktop lg+ unchanged) ── */
+
+@media (max-width: 1023px) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .scroll-smooth-mobile,
+  .dashboard-main-safe,
+  .trend-intelligence-page,
+  .studio-page {
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+
+  /* Glass utilities — higher opacity fill, lower blur (keeps glass feel) */
+  .glass {
+    background-color: rgb(24 24 27 / 0.88);
+    -webkit-backdrop-filter: blur(8px) saturate(1.05);
+    backdrop-filter: blur(8px) saturate(1.05);
+  }
+
+  .glass-subtle {
+    background-color: rgb(9 9 11 / 0.92);
+    -webkit-backdrop-filter: blur(6px) saturate(1.04);
+    backdrop-filter: blur(6px) saturate(1.04);
+  }
+
+  .glass-card {
+    background-color: rgb(24 24 27 / 0.9);
+    -webkit-backdrop-filter: blur(8px) saturate(1.05);
+    backdrop-filter: blur(8px) saturate(1.05);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.03) inset,
+      0 4px 20px -10px rgb(0 0 0 / 0.45);
+  }
+
+  .glass-premium {
+    background: rgb(24 24 27 / 0.9);
+    -webkit-backdrop-filter: blur(10px) saturate(1.06);
+    backdrop-filter: blur(10px) saturate(1.06);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 8px 28px -14px rgb(0 0 0 / 0.5),
+      0 0 0 1px rgb(139 92 246 / 0.06);
+  }
+
+  .nex-glass-panel,
+  .dashboard-os-workspace {
+    background: rgb(9 9 11 / 0.92);
+    -webkit-backdrop-filter: blur(8px) saturate(1.05);
+    backdrop-filter: blur(8px) saturate(1.05);
+  }
+
+  .sidebar-panel {
+    background: linear-gradient(180deg, rgb(9 9 11 / 0.97) 0%, rgb(9 9 11 / 0.94) 100%);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Tailwind backdrop utilities used across components */
+  .backdrop-blur-xl {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+
+  .backdrop-blur-md {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+
+  .backdrop-blur-sm {
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .backdrop-blur-\[2px\] {
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+
+  .mobile-drawer-backdrop {
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Sticky / fixed nav — solid base + light frost (Safari compositor friendly) */
+  .sticky-header-smooth,
+  .dashboard-mobile-header {
+    transform: none;
+    will-change: auto;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    contain: layout style;
+  }
+
+  .sticky-header-smooth {
+    -webkit-backdrop-filter: blur(8px) saturate(1.05);
+    backdrop-filter: blur(8px) saturate(1.05);
+  }
+
+  header.sticky.glass-subtle {
+    background-color: rgb(9 9 11 / 0.94);
+  }
+
+  /* Ambient backgrounds — single soft layer instead of stacked radials */
+  .ambient-glow {
+    background-image: radial-gradient(
+      ellipse 90% 45% at 50% -12%,
+      rgb(139 92 246 / 0.06),
+      transparent 68%
+    );
+  }
+
+  .ti-ambient {
+    background-image: radial-gradient(
+      ellipse 75% 40% at 50% -8%,
+      rgb(139 92 246 / 0.1),
+      transparent 70%
+    );
+  }
+
+  .nex-ambient__orb--2 {
+    display: none;
+  }
+
+  .nex-ambient__orb--1 {
+    filter: blur(48px);
+    opacity: 0.75;
+    width: 12rem;
+    height: 12rem;
+  }
+
+  .nex-orb {
+    filter: blur(32px);
+    opacity: 0.85;
+  }
+
+  .studio-page::before {
+    opacity: 0.45;
+    animation: none;
+  }
+
+  .pricing-glow {
+    filter: blur(40px);
+    opacity: 0.55;
+    animation: none;
+  }
+
+  .nex-os-polish .dashboard-os-workspace {
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 0 0 1px rgb(139 92 246 / 0.05),
+      0 8px 24px -16px rgb(0 0 0 / 0.5);
+  }
+
+  .dashboard-os-hero__glow,
+  .dashboard-os-hero__mesh {
+    opacity: 0.5;
+  }
+
+  .dashboard-os-hero__particle {
+    display: none;
+  }
+
+  .dashboard-os-engine__halo {
+    filter: blur(6px);
+    animation-duration: 8s;
+  }
+
+  .dashboard-os .dashboard-os-card::after {
+    opacity: 0.25;
+  }
+
+  .studio-modal-glow {
+    background-image: radial-gradient(
+      ellipse 80% 50% at 50% 0%,
+      rgb(139 92 246 / 0.1),
+      transparent
+    );
+  }
+
+  .ai-video-card__glass {
+    -webkit-backdrop-filter: blur(1px);
+    backdrop-filter: blur(1px);
+  }
+
+  /* Less aggressive will-change on scroll-heavy lists */
+  .trend-card {
+    will-change: auto;
+  }
+
+  .video-card__poster,
+  .video-card__video {
+    will-change: auto;
+  }
+}
+
+/* iOS Safari: extra scroll + fixed-layer tuning (still mobile width only) */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 1023px) {
+    .dashboard-mobile-header,
+    header.sticky.top-0 {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .mobile-drawer-backdrop {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: rgb(0 0 0 / 0.72);
+    }
+
+    .glass-subtle,
+    .dashboard-mobile-header.glass-subtle {
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
+  }
+}

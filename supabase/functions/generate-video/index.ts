@@ -19,14 +19,10 @@ import {
   pipelineError,
   type PipelineStep,
 } from "../_shared/video-pipeline.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
-const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+import {
+  corsHeadersFor,
+  defaultJsonHeaders as jsonHeaders,
+} from "../_shared/cors.ts";
 
 type Action = "create" | "poll" | "history" | "retry" | "health" | "library" | "delete";
 
@@ -135,7 +131,7 @@ async function persistRemoteVideo(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeadersFor(req) });
   }
 
   try {

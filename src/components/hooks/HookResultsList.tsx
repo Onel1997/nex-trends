@@ -1,5 +1,9 @@
 import { Button } from '@/components/ui/Button'
 import { CopyIcon, BookmarkIcon, BookmarkFilledIcon } from '@/components/ui/icons'
+import {
+  coerceErrorMessage,
+  formatHookDisplayText,
+} from '@/lib/ai/parse-hooks-response'
 import { cn } from '@/lib'
 
 type HookResultsListProps = {
@@ -21,9 +25,15 @@ export function HookResultsList({
 }: HookResultsListProps) {
   if (hooks.length === 0) return null
 
+  const displayHooks = hooks
+    .map((hook) => formatHookDisplayText(hook))
+    .filter((hook) => hook.length > 0)
+
+  if (displayHooks.length === 0) return null
+
   return (
     <ol className={cn('grid gap-3 sm:grid-cols-1', className)}>
-      {hooks.map((hook, index) => {
+      {displayHooks.map((hook, index) => {
         const isSaved = savedHooks?.has(hook) ?? false
         const saving = isSaving === hook
 
@@ -110,6 +120,8 @@ type HookErrorStateProps = {
 }
 
 export function HookErrorState({ message, onRetry, className }: HookErrorStateProps) {
+  const displayMessage = coerceErrorMessage(message)
+
   return (
     <div
       role="alert"
@@ -118,7 +130,7 @@ export function HookErrorState({ message, onRetry, className }: HookErrorStatePr
         className,
       )}
     >
-      <p className="leading-relaxed">{message}</p>
+      <p className="leading-relaxed">{displayMessage}</p>
       <Button variant="secondary" size="sm" onClick={onRetry} className="mt-3">
         Erneut versuchen
       </Button>

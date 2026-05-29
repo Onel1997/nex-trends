@@ -13,8 +13,10 @@
     "compress:demo-videos": "bash scripts/compress-demo-videos.sh",
     "deploy:admin-api": "supabase functions deploy admin-api",
     "deploy:admin": "supabase db push && supabase functions deploy admin-api track-event usage-limit",
-    "deploy:functions": "supabase functions deploy admin-api usage-limit track-event generate-video create-checkout-session create-portal-session stripe-webhook",
-    "deploy:video": "supabase functions deploy generate-video"
+    "deploy:functions": "supabase functions deploy admin-api usage-limit track-event consume-credits hook-generator generate-video create-checkout-session create-portal-session stripe-webhook",
+    "deploy:hooks": "supabase functions deploy hook-generator consume-credits",
+    "deploy:video": "supabase functions deploy generate-video",
+    "verify:functions": "node scripts/verify-edge-functions.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",

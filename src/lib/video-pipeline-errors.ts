@@ -36,16 +36,56 @@ export type PipelineErrorPayload = {
   details?: Record<string, unknown>
 }
 
+export function formatEdgeFunctionNetworkError(functionName: string): string {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''
+  const host = (() => {
+    try {
+      return new URL(baseUrl).host
+    } catch {
+      return baseUrl || 'dein Supabase-Projekt'
+    }
+  })()
+
+  return (
+    `Die Edge Function „${functionName}“ ist nicht erreichbar. ` +
+    `Prüfe: (1) VITE_SUPABASE_URL zeigt auf https://<ref>.supabase.co (aktuell: ${host}), ` +
+    `(2) Function deployed: supabase functions deploy ${functionName}, ` +
+    '(3) Im Dashboard unter Edge Functions sichtbar, (4) Du bist angemeldet.'
+  )
+}
+
+function errorValueToString(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (value instanceof Error) return value.message
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    if (typeof record.message === 'string') return record.message
+    if (typeof record.error === 'string') return record.error
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return 'Unbekannter Fehler'
+    }
+  }
+  return String(value)
+}
+
 export function formatPipelineError(
   payload: PipelineErrorPayload | null | undefined,
   fallback?: string,
+  functionName?: string,
 ): string {
-  const raw = payload?.error ?? payload?.message ?? fallback ?? 'Unbekannter Fehler'
+  const raw =
+    errorValueToString(payload?.error) ||
+    errorValueToString(payload?.message) ||
+    fallback ||
+    'Unbekannter Fehler'
   const step = (payload?.step ?? 'unknown') as PipelineStep
   const label = STEP_LABELS[step] ?? step
 
   if (payload?.step && payload?.error) {
-    let msg = `${label}: ${payload.error}`
+    let msg = `${label}: ${errorValueToString(payload.error)}`
 
     const details = payload.details
     if (details && import.meta.env.DEV) {
@@ -66,11 +106,7 @@ export function formatPipelineError(
     raw.includes('Failed to fetch') ||
     raw.includes('Failed to send a request')
   ) {
-    return (
-      'Die Edge Function „generate-video“ ist nicht erreichbar (Netzwerk/CORS). ' +
-      'Bitte deployen: supabase functions deploy generate-video — und ' +
-      'VITE_SUPABASE_URL prüfen.'
-    )
+    return formatEdgeFunctionNetworkError(functionName ?? 'edge-function')
   }
 
   return raw

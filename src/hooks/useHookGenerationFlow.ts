@@ -3,6 +3,11 @@ import {
   generateHooksWithCredits,
   isAiGenerationError,
 } from '@/lib/ai/hook-generator'
+import {
+  coerceErrorMessage,
+  normalizeGeneratedHooksRow,
+  normalizeHooksList,
+} from '@/lib/ai/parse-hooks-response'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
 import type {
   GeneratedHooksRow,
@@ -50,8 +55,8 @@ export function useHookGenerationFlow() {
 
         if (requestId !== requestIdRef.current) return null
 
-        setHooks(result.hooks)
-        setGeneration(result.generation)
+        setHooks(normalizeHooksList(result.hooks))
+        setGeneration(normalizeGeneratedHooksRow(result.generation))
         setStatus('success')
 
         if (!options?.skipCreditCharge && !unlimited) {
@@ -62,13 +67,14 @@ export function useHookGenerationFlow() {
       } catch (err) {
         if (requestId !== requestIdRef.current) return null
 
-        if (isAiGenerationError(err)) {
-          setError(err.message)
-          if (err.code === 'insufficient_credits') {
-            openUpgradeModal()
-          }
-        } else {
-          setError(err instanceof Error ? err.message : 'Generierung fehlgeschlagen.')
+        const message = isAiGenerationError(err)
+          ? coerceErrorMessage(err.message)
+          : coerceErrorMessage(err)
+
+        setError(message)
+
+        if (isAiGenerationError(err) && err.code === 'insufficient_credits') {
+          openUpgradeModal()
         }
 
         setStatus('error')
@@ -79,8 +85,9 @@ export function useHookGenerationFlow() {
   )
 
   const loadFromHistory = useCallback((row: GeneratedHooksRow) => {
-    setHooks(row.generated_hooks_json ?? [])
-    setGeneration(row)
+    const normalized = normalizeGeneratedHooksRow(row)
+    setHooks(normalized.generated_hooks_json)
+    setGeneration(normalized)
     setStatus('success')
     setError(null)
   }, [])

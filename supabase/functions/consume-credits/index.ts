@@ -12,14 +12,7 @@ import {
 } from "../_shared/credits.ts";
 import { ensureProfile } from "../_shared/usage.ts";
 import type { UsageActionId } from "../_shared/plans.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
-
-const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+import { corsHeadersFor, jsonHeadersFor } from "../_shared/cors.ts";
 
 type ConsumeAction = "check" | "consume";
 
@@ -33,6 +26,17 @@ const VALID_FEATURES = new Set<string>([
   "voiceover",
   "captions",
 ]);
+
+function jsonResponse(
+  req: Request,
+  body: unknown,
+  status = 200,
+): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: jsonHeadersFor(req),
+  });
+}
 
 function readGenerationMeta(
   body: Record<string, unknown>,
@@ -70,16 +74,13 @@ function readGenerationMeta(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeadersFor(req) });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
-        status: 401,
-        headers: jsonHeaders,
-      });
+      return jsonResponse(req, { error: "Nicht authentifiziert" }, 401);
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -101,20 +102,14 @@ serve(async (req) => {
     } = await supabaseAuth.auth.getUser(token);
 
     if (authError || !user?.id) {
-      return new Response(JSON.stringify({ error: "User nicht gefunden" }), {
-        status: 401,
-        headers: jsonHeaders,
-      });
+      return jsonResponse(req, { error: "User nicht gefunden" }, 401);
     }
 
     const body = await req.json().catch(() => ({}));
     const action = (body.action ?? "consume") as ConsumeAction;
 
     if (action !== "check" && action !== "consume") {
-      return new Response(JSON.stringify({ error: "Ungültige action" }), {
-        status: 400,
-        headers: jsonHeaders,
-      });
+      return jsonResponse(req, { error: "Ungültige action" }, 400);
     }
 
     const featureRaw = typeof body.feature === "string"
@@ -126,10 +121,7 @@ serve(async (req) => {
       : null;
 
     if (action === "consume" && !featureRaw) {
-      return new Response(JSON.stringify({ error: "feature ist erforderlich" }), {
-        status: 400,
-        headers: jsonHeaders,
-      });
+      return jsonResponse(req, { error: "feature ist erforderlich" }, 400);
     }
 
     const feature = featureRaw ?? "generation";
@@ -143,18 +135,15 @@ serve(async (req) => {
     const profile = await ensureProfile(supabaseAdmin, user.id, user.email);
 
     if (profile.is_banned) {
-      return new Response(
-        JSON.stringify({
-          allowed: false,
-          unlimited: false,
-          used: profile.monthly_usage_count ?? 0,
-          remaining: profile.credit_balance ?? 0,
-          limit: null,
-          usageResetDate: profile.usage_reset_date ?? null,
-          error: "Account gesperrt",
-        }),
-        { status: 403, headers: jsonHeaders },
-      );
+      return jsonResponse(req, {
+        allowed: false,
+        unlimited: false,
+        used: profile.monthly_usage_count ?? 0,
+        remaining: profile.credit_balance ?? 0,
+        limit: null,
+        usageResetDate: profile.usage_reset_date ?? null,
+        error: "Account gesperrt",
+      }, 403);
     }
 
     const explicitCost = typeof body.cost === "number" ? body.cost : undefined;
@@ -194,18 +183,12 @@ serve(async (req) => {
       console.log("[consume-credits] analytics", recorded.id, normalizedFeature);
     }
 
-    const status = result.allowed ? 200 : 402;
+    const status = action === "check" ? 200 : (result.allowed ? 200 : 402);
 
-    return new Response(JSON.stringify(result), {
-      status: action === "check" ? 200 : status,
-      headers: jsonHeaders,
-    });
+    return jsonResponse(req, result, status);
   } catch (err) {
     console.error("[consume-credits] FEHLER:", err);
     const message = err instanceof Error ? err.message : String(err);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: jsonHeaders,
-    });
+    return jsonResponse(req, { error: message }, 500);
   }
 });
