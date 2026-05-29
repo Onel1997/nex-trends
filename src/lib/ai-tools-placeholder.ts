@@ -12,6 +12,8 @@ export {
   analyzeLandingPageContent,
 } from '@/lib/landing-page-analyzer'
 
+import type { AdCopyPlatform, AdCopyTone, AdCopyVariant } from '@/types/ad-copy-generation'
+
 function delay(ms = 800): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -21,34 +23,53 @@ function extractTopic(input: string): string {
   return trimmed.length > 48 ? `${trimmed.slice(0, 45)}…` : trimmed || 'dein Produkt'
 }
 
-export async function generateAdCopyPlaceholder(briefing: string): Promise<string> {
+export async function generateAdCopyVariantsPlaceholder(
+  briefing: string,
+  tone: AdCopyTone = 'aggressive',
+  platform: AdCopyPlatform = 'Meta Ads',
+): Promise<AdCopyVariant[]> {
   await delay()
   const topic = extractTopic(briefing)
+  const toneHint = tone === 'luxury' ? 'Premium' : tone === 'ugc' ? 'Authentisch' : 'Direkt'
 
-  return `━━ AI AD COPY · ${topic.toUpperCase()} ━━
+  return [
+    {
+      headline: `${topic} — endlich ohne Bullshit-Marketing.`,
+      primaryText: `${toneHint} Ad Copy für ${platform}: Zeige deiner Zielgruppe in 3 Sekunden, warum ${topic} jetzt relevant ist. Social Proof + klare Value Prop.`,
+      cta: 'Jetzt kostenlos testen',
+    },
+    {
+      headline: `Die ${topic}-Methode, die Creators testen.`,
+      primaryText: `POV: Du entdeckst ${topic} zum ersten Mal. 3 schnelle Wins, die sofort umsetzbar sind — ohne teures Setup. Perfekt für ${platform}.`,
+      cta: 'Mehr erfahren',
+    },
+    {
+      headline: `Warum 80 % bei ${topic} Geld verbrennen.`,
+      primaryText: `Die Top 1 % machen es anders: Fokus auf Ergebnis statt Hype. ${toneHint} Messaging, das konvertiert — optimiert für Paid Social.`,
+      cta: 'Strategie sichern',
+    },
+    {
+      headline: `Stopp — ${topic} ohne diese 3 Fehler.`,
+      primaryText: `Die häufigsten Paid-Ad-Fehler bei ${topic} — und wie du sie in 24h fixst. Mobile-first, scroll-stoppend, conversion-stark.`,
+      cta: 'Checkliste holen',
+    },
+    {
+      headline: `${topic}: Von 0 auf Ergebnis in 14 Tagen.`,
+      primaryText: `Authentisch, mobile-first, kein Corporate-Speak. UGC-Look mit Text-Overlay — ideal für ${platform} und schnelle Tests.`,
+      cta: 'Jetzt starten',
+    },
+  ]
+}
 
-▸ HEADLINE 1
-„${topic} — endlich ohne Bullshit-Marketing."
-
-▸ HEADLINE 2
-„Die ${topic}-Methode, die Creators gerade testen (und nicht mehr loslassen)."
-
-▸ HEADLINE 3
-„Warum 80 % bei ${topic} Geld verbrennen — und was die Top 1 % anders machen."
-
-▸ PRIMARY CTA
-Jetzt kostenlos testen → Link in Bio
-
-▸ SECONDARY CTA
-Speichern & später umsetzen
-
-▸ SHORT-FORM BODY (TikTok/Reels)
-Hook: „Stopp — wenn du ${topic} machst, musst du das sehen."
-Body: 3 schnelle Wins + Social Proof
-CTA: „Kommentiere ‚GO' für die Checkliste."
-
-▸ STORY ANGLE
-Authentisch, mobile-first, kein Corporate-Speak — UGC-Look mit Text-Overlay.`
+/** @deprecated Use generateAdCopyVariantsPlaceholder — kept for legacy AiGeneratorTool */
+export async function generateAdCopyPlaceholder(briefing: string): Promise<string> {
+  const variants = await generateAdCopyVariantsPlaceholder(briefing)
+  return variants
+    .map(
+      (v, i) =>
+        `▸ VARIANTE ${i + 1}\nHeadline: ${v.headline}\n\n${v.primaryText}\n\nCTA: ${v.cta}`,
+    )
+    .join('\n\n')
 }
 
 export async function generateHooksPlaceholder(briefing: string): Promise<string> {

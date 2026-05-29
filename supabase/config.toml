@@ -472,3 +472,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/hook-generator/deno.json"
 entrypoint = "./functions/hook-generator/index.ts"
+
+[functions.ad-copy-generator]
+enabled = true
+verify_jwt = true
+import_map = "./functions/ad-copy-generator/deno.json"
+entrypoint = "./functions/ad-copy-generator/index.ts"

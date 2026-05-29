@@ -472,6 +472,121 @@ body {
   box-shadow: 0 0 0 1px rgb(16 185 129 / 0.28);
 }
 
+/* ── Ad Copy Generator feed cards ── */
+
+.ad-copy-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+@media (min-width: 640px) {
+  .ad-copy-feed {
+    gap: 1.25rem;
+  }
+}
+
+.ad-copy-card {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-width: 0;
+  border-radius: 1.5rem;
+  border: 1px solid rgb(63 63 70 / 0.42);
+  background: linear-gradient(
+    165deg,
+    rgb(9 9 11 / 0.96) 0%,
+    rgb(15 15 18 / 0.88) 48%,
+    rgb(9 9 11 / 0.94) 100%
+  );
+  box-shadow:
+    0 1px 0 0 rgb(255 255 255 / 0.025) inset,
+    0 12px 40px -28px rgb(0 0 0 / 0.65);
+  transition:
+    transform 0.32s var(--ease-out-expo),
+    border-color 0.32s var(--ease-out-smooth),
+    box-shadow 0.32s var(--ease-out-smooth),
+    opacity 0.24s var(--ease-out-smooth);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ad-copy-card:hover {
+    transform: translate3d(0, -1px, 0);
+    border-color: rgb(139 92 246 / 0.28);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.035) inset,
+      0 16px 48px -24px rgb(139 92 246 / 0.22),
+      0 8px 24px -16px rgb(0 0 0 / 0.55);
+  }
+}
+
+.ad-copy-card--saved {
+  border-color: rgb(245 158 11 / 0.2);
+}
+
+.ad-copy-card--removing {
+  transform: scale(0.985);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ad-copy-card__glow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  opacity: 0.55;
+}
+
+.ad-copy-card__glow::before {
+  content: "";
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 70%;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgb(139 92 246 / 0.14) 0%,
+    transparent 68%
+  );
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ad-copy-card:hover .ad-copy-card__glow::before {
+    background: radial-gradient(
+      ellipse at 50% 0%,
+      rgb(139 92 246 / 0.22) 0%,
+      transparent 72%
+    );
+  }
+}
+
+.ad-copy-stagger-item {
+  animation: ad-copy-stagger-in 0.5s var(--ease-out-expo) both;
+}
+
+@keyframes ad-copy-stagger-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.ad-copy-skeleton-card {
+  border-radius: 1.5rem;
+  border: 1px solid rgb(63 63 70 / 0.35);
+  background: rgb(9 9 11 / 0.72);
+  overflow: hidden;
+}
+
 .nex-tool-surface {
   width: 100%;
   max-width: 100%;
@@ -3354,6 +3469,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hook-stagger-item,
+  .ad-copy-stagger-item,
   .animate-save-glow,
   .animate-bookmark-pop,
   .nex-os-polish .dashboard-os__content > * {
