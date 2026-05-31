@@ -5,6 +5,7 @@ import {
   LandingAuditResults,
 } from '@/components/landing-analyzer'
 import { AiToolLayout } from '@/components/tools/AiToolLayout'
+import { ProtectedTool } from '@/components/subscription/ProtectedTool'
 import { UsageLimitWarning } from '@/components/subscription/UsageLimitWarning'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Input'
@@ -21,8 +22,8 @@ FAQ · Pricing from €29/mo`
 
 export function LandingPageAnalyzerPage() {
   const {
-    hasProAccess,
     isUsageLimitReached,
+    userPlan,
     requireCredits,
     consumeCreditAfterSuccess,
   } = useUsageLimit()
@@ -57,60 +58,66 @@ export function LandingPageAnalyzerPage() {
 
   const showResults = result && !isAnalyzing
   const showLoading = isAnalyzing
-  const showEmpty = !showResults && !showLoading && !(isUsageLimitReached && !hasProAccess)
+  const showEmpty = !showResults && !showLoading && !(isUsageLimitReached && userPlan === 'free')
 
   return (
-    <AiToolLayout
+    <ProtectedTool
+      toolId="analyzer"
       title="Landing Page Analyzer"
-      description="Premium AI CRO audit — context-aware scores, strengths, and prioritized quick wins from your URL or page copy."
-      className="lp-analyzer-page"
+      description="Premium KI-CRO-Audit mit kontextbezogenen Scores, Stärken und priorisierten Quick Wins — ab Pro Creator."
     >
-      <div className="glass-card lp-analyzer-input p-5 sm:p-7">
-        <label
-          htmlFor="lp-analyzer-input"
-          className="mb-2.5 block text-xs font-semibold uppercase tracking-widest text-zinc-600"
-        >
-          URL or page content
-        </label>
-        <Textarea
-          id="lp-analyzer-input"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          rows={4}
-          placeholder="https://your-site.com or paste your hero headline, CTA, and key sections…"
-          disabled={isAnalyzing}
-        />
-        <Button
-          variant="pro"
-          size="lg"
-          fullWidth
-          loading={isAnalyzing}
-          disabled={isAnalyzing || !input.trim()}
-          onClick={() => void handleAnalyze()}
-          className="mt-5 min-h-12"
-        >
-          <SparklesIcon className="size-4" aria-hidden />
-          {isAnalyzing ? 'Analyzing…' : 'Run CRO audit · 1 credit'}
-        </Button>
-      </div>
-
-      <section className="lp-analyzer-output mt-6 sm:mt-8" aria-live="polite">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-600">
-          Audit results
-        </p>
-
-        <div className="lp-analyzer-output__frame min-h-[22rem] sm:min-h-[24rem]">
-          {isUsageLimitReached && !hasProAccess ? (
-            <UsageLimitWarning />
-          ) : showLoading ? (
-            <LandingAnalyzerLoading active={isAnalyzing} />
-          ) : showResults ? (
-            <LandingAuditResults result={result} />
-          ) : showEmpty ? (
-            <LandingAnalyzerEmptyState onUseExample={handleUseExample} />
-          ) : null}
+      <AiToolLayout
+        title="Landing Page Analyzer"
+        description="Premium KI-CRO-Audit — kontextbezogene Scores, Stärken und priorisierte Quick Wins aus URL oder Seiteninhalt."
+        className="lp-analyzer-page"
+      >
+        <div className="glass-card lp-analyzer-input p-5 sm:p-7">
+          <label
+            htmlFor="lp-analyzer-input"
+            className="mb-2.5 block text-xs font-semibold uppercase tracking-widest text-zinc-600"
+          >
+            URL oder Seiteninhalt
+          </label>
+          <Textarea
+            id="lp-analyzer-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            rows={4}
+            placeholder="https://deine-seite.de oder Hero-Headline, CTA und wichtige Abschnitte einfügen …"
+            disabled={isAnalyzing}
+          />
+          <Button
+            variant="pro"
+            size="lg"
+            fullWidth
+            loading={isAnalyzing}
+            disabled={isAnalyzing || !input.trim()}
+            onClick={() => void handleAnalyze()}
+            className="mt-5 min-h-12"
+          >
+            <SparklesIcon className="size-4" aria-hidden />
+            {isAnalyzing ? 'Analysiert …' : 'CRO-Audit starten · 1 Credit'}
+          </Button>
         </div>
-      </section>
-    </AiToolLayout>
+
+        <section className="lp-analyzer-output mt-6 sm:mt-8" aria-live="polite">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-600">
+            Audit-Ergebnisse
+          </p>
+
+          <div className="lp-analyzer-output__frame min-h-[22rem] sm:min-h-[24rem]">
+            {isUsageLimitReached && userPlan === 'free' ? (
+              <UsageLimitWarning />
+            ) : showLoading ? (
+              <LandingAnalyzerLoading active={isAnalyzing} />
+            ) : showResults ? (
+              <LandingAuditResults result={result} />
+            ) : showEmpty ? (
+              <LandingAnalyzerEmptyState onUseExample={handleUseExample} />
+            ) : null}
+          </div>
+        </section>
+      </AiToolLayout>
+    </ProtectedTool>
   )
 }

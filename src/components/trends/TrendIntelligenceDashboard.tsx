@@ -11,9 +11,9 @@ type TrendIntelligenceDashboardProps = {
 }
 
 const HORIZONTAL_SCROLL =
-  'ti-horizontal-scroll flex overflow-x-auto flex-nowrap gap-4 pb-2 snap-x snap-mandatory scrollbar-hide touch-pan-x scroll-smooth-mobile'
+  'ti-horizontal-scroll flex overflow-x-auto flex-nowrap gap-3 pb-2 snap-x snap-mandatory scrollbar-hide scroll-smooth-mobile'
 
-const HORIZONTAL_CARD = 'min-w-[260px] snap-start shrink-0'
+const HORIZONTAL_CARD = 'w-[min(78vw,17rem)] snap-center shrink-0'
 
 function MetricPill({
   label,

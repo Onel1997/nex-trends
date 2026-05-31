@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useSubscription } from '@/hooks/useSubscription'
+import { hasFeatureAccess as checkPlanFeature, type FeatureId } from '@/lib/plans/feature-access'
 import type { UsageLimitResult } from '@/types/usage'
 
 type ConsumeActivity = {
@@ -13,11 +14,12 @@ type ConsumeActivity = {
   skip_analytics_log?: boolean
 }
 
-/** Convenience hook für Credit-Limits (Free: wöchentliche Aufladung, Pro: unlimited). */
+/** Convenience hook für Credit-Limits und Feature-Gates. */
 export function useUsageLimit() {
   const {
     usage,
     hasProAccess,
+    userPlan,
     isAdmin,
     isUsageLimitReached,
     isCreditsLow,
@@ -27,7 +29,11 @@ export function useUsageLimit() {
     openStripeCheckout,
   } = useSubscription()
 
-  /** Block new generations at 0 credits and show the Pro modal. */
+  const canUseFeature = useCallback(
+    (feature: FeatureId | string) => isAdmin || checkPlanFeature(userPlan, feature),
+    [isAdmin, userPlan],
+  )
+
   const requireCredits = useCallback((): boolean => {
     if (usage.unlimited) return true
     if (isUsageLimitReached) {
@@ -37,7 +43,6 @@ export function useUsageLimit() {
     return true
   }, [usage.unlimited, isUsageLimitReached, openUpgradeModal])
 
-  /** Deduct credit after success; Pro/Admin only logs analytics (no charge). */
   const consumeCreditAfterSuccess = useCallback(
     async (activity: ConsumeActivity): Promise<UsageLimitResult | null> => {
       return consumeUsage(activity)
@@ -48,9 +53,11 @@ export function useUsageLimit() {
   return {
     usage,
     hasProAccess,
+    userPlan,
     isAdmin,
     isUsageLimitReached,
     isCreditsLow,
+    canUseFeature,
     consumeUsage,
     requireCredits,
     consumeCreditAfterSuccess,

@@ -248,6 +248,20 @@ serve(async (req) => {
         return legacyIsPro(plan, p.subscription_status ?? null);
       }).length;
 
+      const planCounts: Record<string, number> = {
+        free: 0,
+        creator: 0,
+        audio: 0,
+        pro_creator: 0,
+        studio: 0,
+        agency: 0,
+        founder: 0,
+      };
+      for (const p of profileRows) {
+        const plan = normalizePlanId(p.plan ?? "free");
+        planCounts[plan] = (planCounts[plan] ?? 0) + 1;
+      }
+
       const gensResult = await safeAiGenerationsInPeriod(
         supabaseAdmin,
         period,
@@ -272,6 +286,7 @@ serve(async (req) => {
         activeUsers: periodActiveUsers,
         totalGenerations: Math.max(totalGenerations, eventCountResult.data),
         proUsers,
+        planCounts,
         creditsConsumed,
         revenuePlaceholder: "€ — Stripe Sync",
         period,

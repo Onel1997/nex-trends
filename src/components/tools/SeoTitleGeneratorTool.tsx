@@ -54,7 +54,7 @@ const JUST_SAVED_MS = 900
 
 export function SeoTitleGeneratorTool() {
   const { showToast } = useToast()
-  const { hasProAccess, isUsageLimitReached, unlimited } = useUsageLimit()
+  const { isUsageLimitReached, unlimited, userPlan } = useUsageLimit()
   const {
     variants,
     generation,
@@ -363,7 +363,7 @@ export function SeoTitleGeneratorTool() {
 
         {activeTab === 'results' && (
           <div key="results" className="animate-fade-in">
-            {isUsageLimitReached && !hasProAccess && !unlimited ? (
+            {isUsageLimitReached && userPlan === 'free' && !unlimited ? (
               <UsageLimitWarning />
             ) : error ? (
               <SeoTitleErrorState

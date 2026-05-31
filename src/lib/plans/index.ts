@@ -4,6 +4,7 @@ export {
   PLAN_MONTHLY_CREDITS,
   PLAN_RANK,
   PAID_PLANS,
+  PLANS,
   UNLIMITED_CREDIT_PLANS,
   isUnlimitedPlan,
   legacyIsPro,
@@ -20,9 +21,17 @@ export {
   canAccessRoute,
   getRouteUpgradePlan,
   hasFeatureAccess,
-  hasPlanRank,
+  hasPlanFeature,
+  resolveFeatureId,
   type FeatureFlag,
 } from './access'
+
+export {
+  FEATURE_ACCESS,
+  FEATURE_ALIASES,
+  getFeatureUpgradePlan,
+  type FeatureId,
+} from './feature-access'
 
 export {
   ADMIN_MANAGEABLE_PLANS,

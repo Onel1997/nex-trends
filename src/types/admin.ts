@@ -20,6 +20,7 @@ export type AdminOverview = {
   activeUsers: number
   totalGenerations: number
   proUsers: number
+  planCounts?: Record<string, number>
   creditsConsumed?: number
   revenuePlaceholder: string
   period?: AnalyticsPeriod

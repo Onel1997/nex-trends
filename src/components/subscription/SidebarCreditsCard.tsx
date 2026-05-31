@@ -1,5 +1,6 @@
 import { CrownIcon } from '@/components/ui/icons'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
+import { PLAN_LABELS } from '@/lib/plans'
 import { MAX_FREE_CREDITS } from '@/lib/usage'
 import { cn } from '@/lib'
 
@@ -9,12 +10,17 @@ type SidebarCreditsCardProps = {
 }
 
 export function SidebarCreditsCard({ onUpgrade, className }: SidebarCreditsCardProps) {
-  const { usage, hasProAccess, isAdmin } = useUsageLimit()
+  const { usage, userPlan, isAdmin } = useUsageLimit()
 
-  const planLabel = isAdmin ? 'Admin' : usage.unlimited ? 'Unlimited' : hasProAccess ? 'Pro' : 'Free'
+  const planLabel = isAdmin
+    ? 'Admin'
+    : usage.unlimited
+      ? 'Unbegrenzt'
+      : (PLAN_LABELS[userPlan] ?? 'Free')
   const unlimited = usage.unlimited
   const limit = usage.limit ?? MAX_FREE_CREDITS
   const remaining = unlimited ? '∞' : String(usage.remaining ?? 0)
+  const showUpgrade = userPlan === 'free' && onUpgrade
 
   return (
     <div
@@ -46,7 +52,7 @@ export function SidebarCreditsCard({ onUpgrade, className }: SidebarCreditsCardP
             Plan ·{' '}
             <span
               className={cn(
-                planLabel === 'Pro' || planLabel === 'Admin'
+                userPlan !== 'free' || isAdmin
                   ? 'text-violet-300'
                   : 'text-zinc-400',
               )}
@@ -56,7 +62,7 @@ export function SidebarCreditsCard({ onUpgrade, className }: SidebarCreditsCardP
           </p>
         </div>
 
-        {!hasProAccess && onUpgrade ? (
+        {showUpgrade ? (
           <button
             type="button"
             onClick={() => void onUpgrade()}
@@ -69,7 +75,7 @@ export function SidebarCreditsCard({ onUpgrade, className }: SidebarCreditsCardP
           >
             <span className="flex items-center gap-1">
               <CrownIcon className="size-3" aria-hidden />
-              Pro
+              Upgrade
             </span>
           </button>
         ) : (

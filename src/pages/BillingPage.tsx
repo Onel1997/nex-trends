@@ -13,12 +13,14 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { fetchActiveSubscription, fetchUsageLogs } from '@/lib/billing'
 import { supabase } from '@/lib/supabase'
 import { PLAN_LABELS } from '@/lib/plans'
+import { hasPaidSubscription } from '@/lib/subscription'
 import { navigateToTool } from '@/lib/navigation'
 import { startStripePortalFlow } from '@/lib/stripe'
 import type { SubscriptionRow, UsageLogRow } from '@/types/billing'
 
 export function BillingPage() {
-  const { userPlan, isAdmin, openStripeCheckout, hasProAccess } = useSubscription()
+  const { userPlan, isAdmin, openStripeCheckout, profile, session } = useSubscription()
+  const paid = hasPaidSubscription(profile, session?.user?.email)
   const { usage, remainingLabel, resetDateLabel } = useDashboardData()
   const [logs, setLogs] = useState<UsageLogRow[]>([])
   const [subscription, setSubscription] = useState<SubscriptionRow | null>(null)
@@ -48,13 +50,13 @@ export function BillingPage() {
     <div className="dashboard-os nex-os-polish relative mx-auto w-full min-w-0 max-w-3xl">
       <header className="mb-4">
         <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-violet-400">
-          Billing
+          Abrechnung
         </p>
         <h1 className="mt-1 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-          Subscription & usage
+          Abo & Nutzung
         </h1>
         <p className="dashboard-os-muted mt-1 text-[11px] sm:text-xs">
-          Manage your plan, credits, and recent AI activity.
+          Verwalte deinen Plan, Credits und letzte KI-Aktivität.
         </p>
       </header>
 
@@ -67,15 +69,15 @@ export function BillingPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
-                Current plan
+                Aktueller Plan
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <PlanBadge plan={userPlan} />
-                {hasProAccess && !isAdmin && (
-                  <span className="text-[10px] text-emerald-400">Active</span>
+                {paid && !isAdmin && (
+                  <span className="text-[10px] text-emerald-400">Aktiv</span>
                 )}
               </div>
-              <p className="mt-2 text-sm text-zinc-300">{PLAN_LABELS[userPlan]} workspace</p>
+              <p className="mt-2 text-sm text-zinc-300">{PLAN_LABELS[userPlan]} Workspace</p>
             </div>
             <div className="flex shrink-0 items-center gap-2 rounded-lg border border-violet-500/20 bg-violet-500/10 px-3 py-2">
               <CreditIcon className="size-5 text-violet-400" aria-hidden />
@@ -87,12 +89,12 @@ export function BillingPage() {
           </div>
 
           {resetDateLabel && !usage.unlimited && (
-            <p className="dashboard-os-muted mt-3 text-[10px]">Next refill · {resetDateLabel}</p>
+            <p className="dashboard-os-muted mt-3 text-[10px]">Nächste Aufladung · {resetDateLabel}</p>
           )}
 
           {subscription?.current_period_end && (
             <p className="dashboard-os-muted mt-1 text-[10px]">
-              Renews{' '}
+              Verlängert am{' '}
               {new Date(subscription.current_period_end).toLocaleDateString('de-DE', {
                 day: '2-digit',
                 month: 'long',
@@ -102,23 +104,23 @@ export function BillingPage() {
           )}
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            {!isAdmin && !hasProAccess && (
+            {!isAdmin && !paid && (
               <Button
                 variant="pro"
                 className="btn-glow-pro"
                 onClick={() => void openStripeCheckout({ planId: 'pro_creator' })}
               >
                 <CrownIcon className="size-4" aria-hidden />
-                Upgrade plan
+                Plan upgraden
               </Button>
             )}
-            {hasProAccess && !isAdmin && (
+            {paid && !isAdmin && (
               <Button variant="secondary" onClick={() => void startStripePortalFlow()}>
-                Manage in Stripe
+                In Stripe verwalten
               </Button>
             )}
             <Button variant="ghost" onClick={() => navigateToTool('pricing')}>
-              View all plans
+              Alle Pläne ansehen
             </Button>
           </div>
         </section>
@@ -126,9 +128,9 @@ export function BillingPage() {
         <RecentUsageActivity limit={15} />
 
         <section>
-          <h2 className="mb-2 text-sm font-semibold text-zinc-200">Full activity log</h2>
+          <h2 className="mb-2 text-sm font-semibold text-zinc-200">Vollständiges Aktivitätsprotokoll</h2>
           {loading ? (
-            <p className="text-[11px] text-zinc-500">Loading activity…</p>
+            <p className="text-[11px] text-zinc-500">Aktivität wird geladen …</p>
           ) : (
             <BillingActivityList logs={logs} />
           )}

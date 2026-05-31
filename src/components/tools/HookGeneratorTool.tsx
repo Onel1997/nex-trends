@@ -56,7 +56,7 @@ const JUST_SAVED_MS = 900
 
 export function HookGeneratorTool() {
   const { showToast } = useToast()
-  const { hasProAccess, isUsageLimitReached, unlimited } = useUsageLimit()
+  const { isUsageLimitReached, unlimited, userPlan } = useUsageLimit()
   const {
     hooks,
     generation,
@@ -437,7 +437,7 @@ export function HookGeneratorTool() {
 
         {activeTab === 'results' && (
           <div key="results" className="animate-fade-in">
-            {isUsageLimitReached && !hasProAccess && !unlimited ? (
+            {isUsageLimitReached && userPlan === 'free' && !unlimited ? (
               <UsageLimitWarning />
             ) : error ? (
               <HookErrorState

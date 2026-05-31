@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { CrownIcon, LockIcon } from '@/components/ui/icons'
 import { usePlanAccess } from '@/hooks/usePlanAccess'
-import { PLAN_LABELS } from '@/lib/plans'
+import { getRouteUpgradePlan, PLAN_LABELS } from '@/lib/plans'
 import type { DashboardRouteId } from '@/lib/routes'
 import { navigateToTool } from '@/lib/navigation'
 import { cn } from '@/lib'
@@ -18,7 +18,7 @@ type ToolAccessGateProps = {
 export function ToolAccessGate({
   routeId,
   children,
-  title = 'Premium feature',
+  title = 'Premium-Feature',
   description,
   className,
 }: ToolAccessGateProps) {
@@ -28,9 +28,8 @@ export function ToolAccessGate({
     return <>{children}</>
   }
 
-  const requiredPlan = PLAN_LABELS[
-    routeId === 'ai-studio' ? 'pro_creator' : 'creator'
-  ]
+  const requiredPlanId = getRouteUpgradePlan(routeId)
+  const requiredPlan = PLAN_LABELS[requiredPlanId]
 
   return (
     <div
@@ -45,10 +44,10 @@ export function ToolAccessGate({
       <h2 className="text-lg font-semibold tracking-tight text-white">{title}</h2>
       <p className="dashboard-os-muted mt-2 max-w-md text-sm">
         {description ??
-          `Your ${planLabel} plan does not include this module. Upgrade to ${requiredPlan} to unlock.`}
+          `Dein ${planLabel}-Plan enthält dieses Modul nicht. Upgrade auf ${requiredPlan}, um es freizuschalten.`}
       </p>
       <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-        Current plan · {planLabel}
+        Aktueller Plan · {planLabel}
       </p>
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <Button
@@ -57,10 +56,10 @@ export function ToolAccessGate({
           onClick={() => requestUpgrade(routeId)}
         >
           <CrownIcon className="size-4" aria-hidden />
-          Upgrade to {requiredPlan}
+          Upgrade auf {requiredPlan}
         </Button>
         <Button variant="secondary" onClick={() => navigateToTool('pricing')}>
-          Compare plans
+          Pläne vergleichen
         </Button>
       </div>
     </div>

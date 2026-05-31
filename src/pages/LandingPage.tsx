@@ -4,20 +4,22 @@ import { LandingHeader } from '@/components/landing/LandingHeader'
 import { LandingHero } from '@/components/landing/LandingHero'
 import { LandingLogin } from '@/components/landing/LandingLogin'
 import { LandingPricing } from '@/components/landing/LandingPricing'
-import { LandingShowcase } from '@/components/landing/LandingShowcase'
 import { LandingSocialProof } from '@/components/landing/LandingSocialProof'
+import { LandingStickyCta } from '@/components/landing/LandingStickyCta'
+import { LandingWorkflow } from '@/components/landing/LandingWorkflow'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-svh bg-black text-zinc-100">
+    <div className="landing-page min-h-svh overflow-x-hidden bg-[#030305] text-zinc-100">
       <LandingHeader />
-      <main>
+      <main className="pb-[4.5rem] sm:pb-0">
         <LandingHero />
-        <LandingShowcase />
+        <LandingWorkflow />
         <LandingFeatures />
         <LandingSocialProof />
         <LandingPricing />
         <LandingLogin />
+        <LandingStickyCta />
       </main>
       <LandingFooter />
     </div>

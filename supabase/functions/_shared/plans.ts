@@ -133,11 +133,11 @@ export function canAccessRoute(plan: PlanId, routeId: string): boolean {
   const rank = PLAN_RANK[plan];
 
   if (routeId === "ai-studio") {
-    return rank >= PLAN_RANK.pro_creator;
+    return rank >= PLAN_RANK.studio;
   }
 
   if (routeId === "analyzer") {
-    return rank >= PLAN_RANK.creator;
+    return rank >= PLAN_RANK.pro_creator;
   }
 
   if (

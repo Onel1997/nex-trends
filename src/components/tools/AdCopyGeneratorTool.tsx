@@ -54,7 +54,7 @@ const JUST_SAVED_MS = 900
 
 export function AdCopyGeneratorTool() {
   const { showToast } = useToast()
-  const { hasProAccess, isUsageLimitReached, unlimited } = useUsageLimit()
+  const { isUsageLimitReached, unlimited, userPlan } = useUsageLimit()
   const {
     variants,
     generation,
@@ -325,7 +325,7 @@ export function AdCopyGeneratorTool() {
 
         {activeTab === 'results' && (
           <div key="results" className="animate-fade-in">
-            {isUsageLimitReached && !hasProAccess && !unlimited ? (
+            {isUsageLimitReached && userPlan === 'free' && !unlimited ? (
               <UsageLimitWarning />
             ) : error ? (
               <AdCopyErrorState

@@ -26,7 +26,7 @@ export function AiStudioPage() {
     <ProtectedTool
       toolId="ai-studio"
       title="AI Video Studio"
-      description="Generate viral AI shorts with voiceovers, captions, and premium templates — available on Pro Creator and above."
+      description="Generate viral AI shorts with voiceovers, captions, and premium templates — available on Studio and above."
     >
     <div className="studio-page mx-auto max-w-6xl space-y-8 px-1 pb-8 animate-fade-in sm:space-y-10 sm:px-0 sm:pb-10">
       <header className="relative space-y-3">

@@ -80,15 +80,15 @@ export function PricingCard({
     isCurrent || (plan.id === 'free' && currentPlanId !== 'free') || (isAdminCard && isAdmin)
 
   const ctaLabel = isCurrent
-    ? 'Current plan'
+    ? 'Aktueller Plan'
     : plan.id === 'free'
-      ? 'Included'
+      ? 'Enthalten'
       : plan.cta
 
   return (
     <article
       className={cn(
-        'pricing-card nex-card-interactive group relative flex flex-col rounded-[var(--dash-radius-lg)] border bg-zinc-950/70 p-4 backdrop-blur-xl sm:p-5',
+        'pricing-card nex-card-interactive group relative flex flex-col rounded-[var(--dash-radius-lg)] border bg-zinc-950/70 p-3.5 backdrop-blur-xl sm:p-5',
         styles.border,
         styles.glow,
         plan.featured &&

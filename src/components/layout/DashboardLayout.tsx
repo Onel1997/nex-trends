@@ -46,28 +46,28 @@ export function DashboardLayout({
     <div className="flex min-h-svh bg-zinc-950 text-zinc-100">
       <button
         type="button"
-        aria-label="Close menu"
+        aria-label="Menü schließen"
         onClick={() => setMobileOpen(false)}
         className={cn(
-          'mobile-drawer-backdrop fixed inset-0 z-40 bg-black/55 transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden',
+          'mobile-drawer-backdrop fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden',
           mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       />
 
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-[min(100%,17.5rem)]',
-          'transition-[transform,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
-          'lg:static lg:z-auto lg:w-[17.5rem] lg:translate-x-0 lg:transition-none',
+          'mobile-sidebar-drawer fixed inset-y-0 left-0 z-50 w-[82vw] max-w-[20rem]',
+          'transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform',
+          'lg:static lg:z-auto lg:w-[17.5rem] lg:max-w-none lg:translate-x-0 lg:transition-none',
           mobileOpen
-            ? 'translate-x-0 shadow-[4px_0_48px_-8px_rgba(0,0,0,0.65)]'
+            ? 'translate-x-0 shadow-[4px_0_40px_-8px_rgba(0,0,0,0.5)]'
             : '-translate-x-full',
         )}
       >
         <Sidebar
           activeTool={activeTool}
           onSelectTool={handleSelectTool}
-          className="h-full lg:shadow-none"
+          className="h-full min-h-0 lg:shadow-none"
         />
       </div>
 

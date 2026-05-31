@@ -42,8 +42,8 @@ export function AiGeneratorTool({
   toolActivityName,
 }: AiGeneratorToolProps) {
   const {
-    hasProAccess,
     isUsageLimitReached,
+    userPlan,
     requireCredits,
     consumeCreditAfterSuccess,
   } = useUsageLimit()
@@ -145,7 +145,7 @@ export function AiGeneratorTool({
           Ergebnis
         </p>
 
-        {isUsageLimitReached && !hasProAccess ? (
+        {isUsageLimitReached && userPlan === 'free' ? (
           <UsageLimitWarning />
         ) : busy ? (
           <div className="glass-card space-y-3 p-5">

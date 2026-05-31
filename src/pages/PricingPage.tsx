@@ -19,28 +19,28 @@ export function PricingPage() {
     handleSelectPlan,
     closeUpgradeModal,
     handleFeaturedUpgrade,
-    hasProAccess,
+    showUpgradeCta,
     isAdmin,
   } = usePricingActions()
 
   return (
-    <div className="dashboard-os pricing-os nex-os-polish relative mx-auto w-full min-w-0 max-w-6xl pb-20 lg:pb-0">
+    <div className="dashboard-os pricing-os nex-os-polish relative mx-auto w-full min-w-0 max-w-6xl pb-[4.5rem] sm:pb-20 lg:pb-0">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="pricing-glow pricing-glow--1" />
         <div className="pricing-glow pricing-glow--2" />
       </div>
 
-      <div className="dashboard-os__content relative flex flex-col gap-4 sm:gap-5">
+      <div className="dashboard-os__content relative flex flex-col gap-3 sm:gap-5">
         <header className="pricing-hero text-center sm:text-left">
           <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-violet-400">
-            NexTrends AI OS · Pricing
+            NexTrends AI OS · Preise
           </p>
           <h1 className="mt-1 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-            Creator economy plans
+            Creator-Pläne für jedes Wachstumsstadium
           </h1>
           <p className="dashboard-os-muted mx-auto mt-1 max-w-2xl text-[11px] leading-relaxed sm:mx-0 sm:text-xs">
-            From first viral trend to agency-scale delivery — pick the workspace that
-            matches your output. Upgrade anytime, cancel anytime.
+            Vom ersten viralen Trend bis zur Agentur-Skalierung — wähle den Workspace,
+            der zu deinem Output passt. Jederzeit upgraden, jederzeit kündigen.
           </p>
         </header>
 
@@ -48,7 +48,7 @@ export function PricingPage() {
           <PricingBillingToggle
             value={billingPeriod}
             onChange={setBillingPeriod}
-            className="py-1"
+            className="py-0.5"
           />
         </ScrollReveal>
 
@@ -63,8 +63,8 @@ export function PricingPage() {
 
         <ScrollReveal delay={140}>
           <DashboardSectionHeading
-            title="Compare features"
-            description="Everything included, plan by plan"
+            title="Features vergleichen"
+            description="Alles im Überblick — Plan für Plan"
           />
           <PricingComparisonTable highlightPlanId="pro-creator" />
         </ScrollReveal>
@@ -80,15 +80,16 @@ export function PricingPage() {
         <ScrollReveal delay={260}>
           <PricingCtaSection
             onUpgrade={handleFeaturedUpgrade}
-            hasProAccess={hasProAccess}
+            showUpgradeCta={showUpgradeCta}
             isAdmin={isAdmin}
           />
         </ScrollReveal>
       </div>
 
       <PricingStickyCta
-        visible={!isAdmin && !hasProAccess}
+        visible={showUpgradeCta}
         onUpgrade={handleFeaturedUpgrade}
+        billingPeriod={billingPeriod}
       />
 
       <PlanUpgradeModal

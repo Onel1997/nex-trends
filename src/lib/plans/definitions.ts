@@ -1,5 +1,14 @@
 /** Keep in sync with supabase/functions/_shared/plans.ts */
 
+export const PLANS = {
+  FREE: 'free',
+  CREATOR: 'creator',
+  PRO_CREATOR: 'pro_creator',
+  STUDIO: 'studio',
+  AGENCY: 'agency',
+  AUDIO: 'audio',
+} as const
+
 export type PlanId =
   | 'free'
   | 'creator'
@@ -55,7 +64,7 @@ export const PLAN_LABELS: Record<PlanId, string> = {
   pro_creator: 'Pro Creator',
   studio: 'Studio',
   agency: 'Agency',
-  founder: 'Founder Access',
+  founder: 'Founder',
 }
 
 export const PLAN_MONTHLY_CREDITS: Record<PlanId, number | null> = {

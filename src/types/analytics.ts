@@ -31,6 +31,7 @@ export type AdminAnalyticsDashboard = {
   period: AnalyticsPeriod
   totalUsers?: number
   proUsers?: number
+  planCounts?: Record<string, number>
   revenuePlaceholder?: string
   totalGenerations: number
   creditsConsumed: number

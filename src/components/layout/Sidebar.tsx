@@ -115,7 +115,7 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
 
   return (
     <aside
-      className={cn('sidebar-panel flex h-full w-full flex-col', className)}
+      className={cn('sidebar-panel flex h-full min-h-0 w-full flex-col overflow-hidden', className)}
     >
       {/* Brand */}
       <div className="shrink-0 px-4 pb-2 pt-5">
@@ -199,7 +199,7 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="shrink-0 space-y-3 border-t border-white/[0.04] px-4 py-4">
+      <div className="shrink-0 space-y-3 border-t border-white/[0.04] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <SidebarCreditsCard onUpgrade={() => navigateToTool('pricing')} />
 
         {isAdmin && (

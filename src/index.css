@@ -4476,11 +4476,26 @@ body {
 }
 
 .pricing-sticky-cta {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
   box-shadow:
     0 -8px 32px -12px rgb(0 0 0 / 0.65),
-    0 0 40px -16px rgb(139 92 246 / 0.2);
+    0 0 40px -16px rgb(217 70 239 / 0.18);
   animation: pricing-sticky-in 0.45s var(--ease-out-expo) both;
+}
+
+.pricing-cards-carousel {
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pricing-cards-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.pricing-card--mobile {
+  scroll-snap-align: center;
 }
 
 @keyframes pricing-sticky-in {
@@ -4788,7 +4803,7 @@ body {
     scroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    touch-action: pan-y;
+    touch-action: pan-x pan-y;
   }
 
   /* Glass utilities — higher opacity fill, lower blur (keeps glass feel) */
@@ -4831,9 +4846,9 @@ body {
   }
 
   .sidebar-panel {
-    background: linear-gradient(180deg, rgb(9 9 11 / 0.97) 0%, rgb(9 9 11 / 0.94) 100%);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
+    background: linear-gradient(180deg, rgb(9 9 11 / 0.96) 0%, rgb(12 12 16 / 0.94) 100%);
+    -webkit-backdrop-filter: blur(14px) saturate(1.08);
+    backdrop-filter: blur(14px) saturate(1.08);
   }
 
   /* Tailwind backdrop utilities used across components */
@@ -4858,8 +4873,12 @@ body {
   }
 
   .mobile-drawer-backdrop {
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+    backdrop-filter: blur(12px) saturate(1.1);
+  }
+
+  .mobile-sidebar-drawer .sidebar-panel {
+    border-right-color: rgb(255 255 255 / 0.06);
   }
 
   /* Sticky / fixed nav — solid base + light frost (Safari compositor friendly) */
@@ -5071,7 +5090,9 @@ html.nex-reduced-motion *::after {
 .ti-horizontal-scroll {
   overscroll-behavior-x: contain;
   touch-action: pan-x pan-y;
+  scroll-snap-type: x mandatory;
   scroll-padding-inline: 1rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ti-dashboard-scroll,
@@ -5315,3 +5336,110 @@ html.nex-reduced-motion *::after {
     transparent 70%
   );
 }
+
+/* ── Landing page — Premium Creator OS ── */
+
+.landing-page {
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing-hero__bg {
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgb(139 92 246 / 0.14), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 100% 20%, rgb(217 70 239 / 0.08), transparent 50%),
+    radial-gradient(ellipse 40% 30% at 0% 80%, rgb(99 102 241 / 0.06), transparent 50%);
+}
+
+.landing-fade-in {
+  animation: landing-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.landing-fade-in--1 { animation-delay: 0.08s; }
+.landing-fade-in--2 { animation-delay: 0.16s; }
+.landing-fade-in--3 { animation-delay: 0.24s; }
+.landing-fade-in--4 { animation-delay: 0.32s; }
+.landing-fade-in--5 { animation-delay: 0.4s; }
+
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.landing-hero-preview__frame {
+  animation: landing-preview-float 6s ease-in-out infinite;
+}
+
+@keyframes landing-preview-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -6px, 0); }
+}
+
+.landing-hero-pill {
+  animation: landing-pill-float 5s ease-in-out infinite;
+}
+
+@keyframes landing-pill-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -8px, 0); }
+}
+
+.landing-workflow-carousel,
+.landing-pricing-carousel,
+.landing-testimonials-carousel {
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 1rem;
+}
+
+.landing-workflow-carousel::-webkit-scrollbar,
+.landing-pricing-carousel::-webkit-scrollbar,
+.landing-testimonials-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.landing-sticky-band__shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgb(255 255 255 / 0.03) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: landing-shimmer 8s ease-in-out infinite;
+}
+
+@keyframes landing-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.landing-mobile-sticky-cta {
+  padding-bottom: max(0.625rem, env(safe-area-inset-bottom));
+  box-shadow:
+    0 -8px 32px -12px rgb(0 0 0 / 0.7),
+    0 0 40px -16px rgb(139 92 246 / 0.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-fade-in,
+  .landing-hero-preview__frame,
+  .landing-hero-pill,
+  .landing-sticky-band__shimmer {
+    animation: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .landing-mobile-sticky-cta {
+    display: none;
+  }
+}
+

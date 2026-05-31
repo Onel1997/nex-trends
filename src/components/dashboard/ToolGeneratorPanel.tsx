@@ -29,10 +29,10 @@ export function ToolGeneratorPanel({
   className,
 }: ToolGeneratorPanelProps) {
   const {
-    hasProAccess,
     isUsageLimitReached,
     isCreditsLow,
     usage,
+    userPlan,
     requireCredits,
     consumeCreditAfterSuccess,
   } = useUsageLimit()
@@ -103,7 +103,7 @@ export function ToolGeneratorPanel({
         </p>
       </header>
 
-      {!hasProAccess && isCreditsLow && (
+      {userPlan === 'free' && isCreditsLow && (
         <LowCreditBanner remaining={usage.remaining ?? 0} className="mb-5" />
       )}
 
@@ -141,7 +141,7 @@ export function ToolGeneratorPanel({
             KI-Ergebnis
           </p>
 
-          {isUsageLimitReached && !hasProAccess ? (
+          {isUsageLimitReached && userPlan === 'free' ? (
             <UsageLimitWarning />
           ) : isGenerating ? (
             <div className="space-y-3 rounded-xl border border-zinc-800/60 bg-zinc-950/60 p-5">

@@ -31,105 +31,113 @@ export const YEARLY_DISCOUNT_PERCENT = 20
 export const PRICING_PLANS: readonly PricingPlan[] = [
   {
     id: 'free',
-    name: 'Free',
-    tagline: 'Test the creator OS — perfect for side projects.',
+    name: 'Starter Creator',
+    tagline: 'Teste das NexTrends Creator OS.',
     monthlyPrice: 0,
     yearlyPrice: 0,
     features: [
-      'Limited trend searches',
-      '5 AI generations / month',
-      'Basic creator tools',
-      'Watermarked exports',
+      'Begrenzte Trend Intelligence',
+      '5 KI-Generierungen / Monat',
+      'Basis-Hooks',
+      'Exporte mit Wasserzeichen',
     ],
     accent: 'zinc',
-    cta: 'Current plan',
+    cta: 'Enthalten',
   },
   {
     id: 'creator',
     name: 'Creator',
-    tagline: 'Ship content faster with HD exports and saved trends.',
+    tagline: 'Perfekt für wachsende Creator und Side Projects.',
     monthlyPrice: 19,
     yearlyPrice: 15,
     features: [
-      'More AI generations',
-      'HD exports — no watermark',
-      'Saved trends library',
-      'Hook generator',
-      'SEO title tools',
+      'Trend Intelligence',
+      'Hook Generator',
+      'SEO Generator',
+      'KI Ad Copy Generator',
+      'Gespeicherte Trends',
+      'HD-Exporte',
+      'Mehr monatliche Credits',
     ],
     accent: 'violet',
-    cta: 'Start Creator',
+    cta: 'Creator starten',
   },
   {
     id: 'pro-creator',
     name: 'Pro Creator',
-    tagline: 'Unlimited intelligence + full AI Video Studio.',
+    tagline: 'Die komplette Creator Growth Suite.',
     monthlyPrice: 49,
     yearlyPrice: 39,
     features: [
-      'Unlimited trend intelligence',
-      'AI Video Studio access',
-      'Voiceovers & captions',
-      'Premium templates',
-      'Faster AI generation',
-      'Priority queue',
+      'Unbegrenzte Trend Intelligence',
+      'Hook Generator',
+      'Landing Page Analyzer',
+      'SEO Generator',
+      'KI Ad Copy Generator',
+      'Virale Frameworks',
+      'Erweiterte Analytics',
+      'Priorisierte Generierung',
+      'Premium Creator Workflows',
     ],
     accent: 'fuchsia',
-    badge: 'Most Popular',
+    badge: 'Beliebteste Wahl',
     featured: true,
-    cta: 'Go Pro Creator',
+    cta: 'Pro Creator wählen',
   },
   {
     id: 'studio',
     name: 'Studio',
-    tagline: 'Team workspace for brands scaling multiple channels.',
+    tagline: 'Volle KI-Produktionssuite für skalierende Creator und Brands.',
     monthlyPrice: 99,
     yearlyPrice: 79,
     features: [
-      'Team workspace',
-      'Shared assets library',
-      'Brand presets',
-      'Analytics dashboard',
-      'Multiple workspaces',
+      'Volles AI Video Studio',
+      'Voiceovers',
+      'Untertitel',
+      'Premium-Vorlagen',
+      'Schnelleres Rendering',
+      'Brand Presets',
+      'Team-Workspace',
+      'Mehrere Workspaces',
     ],
     accent: 'emerald',
-    cta: 'Upgrade to Studio',
+    cta: 'Auf Studio upgraden',
   },
   {
     id: 'agency',
     name: 'Agency',
-    tagline: 'Client delivery at scale — white-label & API.',
+    tagline: 'Skaliere Kundenlieferung mit White-Label-Infrastruktur.',
     monthlyPrice: 199,
     yearlyPrice: 159,
     priceFrom: true,
     features: [
-      'Client management',
-      'White-label exports',
-      'API access',
-      'Team roles & permissions',
-      'Unlimited projects',
-      'Priority infrastructure',
+      'White-Label-Exporte',
+      'API-Zugang',
+      'Client Workspaces',
+      'Team-Rollen',
+      'Unbegrenzte Projekte',
+      'Priorisierte Infrastruktur',
     ],
     accent: 'cyan',
-    cta: 'Talk to sales',
+    cta: 'Vertrieb kontaktieren',
     contactOnly: true,
   },
   {
     id: 'admin',
     name: 'Admin Access',
-    tagline: 'Founder-level internal access — unlimited everything.',
+    tagline: 'Founder-Zugang — unbegrenzt alles.',
     monthlyPrice: null,
     yearlyPrice: null,
     features: [
-      'Unlimited credits & generations',
-      'All premium tools unlocked',
-      'Internal system access',
-      'Priority infrastructure',
-      'Founder dashboard',
+      'Unbegrenzte Credits & Generierungen',
+      'Alle Premium-Tools freigeschaltet',
+      'Interner Systemzugang',
+      'Priorisierte Infrastruktur',
+      'Founder Dashboard',
     ],
     accent: 'amber',
-    badge: 'Internal',
-    cta: 'Active',
+    badge: 'Intern',
+    cta: 'Aktiv',
     internalOnly: true,
   },
 ] as const
@@ -144,65 +152,42 @@ export type ComparisonRow = {
 
 export const COMPARISON_ROWS: readonly ComparisonRow[] = [
   {
-    label: 'Trend searches',
+    label: 'Trend-Suchen',
     values: {
-      free: 'Limited',
-      creator: 'Expanded',
-      'pro-creator': 'Unlimited',
-      studio: 'Unlimited',
-      agency: 'Unlimited',
-      admin: 'Unlimited',
+      free: 'Begrenzt',
+      creator: 'Erweitert',
+      'pro-creator': 'Unbegrenzt',
+      studio: 'Unbegrenzt',
+      agency: 'Unbegrenzt',
+      admin: 'Unbegrenzt',
     },
   },
   {
-    label: 'AI generations',
+    label: 'KI-Generierungen',
     values: {
-      free: '5 / mo',
-      creator: '50 / mo',
-      'pro-creator': 'Unlimited',
-      studio: 'Unlimited',
-      agency: 'Unlimited',
-      admin: 'Unlimited',
+      free: '5 / Mo.',
+      creator: '250 / Mo.',
+      'pro-creator': '1.000 / Mo.',
+      studio: '5.000 / Mo.',
+      agency: 'Unbegrenzt',
+      admin: 'Unbegrenzt',
     },
   },
   {
-    label: 'Export quality',
+    label: 'Export-Qualität',
     values: {
-      free: 'Watermarked',
+      free: 'Wasserzeichen',
       creator: 'HD',
-      'pro-creator': '4K ready',
-      studio: '4K + brand',
-      agency: 'White-label',
-      admin: 'Unlimited',
+      'pro-creator': 'HD + Priority',
+      studio: '4K + Brand',
+      agency: 'White-Label',
+      admin: 'Unbegrenzt',
     },
   },
   {
-    label: 'AI Video Studio',
-    category: 'Studio',
+    label: 'Hook & SEO Tools',
     values: {
-      free: false,
-      creator: false,
-      'pro-creator': true,
-      studio: true,
-      agency: true,
-      admin: true,
-    },
-  },
-  {
-    label: 'Voiceovers & captions',
-    values: {
-      free: false,
-      creator: false,
-      'pro-creator': true,
-      studio: true,
-      agency: true,
-      admin: true,
-    },
-  },
-  {
-    label: 'Hook & SEO tools',
-    values: {
-      free: 'Basic',
+      free: 'Basis',
       creator: true,
       'pro-creator': true,
       studio: true,
@@ -211,8 +196,31 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     },
   },
   {
-    label: 'Team workspace',
-    category: 'Teams',
+    label: 'Landing Page Analyzer',
+    category: 'Pro Creator',
+    values: {
+      free: false,
+      creator: false,
+      'pro-creator': true,
+      studio: true,
+      agency: true,
+      admin: true,
+    },
+  },
+  {
+    label: 'Erweiterte Analytics',
+    values: {
+      free: false,
+      creator: false,
+      'pro-creator': true,
+      studio: true,
+      agency: true,
+      admin: true,
+    },
+  },
+  {
+    label: 'AI Video Studio',
+    category: 'Studio',
     values: {
       free: false,
       creator: false,
@@ -223,7 +231,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     },
   },
   {
-    label: 'Brand presets',
+    label: 'Voiceovers & Untertitel',
     values: {
       free: false,
       creator: false,
@@ -234,18 +242,29 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     },
   },
   {
-    label: 'Analytics',
+    label: 'Team-Workspace',
     values: {
       free: false,
       creator: false,
-      'pro-creator': 'Basic',
+      'pro-creator': false,
       studio: true,
       agency: true,
       admin: true,
     },
   },
   {
-    label: 'API access',
+    label: 'Brand Presets',
+    values: {
+      free: false,
+      creator: false,
+      'pro-creator': false,
+      studio: true,
+      agency: true,
+      admin: true,
+    },
+  },
+  {
+    label: 'API-Zugang',
     category: 'Agency',
     values: {
       free: false,
@@ -257,7 +276,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     },
   },
   {
-    label: 'White-label exports',
+    label: 'White-Label-Exporte',
     values: {
       free: false,
       creator: false,
@@ -268,7 +287,7 @@ export const COMPARISON_ROWS: readonly ComparisonRow[] = [
     },
   },
   {
-    label: 'Priority queue',
+    label: 'Priorisierte Queue',
     values: {
       free: false,
       creator: false,
@@ -295,14 +314,14 @@ export type CreditUsageItem = {
 }
 
 export const CREDIT_USAGE_ITEMS: readonly CreditUsageItem[] = [
-  { tool: 'Trend search', cost: 1, description: 'Discover viral niches & hashtags' },
-  { tool: 'Hook generator', cost: 2, description: 'Scroll-stopping opener for Reels' },
-  { tool: 'SEO titles', cost: 2, description: 'CTR-optimized titles' },
-  { tool: 'Ad copy', cost: 3, description: 'Headlines & CTAs for paid ads' },
-  { tool: 'Landing analyzer', cost: 5, description: 'Full CRO audit with scores' },
-  { tool: 'AI video (short)', cost: 20, description: 'Generate a viral AI short' },
-  { tool: 'Voiceover', cost: 10, description: 'AI narration for your clip' },
-  { tool: 'Captions', cost: 5, description: 'Auto captions & styling' },
+  { tool: 'Trend-Suche', cost: 1, description: 'Virale Nischen & Hashtags entdecken' },
+  { tool: 'Hook Generator', cost: 2, description: 'Scroll-stoppender Opener für Reels' },
+  { tool: 'SEO-Titel', cost: 2, description: 'CTR-optimierte Titel' },
+  { tool: 'Ad Copy', cost: 3, description: 'Headlines & CTAs für Paid Ads' },
+  { tool: 'Landing Analyzer', cost: 5, description: 'Vollständiges CRO-Audit mit Scores' },
+  { tool: 'KI-Video (Short)', cost: 20, description: 'Virales KI-Short generieren' },
+  { tool: 'Voiceover', cost: 10, description: 'KI-Sprecher für deinen Clip' },
+  { tool: 'Untertitel', cost: 5, description: 'Auto-Untertitel & Styling' },
 ] as const
 
 export const ENTERPRISE_CONTACT_EMAIL = 'agency@nextrends.ai'
@@ -316,25 +335,24 @@ export function formatPlanPrice(
   period: BillingPeriod,
 ): { amount: string; suffix: string; savings?: string } {
   if (plan.id === 'admin') {
-    return { amount: 'Founder', suffix: 'access' }
+    return { amount: 'Founder', suffix: 'Zugang' }
   }
 
-  const price =
-    period === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice
+  const price = period === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice
 
   if (price === null) {
-    return { amount: 'Custom', suffix: '' }
+    return { amount: 'Individuell', suffix: '' }
   }
 
   if (price === 0) {
-    return { amount: '0 €', suffix: '/ forever' }
+    return { amount: '0 €', suffix: '/ für immer' }
   }
 
-  const prefix = plan.priceFrom ? 'from ' : ''
-  const suffix = period === 'yearly' ? '/ mo · billed yearly' : '/ month'
+  const prefix = plan.priceFrom ? 'ab ' : ''
+  const suffix = period === 'yearly' ? '/ Mo. · jährlich' : '/ Monat'
   const savings =
     period === 'yearly' && plan.monthlyPrice && plan.yearlyPrice
-      ? `Save ${YEARLY_DISCOUNT_PERCENT}%`
+      ? `${YEARLY_DISCOUNT_PERCENT} % sparen`
       : undefined
 
   return {
@@ -345,14 +363,32 @@ export function formatPlanPrice(
 }
 
 export function planTierFromProfile(
-  hasProAccess: boolean,
+  _hasProAccess: boolean,
   isAdmin: boolean,
   saasPlan?: string | null,
 ): PlanTierId {
   if (isAdmin) return 'admin'
-  if (saasPlan === 'creator') return 'creator'
-  if (saasPlan === 'studio') return 'studio'
-  if (saasPlan === 'agency') return 'agency'
-  if (saasPlan === 'pro_creator' || hasProAccess) return 'pro-creator'
+  const normalized = (saasPlan ?? 'free').trim().toLowerCase().replace(/-/g, '_')
+  if (normalized === 'creator') return 'creator'
+  if (normalized === 'studio') return 'studio'
+  if (normalized === 'agency') return 'agency'
+  if (normalized === 'audio') return 'creator'
+  if (normalized === 'pro_creator' || normalized === 'pro') return 'pro-creator'
   return 'free'
+}
+
+export function planTierRank(tier: PlanTierId): number {
+  const ranks: Record<PlanTierId, number> = {
+    free: 0,
+    creator: 1,
+    'pro-creator': 2,
+    studio: 3,
+    agency: 4,
+    admin: 5,
+  }
+  return ranks[tier] ?? 0
+}
+
+export function isBelowFeaturedPlan(currentPlanId: PlanTierId): boolean {
+  return planTierRank(currentPlanId) < planTierRank('pro-creator')
 }

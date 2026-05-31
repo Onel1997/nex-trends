@@ -80,7 +80,7 @@ export function buildTrendDashboardSnapshot(
   const viralHooks = topBy(trends, (t) => t.hookAnalysis.hookScore, 5).map((t) => ({
     id: `${t.id}-hook`,
     label: t.hookAnalysis.hookText.slice(0, 72) + (t.hookAnalysis.hookText.length > 72 ? '…' : ''),
-    meta: `Score ${t.hookAnalysis.hookScore}`,
+    meta: `Punkte ${t.hookAnalysis.hookScore}`,
     score: t.hookAnalysis.hookScore,
   }))
 

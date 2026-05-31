@@ -5,6 +5,7 @@ import { GoogleSignInButton } from '@/components/landing/GoogleSignInButton'
 import { CloseIcon, MenuIcon } from '@/components/ui/icons'
 
 const NAV_LINKS = [
+  { id: 'workflow', label: 'Workflow' },
   { id: 'features', label: 'Features' },
   { id: 'social-proof', label: 'Erfolge' },
   { id: 'pricing', label: 'Preise' },

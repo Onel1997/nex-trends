@@ -26,20 +26,20 @@ export function LandingSectionHeader({
       )}
     >
       {eyebrow && (
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-violet-400">
+        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-violet-400">
           {eyebrow}
         </p>
       )}
-      <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
+      <h2 className="text-[1.75rem] font-bold leading-[1.12] tracking-[-0.025em] text-white sm:text-4xl lg:text-[2.65rem]">
         {title}
         {titleAccent && (
           <>
-            {' '}
-            <span className="text-zinc-500">{titleAccent}</span>
+            <br className="hidden sm:block" />
+            <span className="text-zinc-500"> {titleAccent}</span>
           </>
         )}
       </h2>
-      <p className="mt-4 text-base leading-relaxed text-zinc-400 sm:text-lg">
+      <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:mt-4 sm:text-base lg:text-lg">
         {description}
       </p>
     </div>

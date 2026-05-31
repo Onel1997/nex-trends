@@ -5,34 +5,34 @@ import { cn } from '@/lib'
 
 export function PricingCreditUsage() {
   return (
-    <section className="pricing-credits dashboard-os-card rounded-[var(--dash-radius-lg)] border border-zinc-800/50 bg-zinc-950/60 p-4 sm:p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <section className="pricing-credits dashboard-os-card rounded-[var(--dash-radius-lg)] border border-zinc-800/50 bg-zinc-950/60 p-3.5 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-violet-400">
-            Credit system
+            Credit-System
           </p>
           <h3 className="mt-1 text-base font-semibold tracking-tight text-white sm:text-lg">
-            How credits work
+            So funktionieren Credits
           </h3>
           <p className="dashboard-os-muted mt-1 max-w-xl text-[11px] leading-relaxed sm:text-xs">
-            Every AI action consumes credits. Free includes {SIGNUP_CREDITS} credits per
-            month. Paid plans unlock higher monthly allowances — Agency is unlimited.
+            Jede KI-Aktion verbraucht Credits. Free enthält {SIGNUP_CREDITS} Credits pro
+            Monat. Bezahlpläne schalten höhere monatliche Kontingente frei — Agency ist unbegrenzt.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2 rounded-[var(--dash-radius)] border border-violet-500/20 bg-violet-500/10 px-3 py-2">
           <CreditIcon className="size-5 text-violet-400" aria-hidden />
           <div>
             <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500">
-              Free tier
+              Free-Tier
             </p>
             <p className="text-sm font-semibold text-white">
-              {SIGNUP_CREDITS} / month
+              {SIGNUP_CREDITS} / Monat
             </p>
           </div>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-3 grid gap-2 sm:mt-4 sm:grid-cols-2 lg:grid-cols-4">
         {CREDIT_USAGE_ITEMS.map((item) => (
           <div
             key={item.tool}
@@ -44,7 +44,7 @@ export function PricingCreditUsage() {
             <div className="flex items-center justify-between gap-2">
               <p className="text-[11px] font-semibold text-zinc-200">{item.tool}</p>
               <span className="rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-px text-[10px] font-bold text-violet-300">
-                {item.cost} {item.cost === 1 ? 'credit' : 'credits'}
+                {item.cost} {item.cost === 1 ? 'Credit' : 'Credits'}
               </span>
             </div>
             <p className="mt-1 text-[10px] text-zinc-500">{item.description}</p>

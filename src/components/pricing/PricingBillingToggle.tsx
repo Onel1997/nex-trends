@@ -15,9 +15,9 @@ export function PricingBillingToggle({
 }: PricingBillingToggleProps) {
   return (
     <div
-      className={cn('flex flex-col items-center gap-3 sm:flex-row sm:justify-center', className)}
+      className={cn('flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-3', className)}
       role="group"
-      aria-label="Billing period"
+      aria-label="Abrechnungszeitraum"
     >
       <div className="pricing-billing-toggle relative inline-flex rounded-full border border-zinc-800/80 bg-zinc-950/80 p-1 shadow-inner shadow-black/40">
         <span
@@ -36,7 +36,7 @@ export function PricingBillingToggle({
           )}
           aria-pressed={value === 'monthly'}
         >
-          Monthly
+          Monatlich
         </button>
         <button
           type="button"
@@ -47,12 +47,12 @@ export function PricingBillingToggle({
           )}
           aria-pressed={value === 'yearly'}
         >
-          Yearly
+          Jährlich
         </button>
       </div>
       <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-emerald-300">
         <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" aria-hidden />
-        Save {YEARLY_DISCOUNT_PERCENT}% yearly
+        {YEARLY_DISCOUNT_PERCENT} % sparen · jährlich
       </span>
     </div>
   )

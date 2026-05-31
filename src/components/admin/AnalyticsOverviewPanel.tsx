@@ -13,8 +13,18 @@ import { AdminStatCard } from '@/components/admin/AdminStatCard'
 import { AdminWarningBanner } from '@/components/admin/AdminWarningBanner'
 import { EMPTY_ADMIN_OVERVIEW } from '@/lib/admin-defaults'
 import { fetchAdminAnalytics } from '@/lib/admin-api'
+import { PLAN_ADMIN_LABELS, type AdminManageablePlan } from '@/lib/plans'
 import { useAdminPanelLoad } from '@/hooks/useAdminPanelLoad'
 import type { AnalyticsPeriod } from '@/types/analytics'
+
+const PLAN_STAT_ORDER: AdminManageablePlan[] = [
+  'free',
+  'creator',
+  'pro_creator',
+  'studio',
+  'agency',
+  'audio',
+]
 
 function AnalyticsOverviewPanelInner() {
   const [period, setPeriod] = useState<AnalyticsPeriod>('7d')
@@ -46,6 +56,7 @@ function AnalyticsOverviewPanelInner() {
       activeUsers: data.activeUsers ?? 0,
       totalGenerations: data.totalGenerations ?? 0,
       proUsers: data.proUsers ?? 0,
+      planCounts: data.planCounts ?? {},
       creditsConsumed: data.creditsConsumed ?? 0,
       revenuePlaceholder: data.revenuePlaceholder ?? EMPTY_ADMIN_OVERVIEW.revenuePlaceholder,
     }),
@@ -71,7 +82,7 @@ function AnalyticsOverviewPanelInner() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Analytics Overview
+            Analytics Übersicht
           </h1>
           <p className="mt-2 text-sm text-zinc-500">
             Echtzeit-KPIs aus AI-Generierungen, Credits und aktiven Nutzern.
@@ -102,7 +113,7 @@ function AnalyticsOverviewPanelInner() {
           value={overview.creditsConsumed ?? 0}
           accent="amber"
         />
-        <AdminStatCard label="Pro Users" value={overview.proUsers ?? 0} accent="violet" />
+        <AdminStatCard label="Bezahlte Nutzer" value={overview.proUsers ?? 0} accent="violet" />
         <AdminStatCard
           label="Revenue"
           value={overview.revenuePlaceholder ?? '€ —'}
@@ -111,6 +122,24 @@ function AnalyticsOverviewPanelInner() {
           className="sm:col-span-2 xl:col-span-1"
         />
       </div>
+
+      {overview.planCounts && Object.keys(overview.planCounts).length > 0 ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          {PLAN_STAT_ORDER.map((planId) => (
+            <div
+              key={planId}
+              className="rounded-xl border border-zinc-800/50 bg-zinc-950/50 px-3 py-2.5 text-center"
+            >
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-zinc-600">
+                {PLAN_ADMIN_LABELS[planId]}
+              </p>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-zinc-100">
+                {overview.planCounts?.[planId] ?? 0}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <AdminChartCard title="Generations over time" subtitle="Tägliche AI-Aktivität">

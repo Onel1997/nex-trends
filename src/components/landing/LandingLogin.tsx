@@ -8,9 +8,9 @@ export function LandingLogin() {
     <section
       id="login"
       aria-labelledby="cta-heading"
-      className="border-t border-zinc-900 px-4 py-20 sm:px-6 sm:py-28 lg:px-8"
+      className="landing-section border-t border-white/[0.04] px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
     >
-      <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border border-violet-500/20 bg-gradient-to-br from-zinc-950 via-zinc-950 to-violet-950/30 p-8 text-center shadow-2xl shadow-violet-950/20 sm:p-12 lg:p-14">
+      <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border border-violet-500/25 bg-gradient-to-br from-zinc-950 via-zinc-950 to-violet-950/30 p-6 text-center shadow-[0_0_80px_-24px_rgba(139,92,246,0.45)] sm:p-12 lg:p-14">
         <div
           className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-fuchsia-600/15 blur-3xl"
           aria-hidden
@@ -28,15 +28,15 @@ export function LandingLogin() {
             id="cta-heading"
             className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl"
           >
-            Bereit, deinen Content zu skalieren?
+            Bereit für dein Creator OS?
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-zinc-400 sm:text-base">
             Schließe dich 500+ Creators an. Melde dich mit Google oder E-Mail an und starte in
-            30 Sekunden mit {APP_NAME} — Trend-Scouting & KI-Tools inklusive.
+            30 Sekunden mit {APP_NAME}.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4">
-            <GoogleSignInButton label="Kostenlos mit Google starten" />
+            <GoogleSignInButton label="Kostenlos starten" className="!w-full sm:!w-auto" />
 
             <p className="text-xs text-zinc-500">oder</p>
 
@@ -47,7 +47,7 @@ export function LandingLogin() {
               onClick={() => scrollToSection('pricing')}
               className="text-sm font-medium text-zinc-400 underline-offset-4 transition-colors hover:text-white hover:underline"
             >
-              Oder Pläne vergleichen →
+              Pläne vergleichen →
             </button>
           </div>
 

@@ -1,15 +1,16 @@
 import { useCallback, useState } from 'react'
 import type { BillingPeriod, PlanTierId } from '@/lib/pricing'
-import { planTierFromProfile } from '@/lib/pricing'
+import { isBelowFeaturedPlan, planTierFromProfile } from '@/lib/pricing'
 import { pricingTierToPlanId } from '@/lib/plans'
 import { useSubscription } from '@/hooks/useSubscription'
 
 export function usePricingActions() {
-  const { hasProAccess, isAdmin, openStripeCheckout, userPlan } = useSubscription()
+  const { isAdmin, openStripeCheckout, userPlan } = useSubscription()
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly')
   const [upgradePlanId, setUpgradePlanId] = useState<PlanTierId | null>(null)
 
-  const currentPlanId = planTierFromProfile(hasProAccess, isAdmin, userPlan)
+  const currentPlanId = planTierFromProfile(false, isAdmin, userPlan)
+  const showUpgradeCta = !isAdmin && isBelowFeaturedPlan(currentPlanId)
 
   const handleSelectPlan = useCallback(
     (planId: PlanTierId) => {
@@ -26,7 +27,7 @@ export function usePricingActions() {
       void openStripeCheckout({ planId: saasPlan, billingPeriod })
       setUpgradePlanId(planId)
     },
-    [currentPlanId],
+    [billingPeriod, currentPlanId, openStripeCheckout],
   )
 
   const closeUpgradeModal = useCallback(() => {
@@ -46,7 +47,8 @@ export function usePricingActions() {
     handleSelectPlan,
     closeUpgradeModal,
     handleFeaturedUpgrade,
-    hasProAccess,
+    showUpgradeCta,
     isAdmin,
+    userPlan,
   }
 }

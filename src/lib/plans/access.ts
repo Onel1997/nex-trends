@@ -1,5 +1,11 @@
 import type { DashboardRouteId } from '@/lib/routes'
-import { PLAN_RANK, type PlanId, type UsageActionId } from '@/lib/plans/definitions'
+import {
+  getFeatureUpgradePlan,
+  hasFeatureAccess as checkFeatureAccess,
+  resolveFeatureId,
+  type FeatureId,
+} from '@/lib/plans/feature-access'
+import { type PlanId, type UsageActionId } from '@/lib/plans/definitions'
 
 export type FeatureFlag =
   | 'ai_video_studio'
@@ -12,64 +18,38 @@ export type FeatureFlag =
   | 'voiceover_studio'
   | 'captions_studio'
 
-const ROUTE_MIN_PLAN: Partial<Record<DashboardRouteId, PlanId>> = {
-  'ai-studio': 'pro_creator',
-  hook: 'creator',
-  'ad-copy': 'creator',
-  seo: 'creator',
-  analyzer: 'creator',
-  'saved-trends': 'creator',
-}
-
-const FEATURE_MIN_PLAN: Record<FeatureFlag, PlanId> = {
-  ai_video_studio: 'pro_creator',
-  api_access: 'agency',
-  white_label: 'agency',
-  team_workspace: 'studio',
-  unlimited_trends: 'pro_creator',
-  hd_exports: 'creator',
-  priority_queue: 'pro_creator',
-  voiceover_studio: 'audio',
-  captions_studio: 'audio',
-}
-
-const ACTION_MIN_PLAN: Partial<Record<UsageActionId, PlanId>> = {
-  hook_generation: 'creator',
-  seo_title: 'creator',
-  ad_copy: 'creator',
-  landing_analysis: 'creator',
-  ai_video: 'pro_creator',
-  voiceover: 'audio',
-  captions: 'audio',
-}
-
-export function hasPlanRank(plan: PlanId, minimum: PlanId): boolean {
-  return PLAN_RANK[plan] >= PLAN_RANK[minimum]
+const ROUTE_FEATURES: Partial<Record<DashboardRouteId, FeatureId | UsageActionId>> = {
+  'ai-studio': 'ai_video_studio',
+  hook: 'hook_generator',
+  'ad-copy': 'ad_copy_generator',
+  seo: 'seo_generator',
+  analyzer: 'landing_page_analyzer',
+  'saved-trends': 'saved_trends',
+  'trend-intelligence': 'trend_intelligence',
 }
 
 export function canAccessRoute(plan: PlanId, routeId: DashboardRouteId): boolean {
   if (plan === 'founder') return true
-  const minimum = ROUTE_MIN_PLAN[routeId]
-  if (!minimum) return true
-  return hasPlanRank(plan, minimum)
+  const feature = ROUTE_FEATURES[routeId]
+  if (!feature) return true
+  return checkFeatureAccess(plan, feature)
 }
 
 export function canAccessFeature(plan: PlanId, feature: FeatureFlag): boolean {
   if (plan === 'founder') return true
-  return hasPlanRank(plan, FEATURE_MIN_PLAN[feature])
+  return checkFeatureAccess(plan, feature)
 }
 
 /** Unified gate for feature flags and usage actions — prefer over legacy is_pro checks. */
-export function hasFeatureAccess(plan: PlanId, gate: FeatureFlag | UsageActionId): boolean {
+export function hasFeatureAccess(plan: PlanId, gate: FeatureFlag | UsageActionId | FeatureId): boolean {
   if (plan === 'founder') return true
-  if (gate in FEATURE_MIN_PLAN) {
-    return hasPlanRank(plan, FEATURE_MIN_PLAN[gate as FeatureFlag])
-  }
-  const min = ACTION_MIN_PLAN[gate as UsageActionId]
-  if (min) return hasPlanRank(plan, min)
-  return true
+  return checkFeatureAccess(plan, gate)
 }
 
 export function getRouteUpgradePlan(routeId: DashboardRouteId): PlanId {
-  return ROUTE_MIN_PLAN[routeId] ?? 'creator'
+  const feature = ROUTE_FEATURES[routeId]
+  if (!feature) return 'creator'
+  return getFeatureUpgradePlan(feature)
 }
+
+export { checkFeatureAccess as hasPlanFeature, resolveFeatureId }
