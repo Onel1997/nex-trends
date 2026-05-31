@@ -5,6 +5,7 @@ import { STRIPE_CREATOR_MONTHLY_PRICE_ID } from "./stripe-prices.ts";
 export type PlanId =
   | "free"
   | "creator"
+  | "audio"
   | "pro_creator"
   | "studio"
   | "agency"
@@ -36,16 +37,18 @@ export const CREDIT_COSTS: Record<UsageActionId, number> = {
 export const PLAN_RANK: Record<PlanId, number> = {
   free: 0,
   creator: 1,
-  pro_creator: 2,
-  studio: 3,
-  agency: 4,
-  founder: 5,
+  audio: 2,
+  pro_creator: 3,
+  studio: 4,
+  agency: 5,
+  founder: 6,
 };
 
 export const UNLIMITED_CREDIT_PLANS: PlanId[] = ["agency", "founder"];
 
 export const PAID_PLANS: PlanId[] = [
   "creator",
+  "audio",
   "pro_creator",
   "studio",
   "agency",
@@ -54,6 +57,7 @@ export const PAID_PLANS: PlanId[] = [
 export const PLAN_MONTHLY_CREDITS: Record<PlanId, number | null> = {
   free: 25,
   creator: 250,
+  audio: 500,
   pro_creator: 1000,
   studio: 5000,
   agency: null,
@@ -65,7 +69,8 @@ export function normalizePlanId(value: string | null | undefined): PlanId {
   const v = value.trim().toLowerCase().replace(/-/g, "_");
   if (v === "admin") return "founder";
   if (
-    v === "free" || v === "creator" || v === "pro_creator" || v === "studio" ||
+    v === "free" || v === "creator" || v === "audio" || v === "pro_creator" ||
+    v === "studio" ||
     v === "agency" || v === "founder"
   ) {
     return v;
@@ -86,6 +91,8 @@ export function mapStripePriceToPlan(priceId: string): PlanId | null {
   const entries: [string, PlanId][] = [
     [STRIPE_CREATOR_MONTHLY_PRICE_ID, "creator"],
     [Deno.env.get("STRIPE_PRICE_CREATOR_YEARLY")?.trim() ?? "", "creator"],
+    [Deno.env.get("STRIPE_PRICE_AUDIO_MONTHLY")?.trim() ?? "", "audio"],
+    [Deno.env.get("STRIPE_PRICE_AUDIO_YEARLY")?.trim() ?? "", "audio"],
     [Deno.env.get("STRIPE_PRICE_PRO_CREATOR_MONTHLY")?.trim() ?? "", "pro_creator"],
     [Deno.env.get("STRIPE_PRICE_PRO_CREATOR_YEARLY")?.trim() ?? "", "pro_creator"],
     [Deno.env.get("STRIPE_PRICE_STUDIO_MONTHLY")?.trim() ?? "", "studio"],

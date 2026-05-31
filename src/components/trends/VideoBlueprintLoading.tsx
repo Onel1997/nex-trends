@@ -24,11 +24,11 @@ export function VideoBlueprintLoading({
   const headline = retrying
     ? 'Verbindung wird wiederhergestellt…'
     : rendering
-      ? 'Rendere AI Video…'
-      : 'Blueprint wird erstellt'
+      ? 'Generiere Creator Blueprint…'
+      : 'Blueprint wird vorbereitet'
 
   const subline = retrying
-    ? `Automatischer Versuch ${retryAttempt} · Creator Engine`
+    ? `Automatischer Versuch ${retryAttempt} · OpenAI Strategist`
     : rendering
       ? 'Strategist ✓ · Creative Director ✓ · Viral Editor aktiv'
       : 'AI Strategist · Creative Director · Viral Editor'

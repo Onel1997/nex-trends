@@ -9,6 +9,7 @@ export type GeneratedVideoJob = {
   id: string
   status: GeneratedVideoStatus
   provider?: string
+  mode?: 'strategy' | 'video'
   videoUrl?: string
   posterUrl?: string
   hookText?: string
@@ -24,6 +25,9 @@ export type GeneratedVideoJob = {
   errorMessage?: string
   trendId?: string
   createdAt?: string
+  /** Server-generated OpenAI strategy blueprint */
+  blueprint?: Record<string, unknown> | null
+  postingStrategy?: string
 }
 
 export type GeneratedVideoHistoryItem = GeneratedVideoJob & {

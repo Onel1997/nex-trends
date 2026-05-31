@@ -1,5 +1,4 @@
-import { Badge } from '@/components/ui/Badge'
-import { PLAN_LABELS, type PlanId } from '@/lib/plans'
+import { PLAN_BADGE_CLASSES, PLAN_LABELS, type PlanId } from '@/lib/plans'
 import { cn } from '@/lib'
 
 type PlanBadgeProps = {
@@ -8,18 +7,15 @@ type PlanBadgeProps = {
 }
 
 export function PlanBadge({ plan, className }: PlanBadgeProps) {
-  const variant =
-    plan === 'founder'
-      ? 'admin'
-      : plan === 'pro_creator' || plan === 'studio' || plan === 'agency'
-        ? 'pro'
-        : plan === 'creator'
-          ? 'default'
-          : 'muted'
-
   return (
-    <Badge variant={variant} className={cn('capitalize', className)}>
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide',
+        PLAN_BADGE_CLASSES[plan],
+        className,
+      )}
+    >
       {PLAN_LABELS[plan]}
-    </Badge>
+    </span>
   )
 }

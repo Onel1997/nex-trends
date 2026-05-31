@@ -23,6 +23,21 @@ export type TrendDashboardSnapshot = {
   sections: TrendDashboardSection[]
 }
 
+function trendStateLabel(state?: string): string {
+  switch (state) {
+    case 'exploding':
+      return 'Explodiert'
+    case 'rising':
+      return 'Im Trend'
+    case 'stable':
+      return 'Stabil'
+    case 'saturated':
+      return 'Gesättigt'
+    default:
+      return state ?? 'Im Trend'
+  }
+}
+
 function topBy<T>(items: T[], scoreFn: (item: T) => number, limit: number): T[] {
   return [...items].sort((a, b) => scoreFn(b) - scoreFn(a)).slice(0, limit)
 }
@@ -70,7 +85,7 @@ export function buildTrendDashboardSnapshot(
   }))
 
   const nicheMap = trends.reduce<Record<string, number>>((acc, t) => {
-    const niche = t.niche ?? 'General'
+    const niche = t.niche ?? 'Allgemein'
     acc[niche] = (acc[niche] ?? 0) + (t.momentumScore ?? 0)
     return acc
   }, {})
@@ -80,7 +95,7 @@ export function buildTrendDashboardSnapshot(
     .map(([niche, score]) => ({
       id: `niche-${niche}`,
       label: niche,
-      meta: 'Momentum weighted',
+      meta: 'Kategorie Momentum',
       score: Math.round(score / Math.max(1, trends.filter((t) => t.niche === niche).length)),
     }))
 
@@ -89,14 +104,14 @@ export function buildTrendDashboardSnapshot(
     .map(([platform, count]) => ({
       id: `platform-${platform}`,
       label: platform,
-      meta: `${count} signals`,
+      meta: `${count} Signale`,
       score: count,
     }))
 
   const aiSignals = topBy(trends, (t) => t.momentumScore ?? 0, 5).map((t) => ({
     id: `${t.id}-signal`,
-    label: t.aiInsight ?? 'Emerging creator opportunity',
-    meta: t.trendState ?? 'rising',
+    label: t.aiInsight ?? 'Neue Creator-Chance',
+    meta: trendStateLabel(t.trendState),
     score: t.momentumScore,
   }))
 
@@ -113,58 +128,58 @@ export function buildTrendDashboardSnapshot(
     .map(([label, score]) => ({
       id: `kw-${label}`,
       label: label.startsWith('#') ? label : `#${label}`,
-      meta: 'Rising',
+      meta: 'Im Trend',
       score: Math.round(score / trends.length),
     }))
 
   const opportunityScores = topBy(trends, (t) => t.opportunityScore ?? 0, 6).map((t) => ({
     id: `${t.id}-opp`,
     label: t.title.slice(0, 48) + (t.title.length > 48 ? '…' : ''),
-    meta: `${t.competitionScore}% competition`,
+    meta: `${t.competitionScore}% Konkurrenz`,
     score: t.opportunityScore,
   }))
 
   const sections: TrendDashboardSection[] = [
     {
       id: 'topics',
-      title: 'Trending Topics',
-      subtitle: 'Highest opportunity narratives',
+      title: 'Trendthemen',
+      subtitle: 'Trends mit größtem Potenzial',
       items: trendingTopics,
     },
     {
       id: 'hooks',
-      title: 'Viral Hooks',
-      subtitle: 'Top-performing openers',
+      title: 'Virale Hooks',
+      subtitle: 'Beste Hook-Opener',
       items: viralHooks,
     },
     {
       id: 'niches',
-      title: 'Trending Niches',
-      subtitle: 'Category momentum',
+      title: 'Trend-Nischen',
+      subtitle: 'Kategorie Momentum',
       items: trendingNiches,
     },
     {
       id: 'platforms',
-      title: 'Platform Trends',
-      subtitle: 'Signal distribution',
+      title: 'Plattform-Trends',
+      subtitle: 'Signal-Verteilung',
       items: platformTrends,
     },
     {
       id: 'signals',
-      title: 'AI Trend Signals',
-      subtitle: 'Creator intelligence',
+      title: 'KI-Trend-Signale',
+      subtitle: 'Creator-Intelligence',
       items: aiSignals,
     },
     {
       id: 'keywords',
-      title: 'Rising Keywords',
-      subtitle: 'Hashtag & topic velocity',
+      title: 'Steigende Keywords',
+      subtitle: 'Hashtag- & Themen-Trend',
       items: risingKeywords,
     },
     {
       id: 'opportunity',
-      title: 'Opportunity Scores',
-      subtitle: 'Best windows to enter',
+      title: 'Chancen-Scores',
+      subtitle: 'Beste Einstiegsfenster',
       items: opportunityScores,
     },
   ]

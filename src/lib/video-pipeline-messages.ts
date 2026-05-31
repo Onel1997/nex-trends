@@ -1,4 +1,4 @@
-/** Premium UI copy for the video pipeline — never expose backend details in the UI. */
+/** Premium UI copy for the Creator OS strategy pipeline. */
 
 export const PREMIUM_PIPELINE_MESSAGES = {
   crafting: [
@@ -9,11 +9,12 @@ export const PREMIUM_PIPELINE_MESSAGES = {
     'Baue CTA Sequenz...',
   ],
   rendering: [
-    'Video Rendering wird vorbereitet...',
-    'Creator Engine verbindet sich...',
-    'KI-Szenen werden komponiert...',
-    'Voiceover & Audio werden geladen...',
-    'Finaler Render läuft...',
+    'OpenAI Strategist analysiert Trend...',
+    'Creative Director strukturiert Szenen...',
+    'Shot-List & Captions werden erstellt...',
+    'Voiceover-Skript wird geschrieben...',
+    'Posting-Strategie wird optimiert...',
+    'Finalisiere Creator Blueprint...',
   ],
   retry: [
     'Temporäre Verzögerung — erneuter Versuch...',
@@ -25,9 +26,9 @@ export const PREMIUM_PIPELINE_MESSAGES = {
 
 export const PREMIUM_FAILURE = {
   exhausted: {
-    title: 'AI Video aktuell ausgelastet',
+    title: 'Creator Blueprint vorübergehend nicht verfügbar',
     description:
-      'Die Creator Pipeline verarbeitet gerade viele Anfragen. Bitte versuche es erneut.',
+      'Die AI-Strategie-Pipeline verarbeitet gerade viele Anfragen. Bitte versuche es erneut.',
   },
   credits: {
     title: 'Credits aufgebraucht',

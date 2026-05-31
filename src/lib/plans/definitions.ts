@@ -3,6 +3,7 @@
 export type PlanId =
   | 'free'
   | 'creator'
+  | 'audio'
   | 'pro_creator'
   | 'studio'
   | 'agency'
@@ -35,20 +36,22 @@ export const CREDIT_COSTS: Record<UsageActionId, number> = {
 export const PLAN_RANK: Record<PlanId, number> = {
   free: 0,
   creator: 1,
-  pro_creator: 2,
-  studio: 3,
-  agency: 4,
-  founder: 5,
+  audio: 2,
+  pro_creator: 3,
+  studio: 4,
+  agency: 5,
+  founder: 6,
 }
 
 /** Only agency + founder bypass balance checks */
 export const UNLIMITED_CREDIT_PLANS: PlanId[] = ['agency', 'founder']
 
-export const PAID_PLANS: PlanId[] = ['creator', 'pro_creator', 'studio', 'agency']
+export const PAID_PLANS: PlanId[] = ['creator', 'audio', 'pro_creator', 'studio', 'agency']
 
 export const PLAN_LABELS: Record<PlanId, string> = {
   free: 'Free',
   creator: 'Creator',
+  audio: 'Audio',
   pro_creator: 'Pro Creator',
   studio: 'Studio',
   agency: 'Agency',
@@ -58,6 +61,7 @@ export const PLAN_LABELS: Record<PlanId, string> = {
 export const PLAN_MONTHLY_CREDITS: Record<PlanId, number | null> = {
   free: 25,
   creator: 250,
+  audio: 500,
   pro_creator: 1000,
   studio: 5000,
   agency: null,
@@ -71,6 +75,7 @@ export function normalizePlanId(value: string | null | undefined): PlanId {
   if (
     v === 'free' ||
     v === 'creator' ||
+    v === 'audio' ||
     v === 'pro_creator' ||
     v === 'studio' ||
     v === 'agency' ||

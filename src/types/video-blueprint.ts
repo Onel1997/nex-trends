@@ -79,6 +79,7 @@ export type VideoBlueprint = {
   cta: VideoBlueprintCta
   viralElements: VideoBlueprintViralElements
   platformOptimization: VideoBlueprintPlatformOptimization
+  postingStrategy?: string
   pipeline: VideoBlueprintPipeline
 }
 

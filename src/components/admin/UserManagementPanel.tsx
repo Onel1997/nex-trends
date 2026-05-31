@@ -1,5 +1,6 @@
 import { memo, useState } from 'react'
 import { AdminErrorState } from '@/components/admin/AdminErrorState'
+import { AdminPlanBadge } from '@/components/admin/AdminPlanBadge'
 import { AdminTableSkeleton } from '@/components/admin/AdminSkeleton'
 import { AdminWarningBanner } from '@/components/admin/AdminWarningBanner'
 import { Badge } from '@/components/ui/Badge'
@@ -9,6 +10,14 @@ import { SearchIcon } from '@/components/ui/icons'
 import { fetchAdminUsers, updateAdminUser } from '@/lib/admin-api'
 import { EMPTY_ADMIN_USERS } from '@/lib/admin-defaults'
 import { formatAdminWriteError, logAdminError } from '@/lib/admin-errors'
+import {
+  ADMIN_MANAGEABLE_PLANS,
+  getAdminUserStatus,
+  normalizePlanId,
+  planDisplayLabel,
+  resolveAdminUserPlan,
+  type AdminManageablePlan,
+} from '@/lib/plans'
 import { useAdminPanelLoad } from '@/hooks/useAdminPanelLoad'
 import { cn } from '@/lib'
 import type { AdminUser } from '@/types/admin'
@@ -18,6 +27,82 @@ function formatDate(value: string | null | undefined): string {
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('de-DE')
+}
+
+function StatusBadge({ user }: { user: AdminUser }) {
+  const status = getAdminUserStatus(user)
+  const variant =
+    status === 'BANNED'
+      ? 'warning'
+      : status === 'CANCELED'
+        ? 'muted'
+        : status === 'TRIAL'
+          ? 'default'
+          : 'success'
+
+  return <Badge variant={variant}>{status}</Badge>
+}
+
+type UserActionsProps = {
+  user: AdminUser
+  busy: boolean
+  onUpdate: (userId: string, patch: Parameters<typeof updateAdminUser>[1]) => void
+  layout?: 'inline' | 'stack'
+}
+
+function UserActions({ user, busy, onUpdate, layout = 'inline' }: UserActionsProps) {
+  const plan = resolveAdminUserPlan(user)
+
+  return (
+    <div
+      className={cn(
+        'gap-2',
+        layout === 'stack' ? 'flex flex-col' : 'flex flex-wrap items-center',
+      )}
+    >
+      <label className="flex min-w-[10rem] flex-col gap-1">
+        <span className="text-[9px] font-semibold uppercase tracking-widest text-zinc-600">
+          Change Plan
+        </span>
+        <select
+          value={plan}
+          disabled={busy}
+          onChange={(e) =>
+            onUpdate(user.id, { plan: normalizePlanId(e.target.value) })
+          }
+          className="rounded-lg border border-zinc-700/60 bg-zinc-900/80 px-2 py-1.5 text-xs text-zinc-200 outline-none transition-smooth focus:border-violet-500/40"
+        >
+          {ADMIN_MANAGEABLE_PLANS.map((p) => (
+            <option key={p} value={p}>
+              {planDisplayLabel(p as AdminManageablePlan)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className={cn('flex flex-wrap gap-1.5', layout === 'stack' && 'pt-1')}>
+        {([5, 50, 100] as const).map((delta) => (
+          <ActionBtn
+            key={`+${delta}`}
+            disabled={busy}
+            onClick={() => onUpdate(user.id, { credit_delta: delta })}
+          >
+            +{delta}
+          </ActionBtn>
+        ))}
+        <ActionBtn disabled={busy} onClick={() => onUpdate(user.id, { credit_delta: -1 })}>
+          −1
+        </ActionBtn>
+        <ActionBtn
+          disabled={busy}
+          className={user.is_banned ? '' : 'text-red-300'}
+          onClick={() => onUpdate(user.id, { is_banned: !user.is_banned })}
+        >
+          {user.is_banned ? 'Unban' : 'Ban'}
+        </ActionBtn>
+      </div>
+    </div>
+  )
 }
 
 function UserManagementPanelInner() {
@@ -62,7 +147,9 @@ function UserManagementPanelInner() {
     <div className="space-y-6 animate-fade-in">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight text-white">User Management</h1>
-        <p className="mt-2 text-sm text-zinc-500">Credits, Pro-Status und Sperren verwalten.</p>
+        <p className="mt-2 text-sm text-zinc-500">
+          Pläne, Credits und Status verwalten — synchron mit Profil & Feature Gates.
+        </p>
       </header>
 
       <form className="flex flex-col gap-3 sm:flex-row" onSubmit={handleSearch}>
@@ -84,13 +171,71 @@ function UserManagementPanelInner() {
       {loading ? (
         <AdminTableSkeleton />
       ) : (
-        <UserTable users={users} query={query} busyId={busyId} onUpdate={runUpdate} />
+        <>
+          <UserCardList users={users} query={query} busyId={busyId} onUpdate={runUpdate} />
+          <UserTableDesktop users={users} query={query} busyId={busyId} onUpdate={runUpdate} />
+        </>
       )}
     </div>
   )
 }
 
-const UserTable = memo(function UserTable({
+const UserCardList = memo(function UserCardList({
+  users,
+  query,
+  busyId,
+  onUpdate,
+}: {
+  users: AdminUser[]
+  query: string
+  busyId: string | null
+  onUpdate: (userId: string, patch: Parameters<typeof updateAdminUser>[1]) => void
+}) {
+  if (users.length === 0) {
+    return (
+      <p className="md:hidden px-1 py-8 text-center text-sm text-zinc-500">
+        {query
+          ? 'Keine Nutzer für diese Suche gefunden.'
+          : 'Keine Nutzer geladen — deploy admin-api oder warte auf die erste Registrierung.'}
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-3 md:hidden">
+      {users.map((user) => (
+        <article
+          key={user.id}
+          className="glass-card space-y-3 rounded-2xl border border-zinc-800/50 p-4"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-medium text-zinc-100">{user.email ?? '—'}</p>
+              <p className="mt-1 text-xs text-zinc-500">{formatDate(user.created_at)}</p>
+            </div>
+            <StatusBadge user={user} />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <AdminPlanBadge user={user} />
+            <span className="rounded-lg bg-zinc-900/70 px-2 py-1 text-xs tabular-nums text-zinc-300">
+              {user.credit_balance ?? 0} Credits
+            </span>
+          </div>
+
+          <UserActions
+            user={user}
+            busy={busyId === user.id}
+            onUpdate={onUpdate}
+            layout="stack"
+          />
+        </article>
+      ))}
+    </div>
+  )
+})
+
+const UserTableDesktop = memo(function UserTableDesktop({
   users,
   query,
   busyId,
@@ -102,14 +247,14 @@ const UserTable = memo(function UserTable({
   onUpdate: (userId: string, patch: Parameters<typeof updateAdminUser>[1]) => void
 }) {
   return (
-    <div className="glass-card overflow-hidden rounded-2xl">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-sm">
+    <div className="glass-card hidden overflow-hidden rounded-2xl md:block">
+      <div className="overflow-x-auto scrollbar-hide">
+        <table className="w-full min-w-[920px] text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-800/60 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
               <th className="px-4 py-3">E-Mail</th>
               <th className="px-4 py-3">Credits</th>
-              <th className="px-4 py-3">Pro</th>
+              <th className="px-4 py-3">Plan</th>
               <th className="px-4 py-3">Joined</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Actions</th>
@@ -126,50 +271,20 @@ const UserTable = memo(function UserTable({
                   {user.credit_balance ?? 0}
                 </td>
                 <td className="px-4 py-3">
-                  {user.is_pro ? (
-                    <Badge variant="pro">Pro</Badge>
-                  ) : (
-                    <Badge variant="muted">Free</Badge>
-                  )}
+                  <AdminPlanBadge user={user} />
                 </td>
                 <td className="px-4 py-3 text-xs text-zinc-500">
                   {formatDate(user.created_at)}
                 </td>
                 <td className="px-4 py-3">
-                  {user.is_banned ? (
-                    <Badge variant="warning">Banned</Badge>
-                  ) : (
-                    <Badge variant="success">Active</Badge>
-                  )}
+                  <StatusBadge user={user} />
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    <ActionBtn
-                      disabled={busyId === user.id}
-                      onClick={() => onUpdate(user.id, { credit_delta: 5 })}
-                    >
-                      +5
-                    </ActionBtn>
-                    <ActionBtn
-                      disabled={busyId === user.id}
-                      onClick={() => onUpdate(user.id, { credit_delta: -1 })}
-                    >
-                      −1
-                    </ActionBtn>
-                    <ActionBtn
-                      disabled={busyId === user.id}
-                      onClick={() => onUpdate(user.id, { is_pro: !user.is_pro })}
-                    >
-                      {user.is_pro ? 'Revoke Pro' : 'Grant Pro'}
-                    </ActionBtn>
-                    <ActionBtn
-                      disabled={busyId === user.id}
-                      className={user.is_banned ? '' : 'text-red-300'}
-                      onClick={() => onUpdate(user.id, { is_banned: !user.is_banned })}
-                    >
-                      {user.is_banned ? 'Unban' : 'Ban'}
-                    </ActionBtn>
-                  </div>
+                  <UserActions
+                    user={user}
+                    busy={busyId === user.id}
+                    onUpdate={onUpdate}
+                  />
                 </td>
               </tr>
             ))}

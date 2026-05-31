@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
-import { resolveVideoBrief } from "../_shared/video-prompt.ts";
+import {
+  generateVideoStrategy,
+  type TrendStrategyInput,
+} from "../_shared/video-strategy.ts";
 import {
   pickBackgroundMusic,
   synthesizeVoiceover,
@@ -27,24 +30,113 @@ import { generateId } from "../_shared/generate-id.ts";
 
 type Action = "create" | "poll" | "history" | "retry" | "health" | "library" | "delete";
 
-const SYNTHETIC_CLIPS = [
-  "/demo-videos/demo-1.mp4",
-  "/demo-videos/demo-2.mp4",
-  "/demo-videos/demo-3.mp4",
-  "/demo-videos/demo-4.mp4",
-] as const;
+function buildTrendStrategyInput(
+  body: Record<string, unknown>,
+  trendId: string,
+  title: string,
+): TrendStrategyInput {
+  const hookAnalysis = body.hook_analysis as TrendStrategyInput["hookAnalysis"];
+  const contentBreakdown = body.content_breakdown as TrendStrategyInput["contentBreakdown"];
 
-const SYNTHETIC_POSTERS: Record<string, string> = {
-  "/demo-videos/demo-1.mp4": "/demo-videos/demo-1-poster.jpg",
-  "/demo-videos/demo-2.mp4": "/demo-videos/demo-2-poster.jpg",
-  "/demo-videos/demo-3.mp4": "/demo-videos/demo-3-poster.jpg",
-  "/demo-videos/demo-4.mp4": "/demo-videos/demo-4-poster.jpg",
-};
+  return {
+    trendId: trendId || generateId(),
+    title,
+    niche: typeof body.niche === "string" ? body.niche : undefined,
+    platform: typeof body.platform === "string" ? body.platform : undefined,
+    description: typeof body.description === "string" ? body.description : undefined,
+    hookText: typeof body.hook_text === "string" ? body.hook_text : undefined,
+    videoDuration: typeof body.studio_duration === "string"
+      ? body.studio_duration
+      : undefined,
+    contentBreakdown,
+    hookAnalysis,
+    whyViral: typeof body.why_viral === "string" ? body.why_viral : undefined,
+    aiInsight: typeof body.ai_insight === "string" ? body.ai_insight : undefined,
+    engagementPrediction: typeof body.engagement_prediction === "string"
+      ? body.engagement_prediction
+      : undefined,
+    viralScore: typeof body.viral_score === "number" ? body.viral_score : undefined,
+    trendVelocity: typeof body.trend_velocity === "string"
+      ? body.trend_velocity
+      : undefined,
+    hookSuggestions: Array.isArray(body.hook_suggestions)
+      ? body.hook_suggestions.filter((v): v is string => typeof v === "string")
+      : undefined,
+    contentIdeas: Array.isArray(body.content_ideas)
+      ? body.content_ideas.filter((v): v is string => typeof v === "string")
+      : undefined,
+    aiRecommendations: Array.isArray(body.ai_recommendations)
+      ? body.ai_recommendations.filter((v): v is string => typeof v === "string")
+      : undefined,
+    ctaAngles: Array.isArray(body.cta_angles)
+      ? body.cta_angles.filter((v): v is string => typeof v === "string")
+      : undefined,
+    risingKeywords: Array.isArray(body.rising_keywords)
+      ? body.rising_keywords.filter((v): v is string => typeof v === "string")
+      : undefined,
+    hashtags: Array.isArray(body.hashtags)
+      ? body.hashtags.filter((v): v is string => typeof v === "string")
+      : undefined,
+    targetAudience: typeof body.target_audience === "string"
+      ? body.target_audience
+      : undefined,
+    monetizationPotential: typeof body.monetization_potential === "string"
+      ? body.monetization_potential
+      : undefined,
+    studioStyle: typeof body.studio_style === "string" ? body.studio_style : undefined,
+    studioDuration: typeof body.studio_duration === "string"
+      ? body.studio_duration
+      : undefined,
+  };
+}
 
-function hashPick<T>(arr: readonly T[], seed: string): T {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return arr[h % arr.length];
+async function runStrategyJob(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  jobId: string,
+  input: TrendStrategyInput,
+  generationId: string | null,
+  existingMetadata: Record<string, unknown> = {},
+) {
+  await supabaseAdmin.from("generated_videos").update({
+    status: "generating",
+    error_message: null,
+    updated_at: new Date().toISOString(),
+  }).eq("id", jobId);
+
+  const strategy = await generateVideoStrategy(input);
+  const primaryHook = strategy.hooks[0]?.text ?? input.hookText ?? input.title;
+
+  await supabaseAdmin.from("generated_videos").update({
+    status: "completed",
+    provider: "openai-strategy",
+    hook_text: primaryHook,
+    captions: strategy.captions,
+    scene_prompt: strategy.scenes[0]?.shotPrompt ?? strategy.concept,
+    prompt: strategy.concept,
+    duration: input.studioDuration ?? input.videoDuration ?? "0:15",
+    has_audio: false,
+    metadata: {
+      ...existingMetadata,
+      mode: "strategy",
+      niche: input.niche,
+      platform: input.platform,
+      pacing: strategy.pacing,
+      motionStyle: strategy.motionStyle,
+      visualMood: strategy.visualMood,
+      postingStrategy: strategy.postingStrategy,
+      blueprint: strategy,
+      generation_id: generationId,
+    },
+    updated_at: new Date().toISOString(),
+  }).eq("id", jobId);
+
+  const { data: row } = await supabaseAdmin.from("generated_videos")
+    .select("*")
+    .eq("id", jobId)
+    .single();
+
+  return row;
 }
 
 function jsonError(
@@ -386,6 +478,9 @@ serve(async (req) => {
       }
 
       if (action === "retry" && row.status === "failed") {
+        const meta = (row.metadata ?? {}) as Record<string, unknown>;
+        const trendInput = (meta.trendInput ?? {}) as TrendStrategyInput;
+
         await supabaseAdmin.from("generated_videos").update({
           status: "queued",
           retry_count: (row.retry_count ?? 0) + 1,
@@ -393,38 +488,43 @@ serve(async (req) => {
           updated_at: new Date().toISOString(),
         }).eq("id", jobId);
 
-        const brief = await resolveVideoBrief({
-          trendId: row.trend_id ?? jobId,
-          title: row.hook_text ?? "Trend Video",
-          niche: row.metadata?.niche,
-          platform: row.metadata?.platform,
-          hookText: row.hook_text,
-          generationNonce: generateId(),
-        });
+        try {
+          const updated = await runStrategyJob(
+            supabaseAdmin,
+            user.id,
+            jobId,
+            {
+              ...trendInput,
+              trendId: row.trend_id ?? jobId,
+              title: trendInput.title ?? row.hook_text ?? "Trend Video",
+            },
+            row.generation_id ?? null,
+            meta,
+          );
 
-        const providerJob = await startVideoProviderJob(
-          brief.scenePrompt,
-          row.aspect_ratio ?? "9:16",
-        );
+          return new Response(JSON.stringify({
+            ok: true,
+            job: formatJobRow(updated ?? row, appOrigin),
+          }), { headers: jsonHeaders });
+        } catch (strategyErr) {
+          const message = strategyErr instanceof Error
+            ? strategyErr.message
+            : String(strategyErr);
+          await supabaseAdmin.from("generated_videos").update({
+            status: "failed",
+            error_message: `[prompt] ${message}`,
+            updated_at: new Date().toISOString(),
+          }).eq("id", jobId);
 
-        await supabaseAdmin.from("generated_videos").update({
-          status: "generating",
-          provider: providerJob.provider,
-          external_job_id: providerJob.id,
-          scene_prompt: brief.scenePrompt,
-          hook_text: brief.hookText,
-          captions: brief.captions,
-          prompt: brief.scenePrompt,
-          updated_at: new Date().toISOString(),
-        }).eq("id", jobId);
-
-        return new Response(JSON.stringify({
-          ok: true,
-          job: { id: jobId, status: "generating", provider: providerJob.provider },
-        }), { headers: jsonHeaders });
+          return jsonError("prompt", message, 502);
+        }
       }
 
-      if (row.status === "completed" || row.status === "failed") {
+      const meta = (row.metadata ?? {}) as Record<string, unknown>;
+      const isStrategyJob = meta.mode === "strategy" ||
+        row.provider === "openai-strategy";
+
+      if (isStrategyJob || row.status === "completed" || row.status === "failed") {
         return new Response(JSON.stringify({
           ok: true,
           job: formatJobRow(row, appOrigin),
@@ -528,7 +628,7 @@ serve(async (req) => {
       }), { headers: jsonHeaders });
     }
 
-    // create
+    // create — OpenAI strategy blueprint (no MP4 rendering)
     const trendId = String(body.trend_id ?? "");
     const title = String(body.title ?? "Trend Video");
     const generationId = typeof body.generation_id === "string"
@@ -536,6 +636,15 @@ serve(async (req) => {
       : null;
 
     await ensureProfile(supabaseAdmin, user.id, user.email);
+
+    if (!envCheck.openaiApiKey) {
+      return jsonError(
+        "env",
+        "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
+        503,
+        { missing: ["OPENAI_API_KEY"] },
+      );
+    }
 
     const idempotencyKey = typeof body.idempotency_key === "string"
       ? body.idempotency_key
@@ -549,6 +658,7 @@ serve(async (req) => {
         trend_id: trendId,
         generation_id: generationId,
         title,
+        mode: "strategy",
       },
       idempotencyKey,
       email: user.email,
@@ -565,30 +675,14 @@ serve(async (req) => {
       );
     }
 
-    logPipeline("queue", "create job", { trendId, userId: user.id, cost: creditResult.cost })
+    const trendInput = buildTrendStrategyInput(body, trendId, title);
 
-    let brief
-    try {
-      brief = await resolveVideoBrief({
-        trendId: trendId || generateId(),
-        title,
-        niche: body.niche,
-        platform: body.platform,
-        description: body.description,
-        hookText: body.hook_text,
-        contentBreakdown: body.content_breakdown,
-        generationNonce: generateId(),
-      })
-      logPipeline("prompt", "brief ready", {
-        hookText: brief.hookText.slice(0, 80),
-        pacing: brief.pacing,
-      })
-    } catch (briefErr) {
-      const message = briefErr instanceof Error ? briefErr.message : String(briefErr)
-      return jsonError("prompt", `Prompt-Erstellung fehlgeschlagen: ${message}`, 500)
-    }
-
-    const musicUrl = pickBackgroundMusic(brief.visualMood, trendId || title);
+    logPipeline("queue", "create strategy job", {
+      trendId,
+      userId: user.id,
+      cost: creditResult.cost,
+      platform: trendInput.platform,
+    });
 
     const { data: inserted, error: insertErr } = await supabaseAdmin
       .from("generated_videos")
@@ -597,22 +691,18 @@ serve(async (req) => {
         generation_id: generationId,
         trend_id: trendId || null,
         status: "queued",
-        prompt: brief.scenePrompt,
-        scene_prompt: brief.scenePrompt,
-        hook_text: brief.hookText,
-        captions: brief.captions,
-        music_url: musicUrl,
+        provider: "openai-strategy",
         aspect_ratio: "9:16",
+        has_audio: false,
         metadata: {
-          niche: body.niche,
-          platform: body.platform,
-          pacing: brief.pacing,
-          motionStyle: brief.motionStyle,
-          visualMood: brief.visualMood,
+          mode: "strategy",
+          niche: trendInput.niche,
+          platform: trendInput.platform,
           studio_style: body.studio_style,
           studio_duration: body.studio_duration,
           enable_voiceover: body.enable_voiceover !== false,
           enable_captions: body.enable_captions !== false,
+          trendInput,
         },
       })
       .select("*")
@@ -624,119 +714,52 @@ serve(async (req) => {
         insertErr?.message ?? "Datenbank-Insert fehlgeschlagen",
         500,
         { code: insertErr?.code },
-      )
+      );
     }
 
-    logPipeline("video_generation", "start provider", {
-      jobId: inserted.id,
-      mode: envCheck.providerMode,
-    })
+    try {
+      const done = await runStrategyJob(
+        supabaseAdmin,
+        user.id,
+        inserted.id,
+        trendInput,
+        generationId,
+        (inserted.metadata ?? {}) as Record<string, unknown>,
+      );
 
-    const providerJob = await startVideoProviderJob(brief.scenePrompt, "9:16");
-
-    logPipeline("video_generation", "provider job", {
-      jobId: inserted.id,
-      provider: providerJob.provider,
-      status: providerJob.status,
-      externalId: providerJob.id,
-      error: providerJob.error,
-    })
-
-    if (providerJob.provider === "synthetic") {
-      const clip = hashPick(SYNTHETIC_CLIPS, `${user.id}:${inserted.id}`);
-      const poster = SYNTHETIC_POSTERS[clip] ?? "";
-      const base = appOrigin.replace(/\/$/, "");
-      const videoUrl = base ? `${base}${clip}` : clip;
-
-      const voiceBytes = await synthesizeVoiceover(brief.hookText, inserted.id);
-      let voiceoverUrl: string | null = null;
-      if (voiceBytes) {
-        const voiceUpload = await uploadBytes(
-          supabaseAdmin,
-          `${user.id}/${inserted.id}-voice.mp3`,
-          voiceBytes,
-          "audio/mpeg",
-        );
-        voiceoverUrl = voiceUpload.url
-      }
-
-      logPipeline("compose", "synthetic complete", {
+      logPipeline("prompt", "strategy complete", {
         jobId: inserted.id,
-        videoUrl,
-        voiceoverUrl,
-        appOrigin: base || "(relative)",
-      })
-
-      await supabaseAdmin.from("generated_videos").update({
-        status: "completed",
-        provider: "synthetic",
-        video_url: videoUrl,
-        poster_url: base ? `${base}${poster}` : poster,
-        voiceover_url: voiceoverUrl,
-        duration: "0:15",
-        has_audio: Boolean(voiceoverUrl),
-        metadata: {
-          ...inserted.metadata,
-          synthetic: true,
-          storage_bucket: getStorageBucket(),
-          note: envCheck.replicateApiToken
-            ? "Synthetic fallback"
-            : "Set REPLICATE_API_TOKEN or LUMA_API_KEY for true AI video",
-        },
-        updated_at: new Date().toISOString(),
-      }).eq("id", inserted.id);
-
-      const { data: done } = await supabaseAdmin.from("generated_videos")
-        .select("*").eq("id", inserted.id).single();
+        hooks: (done?.metadata as Record<string, unknown>)?.blueprint
+          ? "ok"
+          : "missing",
+      });
 
       return new Response(JSON.stringify({
         ok: true,
         job: formatJobRow(done ?? inserted, appOrigin),
       }), { headers: jsonHeaders });
-    }
-
-    await supabaseAdmin.from("generated_videos").update({
-      status: providerJob.status === "succeeded" ? "processing" : "generating",
-      provider: providerJob.provider,
-      external_job_id: providerJob.id,
-      updated_at: new Date().toISOString(),
-    }).eq("id", inserted.id);
-
-    if (providerJob.status === "succeeded" && providerJob.outputUrl) {
-      const persisted = await persistRemoteVideo(
-        supabaseAdmin,
-        user.id,
-        inserted.id,
-        providerJob.outputUrl,
-      );
+    } catch (strategyErr) {
+      const message = strategyErr instanceof Error
+        ? strategyErr.message
+        : String(strategyErr);
+      logPipeline("prompt", "strategy failed", { jobId: inserted.id, message });
 
       await supabaseAdmin.from("generated_videos").update({
-        status: "completed",
-        video_url: persisted.url,
-        has_audio: true,
-        error_message: persisted.storageError
-          ? `[storage] ${persisted.storageError}`
-          : null,
+        status: "failed",
+        error_message: `[prompt] ${message}`,
         updated_at: new Date().toISOString(),
       }).eq("id", inserted.id);
+
+      const { data: failedRow } = await supabaseAdmin.from("generated_videos")
+        .select("*")
+        .eq("id", inserted.id)
+        .single();
+
+      return new Response(JSON.stringify({
+        ok: true,
+        job: formatJobRow(failedRow ?? inserted, appOrigin),
+      }), { headers: jsonHeaders });
     }
-
-    if (providerJob.status === "failed") {
-      return jsonError(
-        "video_generation",
-        providerJob.error ?? "Video-Provider hat den Job abgelehnt",
-        502,
-        { provider: providerJob.provider, externalJobId: providerJob.id },
-      )
-    }
-
-    const { data: finalRow } = await supabaseAdmin.from("generated_videos")
-      .select("*").eq("id", inserted.id).single();
-
-    return new Response(JSON.stringify({
-      ok: true,
-      job: formatJobRow(finalRow ?? inserted, appOrigin),
-    }), { headers: jsonHeaders });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Interner Fehler";
     console.error("[generate-video][unknown]", err);
@@ -853,7 +876,11 @@ function formatJobRow(
     posterUrl = `${appOrigin.replace(/\/$/, "")}${posterUrl}`;
   }
 
-  const meta = (row.metadata ?? {}) as Record<string, string>;
+  const meta = (row.metadata ?? {}) as Record<string, unknown>;
+  const blueprint = meta.blueprint ?? null;
+  const postingStrategy = typeof meta.postingStrategy === "string"
+    ? meta.postingStrategy
+    : undefined;
 
   return {
     id: row.id,
@@ -864,15 +891,18 @@ function formatJobRow(
     hookText: row.hook_text,
     captions: row.captions ?? [],
     scenePrompt: row.scene_prompt ?? row.prompt,
-    pacing: meta.pacing,
-    motionStyle: meta.motionStyle,
-    visualMood: meta.visualMood,
+    pacing: meta.pacing as string | undefined,
+    motionStyle: meta.motionStyle as string | undefined,
+    visualMood: meta.visualMood as string | undefined,
     voiceoverUrl: row.voiceover_url,
     musicUrl: row.music_url,
     duration: row.duration ?? "0:15",
-    hasAudio: row.has_audio ?? true,
+    hasAudio: row.has_audio ?? false,
     errorMessage: row.error_message,
     trendId: row.trend_id,
     createdAt: row.created_at,
+    blueprint,
+    postingStrategy,
+    mode: meta.mode === "strategy" ? "strategy" : "video",
   };
 }

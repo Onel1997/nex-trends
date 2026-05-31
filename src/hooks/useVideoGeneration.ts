@@ -9,7 +9,7 @@ import {
   type PremiumVideoError,
 } from '@/lib/video-pipeline-errors'
 import { buildVideoBlueprint } from '@/lib/video-blueprint'
-import { runCraftingPhase, CRAFTING_MESSAGES } from '@/lib/video-blueprint-loading'
+import { CRAFTING_MESSAGES } from '@/lib/video-blueprint-loading'
 import {
   logVideoPipelineError,
   PREMIUM_PIPELINE_MESSAGES,
@@ -156,6 +156,10 @@ export function useVideoGeneration() {
           return
         }
 
+        if (s === 'queued') {
+          setStudioPhase('crafting')
+        }
+
         if (s === 'generating' || s === 'processing') {
           setStudioPhase('rendering')
         }
@@ -164,7 +168,7 @@ export function useVideoGeneration() {
           setDetail(
             sanitizeVideoUiMessage(
               msg,
-              meta?.retryAttempt ? 'retry' : 'rendering',
+              s === 'queued' ? 'crafting' : meta?.retryAttempt ? 'retry' : 'rendering',
               meta?.retryAttempt ?? 0,
             ),
           )
@@ -181,16 +185,7 @@ export function useVideoGeneration() {
       }
 
       try {
-        const craftingPromise = runCraftingPhase(
-          (msg) => {
-            if (controller.signal.aborted) return
-            setStudioPhase('crafting')
-            setDetail(msg)
-          },
-          controller.signal,
-        )
-
-        const videoPromise = runVideoGenerationJob(
+        const result = await runVideoGenerationJob(
           trend,
           onStatus,
           {
@@ -205,15 +200,13 @@ export function useVideoGeneration() {
           },
         )
 
-        const [, result] = await Promise.all([craftingPromise, videoPromise])
-
         if (controller.signal.aborted) return null
 
         applyResult(result)
 
-        if (result.status === 'completed') {
-          setVideoUrl(result.videoUrl)
-          setPosterUrl(result.posterUrl)
+        if (result.status === 'completed' && result.blueprint) {
+          setVideoUrl(result.videoUrl || null)
+          setPosterUrl(result.posterUrl || null)
           setHasAudio(result.hasAudio)
           setBlueprint(buildVideoBlueprint(trend, result))
           setStudioPhase('completed')
@@ -222,12 +215,13 @@ export function useVideoGeneration() {
           if (generationId) {
             await patchGeneration(generationId, {
               status: 'completed',
-              output_url: result.videoUrl,
+              output_url: result.videoUrl || undefined,
             })
           }
           return result
         }
 
+        applyResult(result)
         applyFailure(result.message)
         if (generationId) {
           await patchGeneration(generationId, { status: 'failed', error_message: '[redacted]' })

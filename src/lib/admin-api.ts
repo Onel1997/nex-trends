@@ -181,6 +181,8 @@ export function updateAdminUser(
   patch: {
     credit_delta?: number
     set_credits?: number
+    plan?: string
+    /** @deprecated Prefer plan — kept for backward compatibility */
     is_pro?: boolean
     is_banned?: boolean
   },

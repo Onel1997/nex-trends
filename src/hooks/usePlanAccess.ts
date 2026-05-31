@@ -24,6 +24,8 @@ export function usePlanAccess() {
     [userPlan],
   )
 
+  const hasFeatureAccess = canUseFeature
+
   const requestUpgrade = useCallback(
     (routeId?: DashboardRouteId) => {
       if (isAdmin) return
@@ -40,6 +42,7 @@ export function usePlanAccess() {
       isAdmin,
       canAccess,
       canUseFeature,
+      hasFeatureAccess,
       requestUpgrade,
       openUpgradeModal,
     }),
@@ -49,6 +52,7 @@ export function usePlanAccess() {
       isAdmin,
       canAccess,
       canUseFeature,
+      hasFeatureAccess,
       requestUpgrade,
       openUpgradeModal,
     ],

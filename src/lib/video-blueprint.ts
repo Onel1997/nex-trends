@@ -3,145 +3,143 @@ import type { VideoGenerationResult } from '@/lib/video-generation-pipeline'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 import type {
   VideoBlueprint,
+  VideoBlueprintCta,
   VideoBlueprintHook,
+  VideoBlueprintPlatformOptimization,
   VideoBlueprintScene,
+  VideoBlueprintViralElements,
 } from '@/types/video-blueprint'
 
-const CAMERA_ANGLES = [
-  'Extreme Close-Up (ECU)',
-  'POV Handheld',
-  'Low-Angle Hero Shot',
-  'Over-the-Shoulder',
-  'Dutch Angle Dynamic',
-  'Macro Detail Pull',
-  'Gimbal Orbit 360°',
-  'Whip-Pan Transition',
-] as const
-
-const HOOK_STYLES = [
-  'Pattern Interrupt',
-  'Curiosity Gap',
-  'Contrarian Take',
-  'Social Proof',
-  'Before/After Tease',
-] as const
-
-function hashSeed(input: string): number {
-  let h = 0
-  for (let i = 0; i < input.length; i++) h = (h * 31 + input.charCodeAt(i)) >>> 0
-  return h
+function asString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback
 }
 
-function pick<T>(arr: readonly T[], seed: number, offset = 0): T {
-  return arr[(seed + offset) % arr.length]
+function asNumber(value: unknown, fallback: number): number {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
 }
 
-function platformKey(platform: string): 'tiktok' | 'reels' | 'shorts' {
-  const p = platform.toLowerCase()
-  if (p.includes('instagram') || p.includes('reel')) return 'reels'
-  if (p.includes('youtube') || p.includes('short')) return 'shorts'
-  return 'tiktok'
+function asStringArray(value: unknown, max = 8): string[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+    .map((v) => v.trim())
+    .slice(0, max)
 }
 
-function buildHooks(trend: TrendIntelligence, seed: number, primary: string): VideoBlueprintHook[] {
-  const candidates = [
-    primary,
-    trend.hookAnalysis.hookText,
-    ...(trend.hookSuggestions ?? []),
-    ...(trend.contentIdeas ?? []).slice(0, 1),
-  ].filter(Boolean)
-
-  const unique = [...new Set(candidates)].slice(0, 4)
-
-  return unique.map((text, i) => ({
-    text,
-    retentionScore: Math.min(99, trend.hookAnalysis.hookScore + 4 - i * 3 + (seed % 5)),
-    style: pick(HOOK_STYLES, seed, i),
-    duration: '0–3s',
-  }))
+function mapHooks(raw: unknown): VideoBlueprintHook[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((item, i) => {
+      if (!item || typeof item !== 'object') return null
+      const h = item as Record<string, unknown>
+      const text = asString(h.text ?? h.hook)
+      if (!text) return null
+      return {
+        text,
+        retentionScore: asNumber(h.retentionScore, 80 - i * 3),
+        style: asString(h.style, 'Curiosity Gap'),
+        duration: asString(h.duration, '0–3s'),
+      }
+    })
+    .filter((h): h is VideoBlueprintHook => h !== null)
 }
 
-function sceneTimeRanges(count: number, duration: string): string[] {
-  const seconds = duration.includes('0:30') ? 30 : duration.includes('0:60') ? 60 : 15
-  const slice = Math.floor(seconds / count)
-  return Array.from({ length: count }, (_, i) => {
-    const start = i * slice
-    const end = i === count - 1 ? seconds : (i + 1) * slice
-    return `${start}–${end}s`
-  })
-}
-
-function buildScenes(
-  trend: TrendIntelligence,
-  result: VideoGenerationResult,
-  captions: string[],
-  seed: number,
-): VideoBlueprintScene[] {
-  const scenePrompt = result.scenePrompt ?? trend.contentBreakdown.visualStyle
-  const pacing = result.pacing ?? trend.contentBreakdown.pacing
-  const motion = result.motionStyle ?? 'Dynamic cuts'
-  const duration = result.duration ?? trend.videoDuration ?? '0:15'
-  const ranges = sceneTimeRanges(Math.min(4, captions.length), duration)
-
-  const visualBeats = [
-    `Hook reveal — ${scenePrompt}`,
-    `Value build — ${trend.niche ?? 'Niche'} insight with ${motion}`,
-    `Proof / demo — social proof overlay, ${trend.contentBreakdown.format}`,
-    `CTA close — neon accent, direct eye-line`,
-  ]
-
-  return ranges.map((timeRange, i) => ({
-    id: i + 1,
-    label: i === 0 ? 'Hook' : i === ranges.length - 1 ? 'CTA Outro' : `Beat ${i + 1}`,
-    timeRange,
-    cameraAngle: pick(CAMERA_ANGLES, seed, i + 1),
-    visualDirection: visualBeats[i] ?? visualBeats[visualBeats.length - 1],
-    pacing: i === 0 ? 'Snap cut — 0.5s impact' : i === ranges.length - 1 ? 'Hold + breathe' : pacing,
-    overlayText: captions[i] ?? captions[captions.length - 1],
-    voiceoverLine: captions[i],
-    shotPrompt: `${scenePrompt}. Scene ${i + 1}: ${visualBeats[i]}. 9:16 vertical.`,
-  }))
-}
-
-function buildPlatformOptimization(trend: TrendIntelligence): VideoBlueprint['platformOptimization'] {
-  const niche = trend.niche ?? 'Creator'
-  const key = platformKey(trend.platform)
-
-  const tips = {
-    tiktok: `Front-load hook in 0.8s · trending sound layer · ${niche} hashtags · duet-stitch bait in caption`,
-    reels: `Clean aesthetic · carousel tease in caption · save-worthy tip mid-video · subtle brand safe`,
-    shorts: `Title-card hook · chapter markers · SEO title: "${trend.title.slice(0, 55)}" · end-screen subscribe CTA`,
+function mapScenes(raw: unknown): VideoBlueprintScene[] {
+  if (!Array.isArray(raw)) return []
+  const scenes: VideoBlueprintScene[] = []
+  for (let i = 0; i < raw.length; i++) {
+    const item = raw[i]
+    if (!item || typeof item !== 'object') continue
+    const s = item as Record<string, unknown>
+    const visualDirection = asString(s.visualDirection ?? s.visual)
+    if (!visualDirection) continue
+    const scene: VideoBlueprintScene = {
+      id: asNumber(s.id, i + 1),
+      label: asString(s.label, `Scene ${i + 1}`),
+      timeRange: asString(s.timeRange, `${i * 4}–${(i + 1) * 4}s`),
+      cameraAngle: asString(s.cameraAngle, 'POV Handheld'),
+      visualDirection,
+      pacing: asString(s.pacing, 'Dynamic'),
+      overlayText: asString(s.overlayText ?? s.overlay, visualDirection.slice(0, 60)),
+    }
+    const voiceoverLine = asString(s.voiceoverLine ?? s.voiceover)
+    const shotPrompt = asString(s.shotPrompt ?? s.shot)
+    if (voiceoverLine) scene.voiceoverLine = voiceoverLine
+    if (shotPrompt) scene.shotPrompt = shotPrompt
+    scenes.push(scene)
   }
+  return scenes
+}
 
-  const primaryTip = tips[key]
+function mapCta(raw: unknown, trend: TrendIntelligence): VideoBlueprintCta {
+  const c = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   return {
-    primary: trend.platform,
-    tiktok: key === 'tiktok' ? `★ ${primaryTip}` : tips.tiktok,
-    reels: key === 'reels' ? `★ ${primaryTip}` : tips.reels,
-    shorts: key === 'shorts' ? `★ ${primaryTip}` : tips.shorts,
+    engagement: asString(c.engagement, trend.ctaAngles?.[0] ?? 'Speichern & teilen'),
+    follow: asString(c.follow, `Folge für mehr ${trend.niche ?? 'Viral'}-Content`),
+    commentBait: asString(c.commentBait, trend.hookSuggestions?.[0] ?? 'Was denkst du? 👇'),
   }
 }
 
+function mapViralElements(raw: unknown, trend: TrendIntelligence): VideoBlueprintViralElements {
+  const v = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  return {
+    performanceHypothesis: asString(
+      v.performanceHypothesis ?? v.hypothesis,
+      trend.whyViral ?? trend.engagementPrediction ?? trend.aiInsight ?? '',
+    ),
+    emotionalTriggers: asStringArray(v.emotionalTriggers, 6).length > 0
+      ? asStringArray(v.emotionalTriggers, 6)
+      : [trend.hookAnalysis.retentionTrigger, ...(trend.aiRecommendations?.slice(0, 2) ?? [])].filter(Boolean),
+    algorithmFit: asStringArray(v.algorithmFit, 6).length > 0
+      ? asStringArray(v.algorithmFit, 6)
+      : [
+          `${trend.trendVelocity} velocity · ${trend.platform}`,
+          trend.contentBreakdown.format,
+          `Best post: ${trend.contentBreakdown.bestPostTime}`,
+        ],
+  }
+}
+
+function mapPlatformOptimization(
+  raw: unknown,
+  trend: TrendIntelligence,
+): VideoBlueprintPlatformOptimization {
+  const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  return {
+    primary: asString(p.primary, trend.platform),
+    tiktok: asString(p.tiktok, 'Hook in 0.8s · Trending sound · Niche hashtags'),
+    reels: asString(p.reels, 'Clean aesthetic · Save-worthy tip'),
+    shorts: asString(p.shorts, 'Title-card hook · SEO title · Subscribe CTA'),
+  }
+}
+
+/** Maps OpenAI strategy response from edge function into client VideoBlueprint. */
 export function buildVideoBlueprint(
   trend: TrendIntelligence,
   result: VideoGenerationResult,
 ): VideoBlueprint {
-  const seed = hashSeed(`${trend.id}:${result.jobId ?? generateId()}`)
-  const primaryHook = result.hookText ?? trend.hookAnalysis.hookText
-  const captions = result.captions?.length
-    ? result.captions
-    : [
-        primaryHook.slice(0, 72),
-        `Warum ${trend.niche ?? 'das'} gerade explodiert`,
-        trend.engagementPrediction.slice(0, 60),
-        trend.contentBreakdown.ctaStrategy,
-      ]
+  const server = (result.blueprint ?? {}) as Record<string, unknown>
+  const primaryHook = result.hookText ?? asString(
+    (server.hooks as unknown[])?.[0] &&
+      typeof (server.hooks as unknown[])[0] === 'object'
+      ? ((server.hooks as Record<string, unknown>[])[0]?.text)
+      : undefined,
+    trend.hookAnalysis.hookText,
+  )
 
-  const concept =
-    trend.aiInsight ??
-    `${trend.title} — scroll-stopping ${trend.niche ?? 'viral'} short optimized for ${trend.platform}`
+  const hooks = mapHooks(server.hooks)
+  const scenes = mapScenes(server.scenes)
+  const captions = asStringArray(server.captions, 8).length > 0
+    ? asStringArray(server.captions, 8)
+    : result.captions ?? [primaryHook]
 
-  const scenes = buildScenes(trend, result, captions, seed)
+  const voiceoverScript = asString(
+    server.voiceoverScript ?? server.voiceover,
+    hooks.map((h) => h.text).join('\n') || primaryHook,
+  )
+
+  const postingStrategy = result.postingStrategy ?? asString(server.postingStrategy)
 
   return {
     id: generateId(),
@@ -150,52 +148,38 @@ export function buildVideoBlueprint(
     platform: trend.platform,
     niche: trend.niche ?? trend.contentBreakdown.format,
     createdAt: new Date().toISOString(),
-    concept,
-    hooks: buildHooks(trend, seed, primaryHook),
-    scenes,
+    concept: asString(server.concept, trend.aiInsight ?? trend.title),
+    hooks: hooks.length > 0 ? hooks : [{
+      text: primaryHook,
+      retentionScore: trend.hookAnalysis.hookScore,
+      style: trend.hookAnalysis.hookType,
+      duration: '0–3s',
+    }],
+    scenes: scenes.length > 0 ? scenes : [],
     captions,
-    cta: {
-      engagement: trend.ctaAngles?.[0] ?? `Speichere das — ${trend.niche ?? 'Trend'} peakt gerade`,
-      follow: `Folge für tägliche ${trend.niche ?? 'Viral'}-Breakdowns`,
-      commentBait: trend.hookSuggestions?.[0] ?? 'Was würdest du als Hook testen? 👇',
-    },
-    viralElements: {
-      performanceHypothesis:
-        trend.whyViral ??
-        trend.engagementPrediction ??
-        `High retention via ${trend.hookAnalysis.retentionTrigger} — Score ${trend.viralScore}/100`,
-      emotionalTriggers: [
-        trend.hookAnalysis.retentionTrigger,
-        ...(trend.aiRecommendations?.slice(0, 2) ?? ['Curiosity', 'FOMO']),
-      ],
-      algorithmFit: [
-        `${trend.trendVelocity} velocity · ${trend.platform} native format`,
-        trend.contentBreakdown.format,
-        `Best post: ${trend.contentBreakdown.bestPostTime}`,
-        ...(trend.risingKeywords?.slice(0, 2).map((k) => `#${k.replace(/^#/, '')}`) ?? []),
-      ],
-    },
-    platformOptimization: buildPlatformOptimization(trend),
+    cta: mapCta(server.cta, trend),
+    viralElements: mapViralElements(server.viralElements, trend),
+    platformOptimization: mapPlatformOptimization(server.platformOptimization, trend),
+    postingStrategy,
     pipeline: {
       voiceover: {
-        status: result.voiceoverUrl ? 'completed' : result.hasAudio ? 'ready' : 'pending',
-        script: [primaryHook, ...captions.slice(1)].join(' → '),
+        status: 'ready',
+        script: voiceoverScript,
         voiceStyle: result.visualMood ?? 'Confident creator DE',
         url: result.voiceoverUrl,
       },
       shots: {
-        status: result.videoUrl ? 'completed' : 'generating',
+        status: 'pending',
         items: scenes.map((s) => ({
           sceneId: s.id,
           prompt: s.shotPrompt ?? s.visualDirection,
-          url: result.videoUrl && s.id === 1 ? result.videoUrl : undefined,
         })),
       },
       avatar: { status: 'disabled', config: null },
       render: {
-        status: result.status === 'completed' ? 'completed' : result.status === 'failed' ? 'failed' : 'processing',
-        url: result.videoUrl,
-        posterUrl: result.posterUrl,
+        status: result.videoUrl ? 'completed' : 'pending',
+        url: result.videoUrl || undefined,
+        posterUrl: result.posterUrl || undefined,
         provider: result.provider,
         jobId: result.jobId,
       },

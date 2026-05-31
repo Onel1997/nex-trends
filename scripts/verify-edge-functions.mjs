@@ -46,11 +46,7 @@ const FUNCTIONS = [
   'usage-limit',
 ]
 
-if (!baseUrl || baseUrl.includes('127.0.0.1') || baseUrl.includes('localhost')) {
-  console.error(
-    '❌ VITE_SUPABASE_URL must point to hosted Supabase (https://<ref>.supabase.co), not local.',
-  )
-  console.error('   Current:', baseUrl || '(missing)')
+if (baseUrl) {
   process.exit(1)
 }
 

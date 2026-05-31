@@ -168,11 +168,15 @@ export function VideoBlueprintPanel({
           <div>
             <div className="flex items-center gap-2">
               <span className="creator-badge-live">Blueprint Ready</span>
-              {blueprint.pipeline.render.status === 'completed' ? (
+              {blueprint.pipeline.render.status === 'completed' && blueprint.pipeline.render.url ? (
                 <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
                   Video gerendert
                 </span>
-              ) : null}
+              ) : (
+                <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-300">
+                  Strategie · OpenAI
+                </span>
+              )}
             </div>
             <h3 className="mt-2 text-lg font-semibold tracking-tight text-white sm:text-xl">
               Viral Video Blueprint
@@ -328,6 +332,59 @@ export function VideoBlueprintPanel({
       </BlueprintSection>
 
       <BlueprintSection
+        id="voiceover"
+        title="Voiceover Script"
+        subtitle="Full spoken script for recording or TTS"
+        accent="violet"
+        onCopy={() => void copyText(blueprint.pipeline.voiceover.script, 'Voiceover')}
+      >
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
+          {blueprint.pipeline.voiceover.script}
+        </p>
+      </BlueprintSection>
+
+      <BlueprintSection
+        id="shots"
+        title="Shot List"
+        subtitle={`${blueprint.pipeline.shots.items.length} AI-ready prompts`}
+        accent="cyan"
+        defaultOpen={false}
+        onCopy={() =>
+          void copyText(
+            blueprint.pipeline.shots.items
+              .map((s) => `Scene ${s.sceneId}: ${s.prompt}`)
+              .join('\n\n'),
+            'Shot List',
+          )
+        }
+      >
+        <ul className="space-y-2">
+          {blueprint.pipeline.shots.items.map((shot) => (
+            <li
+              key={shot.sceneId}
+              className="rounded-lg border border-cyan-500/10 bg-cyan-500/5 px-3 py-2.5 text-xs text-zinc-400"
+            >
+              <span className="font-semibold text-cyan-300/90">Scene {shot.sceneId}</span>
+              <p className="mt-1 leading-relaxed">{shot.prompt}</p>
+            </li>
+          ))}
+        </ul>
+      </BlueprintSection>
+
+      {blueprint.postingStrategy ? (
+        <BlueprintSection
+          id="posting"
+          title="Posting Strategy"
+          subtitle="Schedule, hashtags & distribution"
+          accent="emerald"
+          defaultOpen={false}
+          onCopy={() => void copyText(blueprint.postingStrategy ?? '', 'Posting Strategy')}
+        >
+          <p className="text-sm leading-relaxed text-zinc-300">{blueprint.postingStrategy}</p>
+        </BlueprintSection>
+      ) : null}
+
+      <BlueprintSection
         id="captions"
         title="Captions"
         subtitle="Short-form overlay lines"
@@ -444,7 +501,7 @@ export function VideoBlueprintPanel({
 
       <footer className="rounded-xl border border-dashed border-zinc-800/60 bg-zinc-950/30 px-3 py-2.5 text-center">
         <p className="text-[10px] uppercase tracking-widest text-zinc-600">
-          Pipeline-ready · Voiceover · Shots · Avatar · MP4
+          Strategy Blueprint · MP4 rendering coming soon
         </p>
       </footer>
     </div>

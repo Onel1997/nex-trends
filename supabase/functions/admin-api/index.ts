@@ -15,7 +15,13 @@ import {
 } from "../_shared/admin-db.ts";
 import { KNOWN_ADMIN_ACTIONS, normalizeAdminAction } from "../_shared/admin-actions.ts";
 import { SIGNUP_CREDITS } from "../_shared/credits.ts";
-import { planMonthlyCredits } from "../_shared/plans.ts";
+import {
+  legacyIsPro,
+  normalizePlanId,
+  planMonthlyCredits,
+  type PlanId,
+} from "../_shared/plans.ts";
+import { applyPlanToProfile } from "../_shared/usage.ts";
 
 const MAX_ADMIN_SET_CREDITS = planMonthlyCredits("studio") ?? 5000;
 
@@ -28,11 +34,11 @@ const corsHeaders = {
 const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
 const PROFILE_SELECT_FULL =
-  "id, is_pro, subscription_status, credit_balance, monthly_usage_count, is_banned, banned_at";
+  "id, plan, is_pro, subscription_status, credit_balance, monthly_usage_count, is_banned, banned_at";
 const PROFILE_SELECT_MINIMAL =
-  "id, is_pro, subscription_status, credit_balance, monthly_usage_count";
+  "id, plan, is_pro, subscription_status, credit_balance, monthly_usage_count";
 const PROFILE_SELECT_OVERVIEW =
-  "id, is_pro, subscription_status, monthly_usage_count, is_banned";
+  "id, plan, is_pro, subscription_status, monthly_usage_count, is_banned";
 
 type AdminAction =
   | "overview"
@@ -48,6 +54,7 @@ type AdminAction =
 
 type ProfileRow = {
   id: string;
+  plan?: string | null;
   is_pro?: boolean;
   subscription_status?: string | null;
   credit_balance?: number | null;
@@ -87,6 +94,7 @@ function mergeWarnings(...groups: string[][]): string[] {
 function asProfileRow(row: Record<string, unknown>): ProfileRow {
   return {
     id: String(row.id),
+    plan: (row.plan as string | null) ?? "free",
     is_pro: row.is_pro === true,
     subscription_status: (row.subscription_status as string | null) ?? "inactive",
     credit_balance: typeof row.credit_balance === "number"
@@ -235,9 +243,10 @@ serve(async (req) => {
       const authUsers = authResult.data;
 
       const totalUsers = Math.max(authUsers.length, profileRows.length);
-      const proUsers = profileRows.filter(
-        (p) => p.is_pro && p.subscription_status === "active",
-      ).length;
+      const proUsers = profileRows.filter((p) => {
+        const plan = normalizePlanId(p.plan ?? "free");
+        return legacyIsPro(plan, p.subscription_status ?? null);
+      }).length;
 
       const gensResult = await safeAiGenerationsInPeriod(
         supabaseAdmin,
@@ -310,13 +319,15 @@ serve(async (req) => {
 
       let users = sourceUsers.map((u) => {
         const profile = profileMap.get(u.id);
+        const plan = normalizePlanId(profile?.plan ?? "free");
         return {
           id: u.id,
           email: u.email ?? "—",
           created_at: u.created_at ?? new Date(0).toISOString(),
           credit_balance: profile?.credit_balance ?? SIGNUP_CREDITS,
           monthly_usage_count: profile?.monthly_usage_count ?? 0,
-          is_pro: profile?.is_pro ?? false,
+          plan,
+          is_pro: profile?.is_pro ?? legacyIsPro(plan, profile?.subscription_status ?? null),
           subscription_status: profile?.subscription_status ?? "inactive",
           is_banned: profile?.is_banned ?? false,
           banned_at: profile?.banned_at ?? null,
@@ -343,10 +354,27 @@ serve(async (req) => {
       if (!userId) return errorResponse("userId fehlt", 400);
 
       const updates: Record<string, unknown> = {};
+      let planApplied = false;
 
-      if (typeof body.is_pro === "boolean") {
-        updates.is_pro = body.is_pro;
-        updates.subscription_status = body.is_pro ? "active" : "inactive";
+      if (typeof body.plan === "string" && body.plan.trim()) {
+        const plan = normalizePlanId(body.plan) as PlanId;
+        const subscriptionStatus = plan === "free" ? "inactive" : "active";
+        await applyPlanToProfile(
+          supabaseAdmin,
+          userId,
+          plan,
+          subscriptionStatus,
+        );
+        planApplied = true;
+      } else if (typeof body.is_pro === "boolean") {
+        const plan: PlanId = body.is_pro ? "pro_creator" : "free";
+        await applyPlanToProfile(
+          supabaseAdmin,
+          userId,
+          plan,
+          body.is_pro ? "active" : "inactive",
+        );
+        planApplied = true;
       }
 
       if (typeof body.credit_delta === "number") {
@@ -375,16 +403,27 @@ serve(async (req) => {
         updates.banned_at = body.is_banned ? new Date().toISOString() : null;
       }
 
-      if (Object.keys(updates).length === 0) {
+      if (Object.keys(updates).length === 0 && !planApplied) {
         return errorResponse("Keine Updates angegeben", 400);
       }
 
-      let { data, error } = await supabaseAdmin
-        .from("profiles")
-        .update(updates)
-        .eq("id", userId)
-        .select(PROFILE_SELECT_FULL)
-        .single();
+      let data = null;
+      let error = null;
+
+      if (Object.keys(updates).length > 0) {
+        ({ data, error } = await supabaseAdmin
+          .from("profiles")
+          .update(updates)
+          .eq("id", userId)
+          .select(PROFILE_SELECT_FULL)
+          .single());
+      } else {
+        ({ data, error } = await supabaseAdmin
+          .from("profiles")
+          .select(PROFILE_SELECT_FULL)
+          .eq("id", userId)
+          .single());
+      }
 
       if (error && typeof body.is_banned === "boolean") {
         const { is_banned: _b, banned_at: _a, ...withoutBan } = updates;

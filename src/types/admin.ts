@@ -6,6 +6,7 @@ export type AdminUser = {
   created_at: string
   credit_balance: number
   monthly_usage_count: number
+  plan: string
   is_pro: boolean
   subscription_status: string
   is_banned: boolean

@@ -4,9 +4,6 @@ import type { GeneratedVideoHistoryItem, GeneratedVideoJob } from '@/types/gener
 import type { StudioCreateOptions } from '@/lib/ai-studio'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
-const POLL_INTERVAL_MS = 2_500
-const MAX_POLL_MS = 180_000
-
 function log(scope: string, detail?: unknown) {
   if (
     import.meta.env.DEV ||
@@ -35,47 +32,78 @@ type HistoryRow = GeneratedVideoHistoryItem & {
   error_message?: string
   trend_id?: string
   created_at?: string
+  metadata?: Record<string, unknown>
 }
 
 type HistoryResponse = { ok?: boolean; items?: HistoryRow[]; error?: string }
 
-export async function createVideoJob(
-  trend: TrendIntelligence,
-  generationId?: string | null,
-  studio?: StudioCreateOptions,
-): Promise<GeneratedVideoJob> {
-  log('create', { trendId: trend.id })
-
-  const result = await invokeEdgeFunction<CreateResponse>('generate-video', {
-    action: 'create',
+function buildTrendPayload(trend: TrendIntelligence, studio?: StudioCreateOptions) {
+  return {
     trend_id: trend.id,
     title: trend.title,
     niche: trend.niche,
     platform: trend.platform,
     description: trend.description,
     hook_text: trend.hookAnalysis?.hookText ?? trend.title,
-    generation_id: generationId ?? undefined,
-    idempotency_key: generationId ? `video:${generationId}` : undefined,
     content_breakdown: trend.contentBreakdown,
+    hook_analysis: trend.hookAnalysis,
+    why_viral: trend.whyViral,
+    ai_insight: trend.aiInsight,
+    engagement_prediction: trend.engagementPrediction,
+    viral_score: trend.viralScore,
+    trend_velocity: trend.trendVelocity,
+    hook_suggestions: trend.hookSuggestions,
+    content_ideas: trend.contentIdeas,
+    ai_recommendations: trend.aiRecommendations,
+    cta_angles: trend.ctaAngles,
+    rising_keywords: trend.risingKeywords,
+    hashtags: trend.hashtags,
+    target_audience: trend.targetAudience,
+    monetization_potential: trend.monetizationPotential,
     studio_duration: studio?.duration ?? trend.videoDuration,
     studio_style: studio?.style ?? trend.niche,
     enable_voiceover: studio?.enableVoiceover ?? true,
     enable_captions: studio?.enableCaptions ?? true,
+  }
+}
+
+export async function createVideoStrategyJob(
+  trend: TrendIntelligence,
+  generationId?: string | null,
+  studio?: StudioCreateOptions,
+): Promise<GeneratedVideoJob> {
+  log('create-strategy', { trendId: trend.id, platform: trend.platform })
+
+  const result = await invokeEdgeFunction<CreateResponse>('generate-video', {
+    action: 'create',
+    ...buildTrendPayload(trend, studio),
+    generation_id: generationId ?? undefined,
+    idempotency_key: generationId ? `video:${generationId}` : undefined,
   })
 
   if (!result?.job) {
     throw new Error(
-      formatPipelineError(result, 'Video-Job konnte nicht erstellt werden'),
+      formatPipelineError(result, 'Creator Blueprint konnte nicht generiert werden'),
     )
   }
 
-  log('create ok', {
+  log('create-strategy ok', {
     jobId: result.job.id,
     status: result.job.status,
     provider: result.job.provider,
+    hasBlueprint: Boolean(result.job.blueprint),
   })
 
   return result.job
+}
+
+/** @deprecated Use createVideoStrategyJob — kept for retry/history compatibility */
+export async function createVideoJob(
+  trend: TrendIntelligence,
+  generationId?: string | null,
+  studio?: StudioCreateOptions,
+): Promise<GeneratedVideoJob> {
+  return createVideoStrategyJob(trend, generationId, studio)
 }
 
 export async function pollVideoJob(jobId: string): Promise<GeneratedVideoJob> {
@@ -125,71 +153,24 @@ export async function fetchVideoHistory(
     voiceoverUrl: row.voiceover_url ?? row.voiceoverUrl,
     musicUrl: row.music_url ?? row.musicUrl,
     duration: row.duration ?? '0:15',
-    hasAudio: row.has_audio ?? row.hasAudio ?? true,
+    hasAudio: row.has_audio ?? row.hasAudio ?? false,
     errorMessage: row.error_message ?? row.errorMessage,
     trendId: row.trend_id ?? row.trendId,
     createdAt: row.created_at ?? row.createdAt,
+    blueprint: row.metadata?.blueprint as GeneratedVideoJob['blueprint'],
+    postingStrategy: row.metadata?.postingStrategy as string | undefined,
+    mode: row.metadata?.mode === 'strategy' ? 'strategy' : 'video',
   }))
 }
 
-export async function waitForVideoJob(
-  jobId: string,
-  onProgress?: (job: GeneratedVideoJob, detail: string) => void,
-  signal?: AbortSignal,
-): Promise<GeneratedVideoJob> {
-  const started = Date.now()
-
-  while (Date.now() - started < MAX_POLL_MS) {
-    if (signal?.aborted) {
-      throw new Error('Abgebrochen')
-    }
-
-    const job = await pollVideoJob(jobId)
-
-    const detail = progressDetail(job.status)
-    onProgress?.(job, detail)
-
-    if (job.status === 'completed' && job.videoUrl) {
-      return job
-    }
-
-    if (job.status === 'failed') {
-      throw new Error(
-        job.errorMessage ?? 'Video-Generierung fehlgeschlagen (Provider oder Storage)',
-      )
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      const timer = window.setTimeout(resolve, POLL_INTERVAL_MS)
-      signal?.addEventListener(
-        'abort',
-        () => {
-          window.clearTimeout(timer)
-          reject(new Error('Abgebrochen'))
-        },
-        { once: true },
-      )
-    })
-  }
-
-  throw new Error(
-    'Zeitüberschreitung — Video-Provider antwortet nicht. Bitte erneut versuchen.',
-  )
-}
-
-function progressDetail(status: GeneratedVideoJob['status']): string {
-  switch (status) {
-    case 'queued':
-      return 'In Warteschlange beim AI-Provider …'
-    case 'generating':
-      return 'KI generiert einzigartige Szenen (9:16) …'
-    case 'processing':
-      return 'Voiceover & Musik werden hinzugefügt …'
-    case 'completed':
-      return 'Video bereit'
-    case 'failed':
-      return 'Generierung fehlgeschlagen'
-    default:
-      return 'Verarbeitung …'
-  }
+export function strategyProgressDetail(step: number): string {
+  const messages = [
+    'Analysiere Viral-Struktur...',
+    'Berechne Hook-Potenzial...',
+    'Generiere Storyboard...',
+    'Optimiere Retention...',
+    'Baue CTA Sequenz...',
+    'Finalisiere Creator Blueprint...',
+  ]
+  return messages[Math.min(step, messages.length - 1)]
 }

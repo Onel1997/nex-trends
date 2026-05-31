@@ -1610,6 +1610,15 @@ body {
   scroll-behavior: smooth;
 }
 
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .video-card__ken-burns {
   animation: video-card-ken-burns 14s ease-in-out infinite alternate;
 }
@@ -1975,6 +1984,7 @@ body {
 
 .dashboard-os-carousel__track {
   display: flex;
+  flex-wrap: nowrap;
   gap: var(--dash-carousel-gap);
   width: 100%;
   max-width: 100%;
@@ -1982,10 +1992,11 @@ body {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
-  scroll-padding-inline: 0;
+  scroll-padding-inline: 0.75rem;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
   scrollbar-width: none;
-  padding-bottom: 0.125rem;
+  padding-bottom: 0.5rem;
   touch-action: pan-x pan-y;
 }
 
@@ -5057,9 +5068,15 @@ html.nex-reduced-motion *::after {
 
 /* ── Trend Intelligence dashboard ── */
 
+.ti-horizontal-scroll {
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  scroll-padding-inline: 1rem;
+}
+
 .ti-dashboard-scroll,
 .ti-dashboard-metrics {
-  scroll-padding-inline: 0.5rem;
+  scroll-padding-inline: 1rem;
 }
 
 .ti-dashboard-chip {
@@ -5072,7 +5089,15 @@ html.nex-reduced-motion *::after {
   }
 
   .ti-dashboard {
-    margin-inline: -0.125rem;
+    margin-inline: -0.25rem;
+    padding-inline: 1.125rem;
+  }
+
+  .ti-horizontal-scroll,
+  .ti-dashboard-metrics {
+    margin-inline: -0.75rem;
+    padding-inline: 0.75rem;
+    scroll-padding-inline: 0.75rem;
   }
 }
 
