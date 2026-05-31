@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Button } from '@/components/ui/Button'
 import { VerifiedIcon } from '@/components/ui/icons'
 import { cn } from '@/lib'
+import { isDevEnvironment } from '@/lib/runtime'
 
 type ErrorBoundaryProps = {
   children: ReactNode
@@ -22,7 +23,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    if (import.meta.env.DEV) {
+    if (isDevEnvironment()) {
       console.error('[ErrorBoundary]', error, info.componentStack)
     }
   }
@@ -88,7 +89,7 @@ export function ErrorFallback({
       <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">{title}</h1>
       <p className="mt-3 max-w-md text-sm leading-relaxed text-zinc-400">{message}</p>
 
-      {import.meta.env.DEV && error?.message && (
+      {isDevEnvironment() && error?.message && (
         <p className="mt-4 max-w-lg truncate rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 font-mono text-xs text-zinc-500">
           {error.message}
         </p>

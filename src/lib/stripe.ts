@@ -21,19 +21,15 @@ export type CheckoutOptions = {
 }
 
 export async function openStripeCheckout(options: CheckoutOptions = {}): Promise<string> {
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession()
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  const session = sessionData?.session
 
   if (sessionError || !session?.access_token) {
     throw new Error('Bitte melde dich an, bevor du ein Abo startest.')
   }
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
+  const { data: userData, error: authError } = await supabase.auth.getUser()
+  const user = userData?.user
 
   if (authError || !user?.id) {
     throw new Error('Benutzer konnte nicht geladen werden. Bitte erneut anmelden.')
@@ -67,10 +63,8 @@ export async function startStripeCheckoutFlow(options: CheckoutOptions = {}): Pr
 }
 
 export async function openStripeCustomerPortal(): Promise<string> {
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession()
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  const session = sessionData?.session
 
   if (sessionError || !session?.access_token) {
     throw new Error('Bitte melde dich an, um dein Abo zu verwalten.')

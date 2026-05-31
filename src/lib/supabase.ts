@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
+import { createUnconfiguredSupabaseClient } from '@/lib/supabase/unconfigured'
 import { readEnv } from '@/lib/env'
 
 /** Resolved hosted project URL — empty string when env is missing. */
@@ -14,20 +15,19 @@ function getClient(): SupabaseClient {
   }
 
   if (!client) {
-    throw new Error(
-      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY on Vercel.',
-    )
+    client = createUnconfiguredSupabaseClient()
   }
 
   return client
 }
 
-/** Lazy Supabase browser client — avoids crashing at module import when env is missing. */
+/** Lazy Supabase browser client — never throws when env vars are missing. */
 export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
   get(_target, prop, receiver) {
-    const value = Reflect.get(getClient(), prop, receiver)
+    const resolved = getClient()
+    const value = Reflect.get(resolved, prop, receiver)
     return typeof value === 'function'
-      ? (value as (...args: unknown[]) => unknown).bind(getClient())
+      ? (value as (...args: unknown[]) => unknown).bind(resolved)
       : value
   },
 })
@@ -44,5 +44,8 @@ export function isLocalSupabaseUrl(url = SUPABASE_URL): boolean {
 }
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(SUPABASE_URL && readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY'))
+  return Boolean(
+    SUPABASE_URL &&
+      readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY'),
+  )
 }

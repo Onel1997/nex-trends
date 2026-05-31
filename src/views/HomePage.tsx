@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getBrowserPathname, isBrowser } from '@/lib/runtime'
 import { DashboardLayout } from '@/components'
 import { DashboardMain } from '@/components/dashboard/DashboardMain'
 import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
@@ -15,7 +16,8 @@ import { BillingCancelPage } from '@/views/BillingCancelPage'
 import { BillingSuccessPage } from '@/views/BillingSuccessPage'
 
 function readBillingResultPath(): 'success' | 'cancel' | null {
-  const path = window.location.pathname.replace(/\/$/, '')
+  if (!isBrowser()) return null
+  const path = getBrowserPathname().replace(/\/$/, '')
   if (path === '/billing/success') return 'success'
   if (path === '/billing/cancel') return 'cancel'
   return null

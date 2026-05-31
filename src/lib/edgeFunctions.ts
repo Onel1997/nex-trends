@@ -1,5 +1,6 @@
 import { supabase, isLocalSupabaseUrl, SUPABASE_URL } from './supabase'
 import { readEnv } from '@/lib/env'
+import { isDebugLoggingEnabled } from '@/lib/runtime'
 import { coerceErrorMessage } from '@/lib/ai/parse-hooks-response'
 import {
   formatPipelineError,
@@ -115,10 +116,8 @@ export async function invokeEdgeFunction<T>(
 ): Promise<T> {
   assertSupabaseConfigured()
 
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession()
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  const session = sessionData?.session
 
   if (sessionError || !session?.access_token) {
     throw new Error('AUTH_REQUIRED')
@@ -126,10 +125,7 @@ export async function invokeEdgeFunction<T>(
 
   const extraOk = options?.okStatuses ?? []
 
-  const debug =
-    import.meta.env.DEV ||
-    import.meta.env.VITE_ADMIN_DEBUG === 'true' ||
-    import.meta.env.VITE_VIDEO_DEBUG === 'true'
+  const debug = isDebugLoggingEnabled()
 
   if (debug) {
     console.debug(`[EdgeFunction] ${functionName} → invoke`, {

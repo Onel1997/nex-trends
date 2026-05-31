@@ -152,8 +152,6 @@ export function formatUsageResetDate(isoDate: string | null): string {
 }
 
 export async function hasActiveSession(): Promise<boolean> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  return Boolean(session?.access_token)
+  const { data } = await supabase.auth.getSession()
+  return Boolean(data?.session?.access_token)
 }

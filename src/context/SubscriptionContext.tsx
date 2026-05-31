@@ -232,9 +232,12 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     async function bootstrapAuth() {
       try {
-        const {
-          data: { session: initialSession },
-        } = await supabase.auth.getSession()
+        const { data, error } = await supabase.auth.getSession()
+        const initialSession = data?.session ?? null
+
+        if (error) {
+          console.error('[auth] getSession error:', error.message)
+        }
 
         if (!mounted) return
 
@@ -264,9 +267,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     let subscription: { unsubscribe: () => void } | undefined
 
     try {
-      const {
-        data: { subscription: authSubscription },
-      } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession((prev) => {
         const sameUser = prev?.user?.id === nextSession?.user?.id
         const sameToken = prev?.access_token === nextSession?.access_token
@@ -287,7 +288,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       }
     })
 
-      subscription = authSubscription
+      subscription = data?.subscription
     } catch (error) {
       console.error('[auth] Failed to subscribe to auth state:', error)
     }

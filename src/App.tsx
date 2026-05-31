@@ -9,6 +9,7 @@ import { CheckoutHandler } from '@/components/app/CheckoutHandler'
 import { MaintenanceBanner } from '@/components/app/MaintenanceBanner'
 import { isAdminPath } from '@/lib/admin-navigation'
 import { isLoginPath } from '@/lib/auth'
+import { isBrowser } from '@/lib/runtime'
 import LandingPage from '@/views/LandingPage'
 import { HomePage } from '@/views/HomePage'
 import { AdminPage } from '@/views/AdminPage'
@@ -16,8 +17,12 @@ import AuthPage from '@/views/AuthPage'
 
 function AppContent() {
   const { session, isAuthLoading } = useSubscription()
-  const [onAdminRoute, setOnAdminRoute] = useState(() => isAdminPath())
-  const [onLoginRoute, setOnLoginRoute] = useState(() => isLoginPath())
+  const [onAdminRoute, setOnAdminRoute] = useState(() =>
+    isBrowser() ? isAdminPath() : false,
+  )
+  const [onLoginRoute, setOnLoginRoute] = useState(() =>
+    isBrowser() ? isLoginPath() : false,
+  )
 
   useEffect(() => {
     const syncRoute = () => {

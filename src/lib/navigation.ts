@@ -1,5 +1,6 @@
 import { isAdminPath } from './admin-navigation'
 import { isAuthCallbackPath } from './auth'
+import { getBrowserPathname, isBrowser } from './runtime'
 import {
   DASHBOARD_BASE,
   getPathForTool,
@@ -24,6 +25,7 @@ const LEGACY_QUERY_MAP: Record<string, DashboardRouteId> = {
 }
 
 function buildUrl(tool: DashboardRouteId): string {
+  if (!isBrowser()) return getPathForTool(tool)
   const url = new URL(window.location.origin + getPathForTool(tool))
   const current = new URL(window.location.href)
   const checkout = current.searchParams.get('checkout')
@@ -32,6 +34,8 @@ function buildUrl(tool: DashboardRouteId): string {
 }
 
 export function readToolFromUrl(): DashboardRouteId {
+  if (!isBrowser()) return 'dashboard'
+
   const fromPath = pathToToolId(window.location.pathname)
   if (fromPath) return fromPath
 
@@ -113,8 +117,9 @@ export function syncLegacyToolQueryToPath(): void {
 
 /** Ensure authenticated users on `/` land on dashboard */
 export function ensureDashboardPath(): void {
+  if (!isBrowser()) return
   if (isAdminPath() || isAuthCallbackPath()) return
-  const path = window.location.pathname.replace(/\/$/, '') || '/'
+  const path = getBrowserPathname().replace(/\/$/, '') || '/'
   if (path === '/') {
     navigateToTool('dashboard', { replace: true })
   } else if (

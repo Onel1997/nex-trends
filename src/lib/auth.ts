@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AuthError, Session } from '@supabase/supabase-js'
 import { readEnv } from '@/lib/env'
+import { getBrowserPathname, isBrowser } from '@/lib/runtime'
 import { isLocalSupabaseUrl, supabase } from '@/lib/supabase'
 import { scrollToSection } from '@/lib/scroll'
 
@@ -41,7 +42,7 @@ function isLocalDevHost(hostname: string): boolean {
 
 /** Origin the user actually loaded (LAN IP on mobile, localhost on desktop). */
 export function getAppOrigin(): string {
-  if (typeof window === 'undefined') return ''
+  if (!isBrowser()) return getConfiguredSiteUrl() ?? ''
 
   const configured = getConfiguredSiteUrl()
   if (configured && !isLocalDevHost(window.location.hostname)) {
@@ -56,13 +57,13 @@ export function getAppOrigin(): string {
   return window.location.origin
 }
 
-export function isAuthCallbackPath(pathname = window.location.pathname): boolean {
-  const normalized = pathname.replace(/\/$/, '') || '/'
+export function isAuthCallbackPath(pathname?: string): boolean {
+  const normalized = (pathname ?? getBrowserPathname()).replace(/\/$/, '') || '/'
   return normalized === AUTH_CALLBACK_PATH
 }
 
-export function isLoginPath(pathname = window.location.pathname): boolean {
-  const normalized = pathname.replace(/\/$/, '') || '/'
+export function isLoginPath(pathname?: string): boolean {
+  const normalized = (pathname ?? getBrowserPathname()).replace(/\/$/, '') || '/'
   return normalized === AUTH_LOGIN_PATH
 }
 
@@ -271,17 +272,16 @@ export function useSession() {
   const [session, setSession] = useState<Session | null>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data?.session ?? null)
     })
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
+    const result = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
     })
 
-    return () => subscription.unsubscribe()
+    const subscription = result?.data?.subscription
+    return () => subscription?.unsubscribe()
   }, [])
 
   return session
