@@ -11,8 +11,8 @@ import {
   readToolFromUrl,
   syncLegacyToolQueryToPath,
 } from '@/lib/navigation'
-import { BillingCancelPage } from '@/pages/BillingCancelPage'
-import { BillingSuccessPage } from '@/pages/BillingSuccessPage'
+import { BillingCancelPage } from '@/views/BillingCancelPage'
+import { BillingSuccessPage } from '@/views/BillingSuccessPage'
 
 function readBillingResultPath(): 'success' | 'cancel' | null {
   const path = window.location.pathname.replace(/\/$/, '')

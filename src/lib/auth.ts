@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { AuthError, Session } from '@supabase/supabase-js'
+import { readEnv } from '@/lib/env'
 import { isLocalSupabaseUrl, supabase } from '@/lib/supabase'
 import { scrollToSection } from '@/lib/scroll'
 
@@ -11,13 +12,14 @@ export type AuthActionResult = {
 /** Dedicated OAuth callback path — must match Supabase redirect allow-list entries. */
 export const AUTH_CALLBACK_PATH = '/auth/callback'
 
+/** Login page shown after failed OAuth. */
+export const AUTH_LOGIN_PATH = '/login'
+
 export const AUTH_ERROR_STORAGE_KEY = 'nextrends_auth_error'
 
 /** Read VITE_SITE_URL or NEXT_PUBLIC_SITE_URL (production: https://nextrends-ai.de). */
 export function getConfiguredSiteUrl(): string | null {
-  const raw =
-    import.meta.env.VITE_SITE_URL?.trim() ||
-    import.meta.env.NEXT_PUBLIC_SITE_URL?.trim()
+  const raw = readEnv('NEXT_PUBLIC_SITE_URL', 'VITE_SITE_URL')
   if (!raw) return null
 
   try {
@@ -57,6 +59,11 @@ export function getAppOrigin(): string {
 export function isAuthCallbackPath(pathname = window.location.pathname): boolean {
   const normalized = pathname.replace(/\/$/, '') || '/'
   return normalized === AUTH_CALLBACK_PATH
+}
+
+export function isLoginPath(pathname = window.location.pathname): boolean {
+  const normalized = pathname.replace(/\/$/, '') || '/'
+  return normalized === AUTH_LOGIN_PATH
 }
 
 /**
@@ -204,8 +211,8 @@ export function getPostAuthRedirectPath(): string {
   return '/dashboard'
 }
 
-/** Redirect to landing after failed OAuth (stores message for optional UI). */
-export function redirectToHomeAfterAuthFailure(message?: string | null): void {
+/** Redirect to login after failed OAuth (stores message for optional UI). */
+export function redirectToLoginAfterAuthFailure(message?: string | null): void {
   if (typeof window === 'undefined') return
 
   if (message) {
@@ -217,7 +224,12 @@ export function redirectToHomeAfterAuthFailure(message?: string | null): void {
   }
 
   cleanAuthParamsFromUrl()
-  window.location.replace('/')
+  window.location.replace(AUTH_LOGIN_PATH)
+}
+
+/** @deprecated Use redirectToLoginAfterAuthFailure */
+export function redirectToHomeAfterAuthFailure(message?: string | null): void {
+  redirectToLoginAfterAuthFailure(message)
 }
 
 /** @deprecated Use completeAuthCallback on /auth/callback only. */

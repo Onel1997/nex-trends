@@ -2,47 +2,47 @@ import { lazy, memo, Suspense } from 'react'
 import { isImmersiveTool, type DashboardToolId } from '@/lib'
 import { ToolPageHeader } from '@/components/layout/ToolPageHeader'
 import { PageLoadingFallback } from '@/components/ui/PageLoadingFallback'
-import { DashboardPage } from '@/pages/DashboardPage'
+import { DashboardPage } from '@/views/DashboardPage'
 import { cn } from '@/lib'
 
 const TrendIntelligencePage = lazy(() =>
-  import('@/pages/trend-intelligence/TrendIntelligencePage').then((m) => ({
+  import('@/views/trend-intelligence/TrendIntelligencePage').then((m) => ({
     default: m.TrendIntelligencePage,
   })),
 )
 const SavedTrendsPage = lazy(() =>
-  import('@/pages/SavedTrendsPage').then((m) => ({ default: m.SavedTrendsPage })),
+  import('@/views/SavedTrendsPage').then((m) => ({ default: m.SavedTrendsPage })),
 )
 const MyAiVideosPage = lazy(() =>
-  import('@/pages/MyAiVideosPage').then((m) => ({ default: m.MyAiVideosPage })),
+  import('@/views/MyAiVideosPage').then((m) => ({ default: m.MyAiVideosPage })),
 )
 const AiStudioPage = lazy(() =>
-  import('@/pages/AiStudioPage').then((m) => ({ default: m.AiStudioPage })),
+  import('@/views/AiStudioPage').then((m) => ({ default: m.AiStudioPage })),
 )
 const HookGeneratorPage = lazy(() =>
-  import('@/pages/HookGeneratorPage').then((m) => ({ default: m.HookGeneratorPage })),
+  import('@/views/HookGeneratorPage').then((m) => ({ default: m.HookGeneratorPage })),
 )
 const SettingsPage = lazy(() =>
-  import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+  import('@/views/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 )
 const PricingPage = lazy(() =>
-  import('@/pages/PricingPage').then((m) => ({ default: m.PricingPage })),
+  import('@/views/PricingPage').then((m) => ({ default: m.PricingPage })),
 )
 const BillingPage = lazy(() =>
-  import('@/pages/BillingPage').then((m) => ({ default: m.BillingPage })),
+  import('@/views/BillingPage').then((m) => ({ default: m.BillingPage })),
 )
 const AdCopyGeneratorPage = lazy(() =>
-  import('@/pages/tools/AdCopyGeneratorPage').then((m) => ({
+  import('@/views/tools/AdCopyGeneratorPage').then((m) => ({
     default: m.AdCopyGeneratorPage,
   })),
 )
 const SeoTitleGeneratorPage = lazy(() =>
-  import('@/pages/tools/SeoTitleGeneratorPage').then((m) => ({
+  import('@/views/tools/SeoTitleGeneratorPage').then((m) => ({
     default: m.SeoTitleGeneratorPage,
   })),
 )
 const LandingPageAnalyzerPage = lazy(() =>
-  import('@/pages/tools/LandingPageAnalyzerPage').then((m) => ({
+  import('@/views/tools/LandingPageAnalyzerPage').then((m) => ({
     default: m.LandingPageAnalyzerPage,
   })),
 )

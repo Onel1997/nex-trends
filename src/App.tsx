@@ -8,25 +8,25 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { CheckoutHandler } from '@/components/app/CheckoutHandler'
 import { MaintenanceBanner } from '@/components/app/MaintenanceBanner'
 import { isAdminPath } from '@/lib/admin-navigation'
-import { isAuthCallbackPath } from '@/lib/auth'
-import LandingPage from '@/pages/LandingPage'
-import { HomePage } from '@/pages/HomePage'
-import { AdminPage } from '@/pages/AdminPage'
-import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
+import { isLoginPath } from '@/lib/auth'
+import LandingPage from '@/views/LandingPage'
+import { HomePage } from '@/views/HomePage'
+import { AdminPage } from '@/views/AdminPage'
+import AuthPage from '@/views/AuthPage'
 
 function AppContent() {
   const { session, isAuthLoading } = useSubscription()
   const [onAdminRoute, setOnAdminRoute] = useState(() => isAdminPath())
+  const [onLoginRoute, setOnLoginRoute] = useState(() => isLoginPath())
 
   useEffect(() => {
-    const syncRoute = () => setOnAdminRoute(isAdminPath())
+    const syncRoute = () => {
+      setOnAdminRoute(isAdminPath())
+      setOnLoginRoute(isLoginPath())
+    }
     window.addEventListener('popstate', syncRoute)
     return () => window.removeEventListener('popstate', syncRoute)
   }, [])
-
-  if (isAuthCallbackPath()) {
-    return <AuthCallbackPage />
-  }
 
   if (isAuthLoading) {
     return (
@@ -38,6 +38,10 @@ function AppContent() {
 
   if (onAdminRoute) {
     return <AdminPage />
+  }
+
+  if (onLoginRoute && !session) {
+    return <AuthPage />
   }
 
   return (
