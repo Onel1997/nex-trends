@@ -18,49 +18,55 @@ function loginRedirect(origin: string, message?: string | null) {
  * Must be listed in Supabase Auth → URL Configuration → Redirect URLs.
  */
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = request.nextUrl
+  try {
+    const { searchParams, origin } = request.nextUrl
 
-  const oauthError =
-    searchParams.get('error_description') ?? searchParams.get('error')
-  if (oauthError) {
-    return loginRedirect(origin, oauthError)
-  }
+    const oauthError =
+      searchParams.get('error_description') ?? searchParams.get('error')
+    if (oauthError) {
+      return loginRedirect(origin, oauthError)
+    }
 
-  const code = searchParams.get('code')
-  if (!code) {
-    return loginRedirect(origin, 'Kein Autorisierungscode erhalten.')
-  }
+    const code = searchParams.get('code')
+    if (!code) {
+      return loginRedirect(origin, 'Kein Autorisierungscode erhalten.')
+    }
 
-  const supabaseUrl = readEnv('NEXT_PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL')
-  const supabaseAnonKey = readEnv(
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'VITE_SUPABASE_ANON_KEY',
-  )
+    const supabaseUrl = readEnv('NEXT_PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL')
+    const supabaseAnonKey = readEnv(
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      'VITE_SUPABASE_ANON_KEY',
+    )
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return loginRedirect(origin, 'Supabase ist nicht konfiguriert.')
-  }
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return loginRedirect(origin, 'Supabase ist nicht konfiguriert.')
+    }
 
-  let response = NextResponse.redirect(new URL(AUTH_SUCCESS_PATH, origin))
+    let response = NextResponse.redirect(new URL(AUTH_SUCCESS_PATH, origin))
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll()
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet?.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
+        },
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options)
-        })
-      },
-    },
-  })
+    })
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-  if (error) {
-    return loginRedirect(origin, error.message)
+    if (error) {
+      return loginRedirect(origin, error.message)
+    }
+
+    return response
+  } catch (error) {
+    console.error('[auth/callback] OAuth exchange failed:', error)
+    const origin = request.nextUrl.origin
+    return loginRedirect(origin, 'Anmeldung fehlgeschlagen. Bitte erneut versuchen.')
   }
-
-  return response
 }

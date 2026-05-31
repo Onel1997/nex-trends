@@ -1,9 +1,19 @@
 import { createBrowserClient } from '@supabase/ssr'
-import { requireEnv } from '@/lib/env'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { readEnv } from '@/lib/env'
 
-export function createSupabaseBrowserClient() {
-  return createBrowserClient(
-    requireEnv('NEXT_PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL'),
-    requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY'),
-  )
+export function createSupabaseBrowserClient(): SupabaseClient | null {
+  const url = readEnv('NEXT_PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL')
+  const anonKey = readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY')
+
+  if (!url || !anonKey) {
+    if (typeof window !== 'undefined') {
+      console.error(
+        '[supabase] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.',
+      )
+    }
+    return null
+  }
+
+  return createBrowserClient(url, anonKey)
 }

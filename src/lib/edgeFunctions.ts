@@ -1,4 +1,5 @@
 import { supabase, isLocalSupabaseUrl, SUPABASE_URL } from './supabase'
+import { readEnv } from '@/lib/env'
 import { coerceErrorMessage } from '@/lib/ai/parse-hooks-response'
 import {
   formatPipelineError,
@@ -14,8 +15,8 @@ export type InvokeEdgeFunctionOptions = {
 }
 
 function assertSupabaseConfigured(): void {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
+  const baseUrl = readEnv('NEXT_PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL')
+  const anonKey = readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY')
 
   if (!baseUrl || !anonKey) {
     logVideoPipelineError('env-missing', 'Supabase env not configured', { baseUrl: !!baseUrl })

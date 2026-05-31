@@ -231,18 +231,28 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     let mounted = true
 
     async function bootstrapAuth() {
-      const {
-        data: { session: initialSession },
-      } = await supabase.auth.getSession()
+      try {
+        const {
+          data: { session: initialSession },
+        } = await supabase.auth.getSession()
 
-      if (!mounted) return
+        if (!mounted) return
 
-      setSession(initialSession)
-      setIsAuthLoading(false)
+        setSession(initialSession)
+        setIsAuthLoading(false)
 
-      if (initialSession?.user?.id) {
-        void loadProfileForUser(initialSession.user.id)
-      } else {
+        if (initialSession?.user?.id) {
+          void loadProfileForUser(initialSession.user.id)
+        } else {
+          setProfile(null)
+          setUsage(getUsageFromProfile(null, null))
+          clearProfileCache()
+        }
+      } catch (error) {
+        console.error('[auth] Failed to bootstrap session:', error)
+        if (!mounted) return
+        setSession(null)
+        setIsAuthLoading(false)
         setProfile(null)
         setUsage(getUsageFromProfile(null, null))
         clearProfileCache()
@@ -251,9 +261,12 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     void bootstrapAuth()
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+    let subscription: { unsubscribe: () => void } | undefined
+
+    try {
+      const {
+        data: { subscription: authSubscription },
+      } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession((prev) => {
         const sameUser = prev?.user?.id === nextSession?.user?.id
         const sameToken = prev?.access_token === nextSession?.access_token
@@ -274,9 +287,14 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       }
     })
 
+      subscription = authSubscription
+    } catch (error) {
+      console.error('[auth] Failed to subscribe to auth state:', error)
+    }
+
     return () => {
       mounted = false
-      subscription.unsubscribe()
+      subscription?.unsubscribe()
     }
   }, [loadProfileForUser])
 
