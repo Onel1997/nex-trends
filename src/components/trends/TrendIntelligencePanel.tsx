@@ -31,7 +31,7 @@ import type { TrendIntelligence } from '@/types/trend-intelligence'
 export function TrendIntelligencePanel() {
   const { hasProAccess, usage, isCreditsLow, requireCredits, consumeCreditAfterSuccess } =
     useUsageLimit()
-  const { savedTrends, savedCount, isSaved, toggleSave, unsave } = useSavedTrends()
+  const { savedTrends, savedCount, isSaved, toggleSave } = useSavedTrends()
   const { history, logSearch, clear, removeEntry } = useTrendHistory()
   const { isRestoring, initial, persist, restoreScroll } = useTrendSessionRestore()
 
@@ -41,7 +41,10 @@ export function TrendIntelligencePanel() {
     (initial?.platform as TrendPlatformFilter) ?? 'all',
   )
   const [categoryFilter, setCategoryFilter] = useState<TrendCategoryFilter>('all')
-  const [openTrendId, setOpenTrendId] = useState<string | null>(null)
+  const [openTrendId, setOpenTrendId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    return new URLSearchParams(window.location.search).get('trend')
+  })
   const [hasSearched, setHasSearched] = useState(
     () => Boolean(initial?.searchQuery?.trim()) && !initial?.isDemo,
   )
@@ -321,7 +324,6 @@ export function TrendIntelligencePanel() {
           trends={savedTrends}
           isSaved={isSaved}
           onToggleSave={toggleSave}
-          onRemove={unsave}
         />
       )}
 

@@ -30,7 +30,7 @@ export function SavedTrendsPage({ onNavigate }: SavedTrendsPageProps) {
   } = useSavedHooks()
 
   const { copiedHook, copyHook } = useHookClipboard()
-  const { savedTrends, isSaved, toggleSave, unsave } = useSavedTrends()
+  const { savedTrends, isSaved, toggleSave } = useSavedTrends()
 
   useEffect(() => {
     void refreshHooks()
@@ -153,7 +153,6 @@ export function SavedTrendsPage({ onNavigate }: SavedTrendsPageProps) {
           trends={savedTrends}
           isSaved={isSaved}
           onToggleSave={toggleSave}
-          onRemove={unsave}
         />
       )}
     </div>

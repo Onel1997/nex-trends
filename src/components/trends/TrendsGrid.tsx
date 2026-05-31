@@ -4,6 +4,7 @@ import { TrendAnalysisLoading } from '@/components/trends/TrendAnalysisLoading'
 import { TrendProUpsell } from '@/components/trends/TrendProUpsell'
 import { TrendsEmptyState } from '@/components/trends/TrendsEmptyState'
 import { TrendCardSkeleton, TrendsGridSkeleton } from '@/components/ui/Skeleton'
+import { TrendDetailModalLoading } from '@/components/trends/TrendDetailModalLoading'
 import { SparklesIcon } from '@/components/ui/icons'
 import { useInViewport } from '@/hooks/useInViewport'
 import { cn } from '@/lib'
@@ -261,13 +262,14 @@ export function TrendsGrid({
                   onClick={() => setSelectedTrend(trend)}
                   priority={i === 0}
                   isSaved={isSaved?.(trend.id)}
+                  onToggleSave={onToggleSave}
                 />
               </div>
             ))}
           </div>
         </div>
 
-        <Suspense fallback={null}>
+        <Suspense fallback={<TrendDetailModalLoading />}>
           <TrendDetailModal
             trend={selectedTrend}
             onClose={() => setSelectedTrend(null)}
@@ -287,7 +289,7 @@ export function TrendsGrid({
           title={noResultsCopy.title}
           description={noResultsCopy.description}
         />
-        <Suspense fallback={null}>
+        <Suspense fallback={<TrendDetailModalLoading />}>
           <TrendDetailModal
             trend={selectedTrend}
             onClose={() => setSelectedTrend(null)}
@@ -361,7 +363,7 @@ export function TrendsGrid({
         </div>
       )}
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<TrendDetailModalLoading />}>
         <TrendDetailModal
           trend={selectedTrend}
           onClose={() => setSelectedTrend(null)}

@@ -1,9 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { VideoGenerationHistory } from '@/components/trends/VideoGenerationHistory'
 import { VideoGenerationProgress } from '@/components/trends/VideoGenerationProgress'
 import { VideoPreview } from '@/components/trends/VideoPreview'
 import { useVideoGeneration } from '@/hooks/useVideoGeneration'
 import { pickNextFallbackMedia } from '@/lib/trend-media-assignment'
+import { TrendAnalysisSummary } from '@/components/trends/TrendAnalysisSummary'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
 import { TrendScoreStrip } from '@/components/trends/TrendScoreStrip'
 import { TrendStateBadge } from '@/components/trends/TrendStateBadge'
@@ -12,10 +14,12 @@ import {
   BookmarkIcon,
   CloseIcon,
   CopyIcon,
+  ShareIcon,
   SparklesIcon,
   VerifiedIcon,
 } from '@/components/ui/icons'
 import { useToast } from '@/context/ToastContext'
+import { shareTrend } from '@/lib/share-trend'
 import { VELOCITY_META } from '@/lib/trend-intelligence'
 import { videoPlaybackManager } from '@/lib/video-playback-manager'
 import { cn } from '@/lib'
@@ -130,9 +134,23 @@ export function TrendDetailModal({
     })
   }
 
-  return (
+  async function handleShare() {
+    try {
+      const result = await shareTrend(trend!)
+      if (result === 'cancelled') return
+      if (result === 'shared') {
+        showToast({ type: 'success', title: 'Geteilt' })
+        return
+      }
+      showToast({ type: 'success', title: 'Link kopiert' })
+    } catch {
+      showToast({ type: 'error', title: 'Teilen fehlgeschlagen' })
+    }
+  }
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4"
+      className="trend-detail-modal-root"
       role="dialog"
       aria-modal="true"
       aria-labelledby="trend-detail-title"
@@ -140,19 +158,12 @@ export function TrendDetailModal({
       <button
         type="button"
         aria-label="Detailansicht schließen"
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"
+        className="trend-detail-modal-overlay animate-fade-in"
         onClick={onClose}
       />
 
-      <article
-        className={cn(
-          'detail-sheet relative flex w-full flex-col overflow-hidden',
-          'max-h-[94vh] sm:max-h-[92vh] sm:max-w-4xl',
-          'rounded-t-2xl border border-zinc-800/70 bg-zinc-950/98 sm:rounded-2xl',
-          'shadow-[0_24px_80px_-12px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.04)_inset]',
-          'animate-sheet-up sm:animate-fade-in-scale',
-        )}
-      >
+      <div className="trend-detail-modal-stage">
+        <article className="trend-detail-modal-sheet animate-sheet-up sm:animate-fade-in-scale flex flex-col overflow-hidden">
         <div
           className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-zinc-700 sm:hidden"
           aria-hidden
@@ -231,6 +242,8 @@ export function TrendDetailModal({
                 </p>
               )}
             </header>
+
+            <TrendAnalysisSummary trend={trend} />
 
             <TrendScoreStrip
               momentum={trend.momentumScore}
@@ -346,6 +359,10 @@ export function TrendDetailModal({
                   {isSaved ? 'Gespeichert' : 'Trend speichern'}
                 </Button>
               )}
+              <Button variant="secondary" size="sm" onClick={() => void handleShare()}>
+                <ShareIcon className="size-4" aria-hidden />
+                Teilen
+              </Button>
             </div>
 
             <div className="flex flex-wrap gap-1.5">
@@ -519,9 +536,34 @@ export function TrendDetailModal({
                 <TrendHookGenerator trend={trend} />
               </Suspense>
             </div>
+
+            <div className="trend-detail-modal-footer sticky bottom-0 z-10 flex gap-2 border-t border-zinc-800/60 bg-[#09090F]/95 p-4 backdrop-blur-md">
+              {onToggleSave && (
+                <Button
+                  variant={isSaved ? 'primary' : 'secondary'}
+                  size="md"
+                  className="flex-1"
+                  onClick={handleSave}
+                >
+                  <BookmarkIcon className={cn('size-4', isSaved && 'fill-current')} aria-hidden />
+                  {isSaved ? 'Gespeichert' : 'Speichern'}
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                size="md"
+                className={onToggleSave ? 'flex-1' : 'w-full'}
+                onClick={() => void handleShare()}
+              >
+                <ShareIcon className="size-4" aria-hidden />
+                Teilen
+              </Button>
+            </div>
           </div>
         </div>
-      </article>
-    </div>
+        </article>
+      </div>
+    </div>,
+    document.body,
   )
 }
