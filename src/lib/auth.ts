@@ -11,9 +11,46 @@ export type AuthActionResult = {
 /** Dedicated OAuth callback path — must match Supabase redirect allow-list entries. */
 export const AUTH_CALLBACK_PATH = '/auth/callback'
 
+export const AUTH_ERROR_STORAGE_KEY = 'nextrends_auth_error'
+
+/** Read VITE_SITE_URL or NEXT_PUBLIC_SITE_URL (production: https://nextrends-ai.de). */
+export function getConfiguredSiteUrl(): string | null {
+  const raw =
+    import.meta.env.VITE_SITE_URL?.trim() ||
+    import.meta.env.NEXT_PUBLIC_SITE_URL?.trim()
+  if (!raw) return null
+
+  try {
+    const url = new URL(raw.includes('://') ? raw : `https://${raw}`)
+    return url.origin
+  } catch {
+    return null
+  }
+}
+
+function isLocalDevHost(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('10.')
+  )
+}
+
 /** Origin the user actually loaded (LAN IP on mobile, localhost on desktop). */
 export function getAppOrigin(): string {
   if (typeof window === 'undefined') return ''
+
+  const configured = getConfiguredSiteUrl()
+  if (configured && !isLocalDevHost(window.location.hostname)) {
+    const configuredHost = new URL(configured).hostname.replace(/^www\./, '')
+    const currentHost = window.location.hostname.replace(/^www\./, '')
+    if (currentHost === configuredHost) {
+      return window.location.origin
+    }
+    return configured
+  }
+
   return window.location.origin
 }
 
@@ -165,6 +202,22 @@ export function completeAuthCallback(): Promise<AuthActionResult> {
 /** Dashboard path after successful OAuth — used by the callback page. */
 export function getPostAuthRedirectPath(): string {
   return '/dashboard'
+}
+
+/** Redirect to landing after failed OAuth (stores message for optional UI). */
+export function redirectToHomeAfterAuthFailure(message?: string | null): void {
+  if (typeof window === 'undefined') return
+
+  if (message) {
+    try {
+      sessionStorage.setItem(AUTH_ERROR_STORAGE_KEY, message)
+    } catch {
+      /* sessionStorage unavailable */
+    }
+  }
+
+  cleanAuthParamsFromUrl()
+  window.location.replace('/')
 }
 
 /** @deprecated Use completeAuthCallback on /auth/callback only. */

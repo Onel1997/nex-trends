@@ -168,6 +168,12 @@ additional_redirect_urls = [
   "http://10.*.*.*:5173/auth/callback",
   "https://localhost:5173/**",
   "https://localhost:5173/auth/callback",
+  "https://nextrends-ai.de",
+  "https://nextrends-ai.de/**",
+  "https://nextrends-ai.de/auth/callback",
+  "https://www.nextrends-ai.de",
+  "https://www.nextrends-ai.de/**",
+  "https://www.nextrends-ai.de/auth/callback",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
