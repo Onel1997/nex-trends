@@ -3,12 +3,15 @@ import { Button } from '@/components/ui/Button'
 import { InputWithIcon } from '@/components/ui/Input'
 import { cn } from '@/lib'
 
-export type ScoutPlatform = 'all' | 'tiktok' | 'instagram'
+import type { TrendPlatformFilter } from '@/lib/trend-signals'
+
+export type ScoutPlatform = TrendPlatformFilter
 
 const PLATFORMS: { id: ScoutPlatform; label: string }[] = [
   { id: 'all', label: 'Alle' },
   { id: 'tiktok', label: 'TikTok' },
   { id: 'instagram', label: 'Instagram' },
+  { id: 'youtube', label: 'YouTube' },
 ]
 
 const NICHE_SUGGESTIONS = [
@@ -33,6 +36,7 @@ type TrendScoutSearchProps = {
   disabled?: boolean
   onSearch: () => void
   onNicheSelect?: (niche: string) => void
+  hidePlatformToggles?: boolean
 }
 
 export function TrendScoutSearch({
@@ -44,6 +48,7 @@ export function TrendScoutSearch({
   disabled = false,
   onSearch,
   onNicheSelect,
+  hidePlatformToggles = false,
 }: TrendScoutSearchProps) {
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
@@ -79,6 +84,7 @@ export function TrendScoutSearch({
         className="mt-5 flex flex-wrap gap-2"
         role="group"
         aria-label="Plattform filtern"
+        hidden={hidePlatformToggles}
       >
         {PLATFORMS.map((item) => (
           <button

@@ -5,6 +5,8 @@ import { VideoPreview } from '@/components/trends/VideoPreview'
 import { useVideoGeneration } from '@/hooks/useVideoGeneration'
 import { pickNextFallbackMedia } from '@/lib/trend-media-assignment'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
+import { TrendScoreStrip } from '@/components/trends/TrendScoreStrip'
+import { TrendStateBadge } from '@/components/trends/TrendStateBadge'
 import { Button } from '@/components/ui/Button'
 import {
   BookmarkIcon,
@@ -207,6 +209,14 @@ export function TrendDetailModal({
 
           <div className="flex flex-1 flex-col gap-5 p-4 sm:p-6 lg:max-h-[calc(92vh-3rem)] lg:overflow-y-auto">
             <header>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                {trend.trendState && <TrendStateBadge state={trend.trendState} size="md" />}
+                {trend.niche && (
+                  <span className="rounded-full border border-zinc-700/60 bg-zinc-900/60 px-2.5 py-0.5 text-[10px] font-medium text-zinc-400">
+                    {trend.niche}
+                  </span>
+                )}
+              </div>
               <h2
                 id="trend-detail-title"
                 className="text-xl font-semibold tracking-tight text-white sm:text-2xl"
@@ -214,7 +224,19 @@ export function TrendDetailModal({
                 {trend.title}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">{trend.description}</p>
+              {trend.aiInsight && (
+                <p className="mt-3 flex items-start gap-2 rounded-xl border border-violet-500/15 bg-violet-500/8 px-3 py-2.5 text-sm text-violet-200/95">
+                  <SparklesIcon className="mt-0.5 size-4 shrink-0 text-violet-400" aria-hidden />
+                  {trend.aiInsight}
+                </p>
+              )}
             </header>
+
+            <TrendScoreStrip
+              momentum={trend.momentumScore}
+              competition={trend.competitionScore}
+              opportunity={trend.opportunityScore}
+            />
 
             <div className="space-y-3">
               <Button
@@ -416,6 +438,63 @@ export function TrendDetailModal({
                 ))}
               </dl>
             </section>
+
+            {trend.monetizationPotential && (
+              <section className="space-y-2 rounded-xl border border-emerald-500/15 bg-emerald-500/5 p-4">
+                <SectionTitle>Monetization Potential</SectionTitle>
+                <p className="text-sm leading-relaxed text-emerald-200/90">
+                  {trend.monetizationPotential}
+                </p>
+              </section>
+            )}
+
+            {trend.ctaAngles && trend.ctaAngles.length > 0 && (
+              <section className="space-y-3 rounded-xl border border-zinc-800/50 bg-zinc-900/25 p-4">
+                <SectionTitle>Suggested CTA Angles</SectionTitle>
+                <ul className="space-y-2">
+                  {trend.ctaAngles.map((cta) => (
+                    <li
+                      key={cta}
+                      className="rounded-lg border border-zinc-800/40 bg-zinc-950/40 px-3 py-2.5 text-sm text-zinc-300"
+                    >
+                      {cta}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {trend.risingKeywords && trend.risingKeywords.length > 0 && (
+              <section className="space-y-2">
+                <SectionTitle>Rising Keywords</SectionTitle>
+                <div className="flex flex-wrap gap-1.5">
+                  {trend.risingKeywords.map((kw) => (
+                    <span
+                      key={kw}
+                      className="rounded-lg bg-zinc-900/60 px-2.5 py-1 text-xs font-medium text-zinc-400 ring-1 ring-zinc-800/60"
+                    >
+                      #{kw.replace(/^#/, '')}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {trend.hookSuggestions && trend.hookSuggestions.length > 0 && (
+              <section className="space-y-3 rounded-xl border border-zinc-800/50 bg-zinc-900/25 p-4">
+                <SectionTitle>Recommended Hooks</SectionTitle>
+                <ul className="space-y-2">
+                  {trend.hookSuggestions.slice(0, 4).map((hook) => (
+                    <li
+                      key={hook}
+                      className="rounded-lg border border-violet-500/10 bg-violet-500/5 px-3 py-2.5 text-sm text-zinc-300"
+                    >
+                      {hook}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             <section className="space-y-2">
               <SectionTitle>Content Ideas</SectionTitle>

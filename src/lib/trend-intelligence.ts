@@ -14,6 +14,7 @@ import {
 } from '@/lib/trend-media-assignment'
 import { hashString } from '@/lib/demo-trend-seed'
 import { isPlayableDemoVideoUrl, posterForVideoUrl } from '@/lib/demo-media'
+import { attachTrendSignals } from '@/lib/trend-signals'
 import { isValidVideoUrl } from '@/lib/video-url'
 
 export { DEMO_TREND_INTELLIGENCE } from '@/lib/trend-demo-data'
@@ -342,7 +343,8 @@ export function enrichTrendIntelligence(
   index: number,
 ): TrendIntelligence {
   const withMedia = enrichTrendWithMedia(trend, index)
-  return { ...withMedia, ...buildIntelligenceExtras(withMedia, index) }
+  const enriched = { ...withMedia, ...buildIntelligenceExtras(withMedia, index) }
+  return attachTrendSignals(enriched)
 }
 
 export function getViralScoreTone(score: number): {

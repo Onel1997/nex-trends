@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib'
 
 const STEPS = [
-  'Scanning TikTok & Instagram signals',
-  'Ranking viral velocity & engagement',
-  'Matching creators & hook patterns',
-  'Generating trend cards & captions',
+  'Analyzing creator signals…',
+  'Detecting viral momentum…',
+  'Mapping audience interest…',
+  'Calculating opportunity score…',
 ] as const
 
 type TrendAnalysisLoadingProps = {
@@ -18,30 +18,28 @@ export function TrendAnalysisLoading({ className }: TrendAnalysisLoadingProps) {
   useEffect(() => {
     const interval = window.setInterval(() => {
       setActiveStep((s) => (s + 1) % STEPS.length)
-    }, 900)
+    }, 1100)
     return () => window.clearInterval(interval)
   }, [])
 
   return (
     <div
       className={cn(
-        'rounded-2xl border border-violet-500/20 bg-zinc-900/40 p-5 sm:p-6',
+        'rounded-2xl border border-violet-500/25 bg-gradient-to-br from-violet-500/[0.08] via-zinc-950/50 to-zinc-950/30 p-5 shadow-[0_0_60px_-20px_rgba(139,92,246,0.55)] backdrop-blur-xl sm:p-6',
         className,
       )}
       role="status"
       aria-live="polite"
-      aria-label="Generating AI trend analysis"
+      aria-label="Trend Intelligence wird analysiert"
     >
       <div className="flex items-center gap-3">
-        <span className="relative flex size-10 shrink-0 items-center justify-center">
-          <span className="absolute inset-0 animate-ping rounded-full bg-violet-500/20" />
-          <span className="relative size-8 animate-spin rounded-full border-2 border-zinc-800 border-t-violet-500 border-r-fuchsia-500/80" />
+        <span className="relative flex size-11 shrink-0 items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-violet-500/25" />
+          <span className="relative size-9 animate-spin rounded-full border-2 border-zinc-800 border-t-violet-500 border-r-fuchsia-500/80" />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white">Generating AI Trend Analysis…</p>
-          <p className="mt-0.5 text-xs text-zinc-500">
-            Fresh signals · creators · hooks · metrics
-          </p>
+          <p className="text-sm font-semibold text-white">AI Trend Intelligence</p>
+          <p className="mt-0.5 text-xs text-violet-300/80">{STEPS[activeStep]}</p>
         </div>
       </div>
 
@@ -54,8 +52,8 @@ export function TrendAnalysisLoading({ className }: TrendAnalysisLoadingProps) {
             <li
               key={step}
               className={cn(
-                'flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs transition-smooth',
-                isActive && 'bg-violet-500/10 text-violet-200',
+                'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs transition-smooth',
+                isActive && 'bg-violet-500/12 text-violet-100 ring-1 ring-violet-500/20',
                 isDone && 'text-zinc-500',
                 !isActive && !isDone && 'text-zinc-600',
               )}
@@ -64,7 +62,7 @@ export function TrendAnalysisLoading({ className }: TrendAnalysisLoadingProps) {
                 className={cn(
                   'flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
                   isDone && 'bg-emerald-500/20 text-emerald-400',
-                  isActive && 'bg-violet-500/25 text-violet-300',
+                  isActive && 'bg-violet-500/30 text-violet-200 animate-pulse-soft',
                   !isDone && !isActive && 'bg-zinc-800 text-zinc-600',
                 )}
                 aria-hidden
@@ -76,6 +74,17 @@ export function TrendAnalysisLoading({ className }: TrendAnalysisLoadingProps) {
           )
         })}
       </ul>
+
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-16 animate-shimmer rounded-xl bg-zinc-800/35"
+            style={{ animationDelay: `${i * 120}ms` }}
+            aria-hidden
+          />
+        ))}
+      </div>
     </div>
   )
 }

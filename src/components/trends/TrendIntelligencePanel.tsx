@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { TrendScoutSearch, type ScoutPlatform } from '@/components/trends/TrendScoutSearch'
+import { TrendFilterBar, type TrendCategoryFilter, type TrendPlatformFilter } from '@/components/trends/TrendFilterBar'
+import { TrendIntelligenceDashboard } from '@/components/trends/TrendIntelligenceDashboard'
+import { TrendScoutSearch } from '@/components/trends/TrendScoutSearch'
+import { filterTrends } from '@/lib/trend-signals'
 import { TrendsGrid } from '@/components/trends/TrendsGrid'
 import {
   SavedTrendsPanel,
@@ -34,7 +37,11 @@ export function TrendIntelligencePanel() {
 
   const [view, setView] = useState<TrendsView>(initial?.view ?? 'explore')
   const [searchQuery, setSearchQuery] = useState(initial?.searchQuery ?? '')
-  const [platform, setPlatform] = useState<ScoutPlatform>(initial?.platform ?? 'all')
+  const [platform, setPlatform] = useState<TrendPlatformFilter>(
+    (initial?.platform as TrendPlatformFilter) ?? 'all',
+  )
+  const [categoryFilter, setCategoryFilter] = useState<TrendCategoryFilter>('all')
+  const [openTrendId, setOpenTrendId] = useState<string | null>(null)
   const [hasSearched, setHasSearched] = useState(
     () => Boolean(initial?.searchQuery?.trim()) && !initial?.isDemo,
   )
@@ -195,15 +202,18 @@ export function TrendIntelligencePanel() {
     }
   }, [searchQuery, isLoadingMore, hasMore, isDemo, searchNonce, trends.length])
 
-  const filteredTrends =
-    platform === 'all'
-      ? trends
-      : trends.filter((t) => t.platform.toLowerCase() === platform.toLowerCase())
+  const filteredTrends = filterTrends(trends, platform, categoryFilter)
 
   const isBusy = isSearching || isLoadingDemo
 
-  const platformLabel =
-    platform === 'tiktok' ? 'TikTok' : platform === 'instagram' ? 'Instagram' : undefined
+  const platformFilterLabel =
+    platform === 'tiktok'
+      ? 'TikTok'
+      : platform === 'instagram'
+        ? 'Instagram'
+        : platform === 'youtube'
+          ? 'YouTube'
+          : undefined
 
   if (isRestoring) {
     return (
@@ -245,7 +255,23 @@ export function TrendIntelligencePanel() {
             disabled={isBusy}
             onSearch={handleSearch}
             onNicheSelect={(niche) => setSearchQuery(niche)}
+            hidePlatformToggles
           />
+
+          <TrendFilterBar
+            platform={platform}
+            category={categoryFilter}
+            onPlatformChange={setPlatform}
+            onCategoryChange={setCategoryFilter}
+            disabled={isBusy}
+          />
+
+          {filteredTrends.length > 0 && !isBusy && (
+            <TrendIntelligenceDashboard
+              trends={filteredTrends}
+              onSelectTrend={(id) => setOpenTrendId(id)}
+            />
+          )}
 
           {!hasProAccess && remaining !== null && (
             <p className="text-center text-xs text-zinc-500 sm:text-left">
@@ -275,14 +301,16 @@ export function TrendIntelligencePanel() {
               hasMore={hasMore && !isDemo && hasSearched}
               onLoadMore={() => void loadMore()}
               isDemo={isDemo}
-              hasSearched={hasSearched}
+              hasSearched={hasSearched || trends.length > 0}
               searchQuery={searchQuery.trim()}
-              platformFilter={platformLabel}
+              platformFilter={platformFilterLabel}
               creditsRemaining={remaining}
               creditsLimit={creditLimit}
               onTryDemo={() => void loadDemo()}
               isSaved={isSaved}
               onToggleSave={toggleSave}
+              autoOpenTrendId={openTrendId}
+              onAutoOpenHandled={() => setOpenTrendId(null)}
             />
           )}
         </>

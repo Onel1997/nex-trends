@@ -3,8 +3,12 @@ import { cn } from '@/lib'
 import { VideoCard } from '@/components/trends/VideoCard'
 import { pickNextFallbackMedia } from '@/lib/trend-media-assignment'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
+import { TrendScoreStrip } from '@/components/trends/TrendScoreStrip'
+import { TrendStateBadge } from '@/components/trends/TrendStateBadge'
 import { ViralScoreRing } from '@/components/trends/ViralScoreRing'
 import {
+  BookmarkIcon,
+  BookmarkFilledIcon,
   EyeIcon,
   HeartIcon,
   SparklesIcon,
@@ -23,6 +27,7 @@ type TrendCardProps = {
   feedIndex?: number
   preloadTier?: VideoPreloadTier
   isSaved?: boolean
+  onToggleSave?: (trend: TrendIntelligence) => void
   /** Other cards' video URLs — avoids failover picking a duplicate in the feed */
   feedVideoUrls?: readonly string[]
 }
@@ -34,6 +39,7 @@ function TrendCardComponent({
   feedIndex = -1,
   preloadTier = 'none',
   isSaved,
+  onToggleSave,
   feedVideoUrls = [],
 }: TrendCardProps) {
   const isTikTok = trend.platform.toLowerCase().includes('tiktok')
@@ -76,7 +82,7 @@ function TrendCardComponent({
         'border border-zinc-800/50 bg-zinc-900/30',
         'shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_4px_24px_-8px_rgba(0,0,0,0.4)]',
         'transition-smooth touch-manipulation',
-        'hover:-translate-y-0.5 hover:border-zinc-700/60 hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]',
+        'hover:-translate-y-0.5 hover:border-violet-500/20 hover:shadow-[0_8px_40px_-12px_rgba(139,92,246,0.25)]',
         'active:scale-[0.985] active:opacity-95 sm:active:scale-100 sm:active:opacity-100',
         onClick && 'cursor-pointer',
       )}
@@ -109,32 +115,68 @@ function TrendCardComponent({
           onVideoUnavailable={handleVideoUnavailable}
         />
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[20] flex items-start p-3 pr-14">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span
+        <div className="trend-card__top-overlay pointer-events-none absolute inset-x-0 top-0 z-[25]">
+          <div className="trend-card__top-bar">
+            <div
               className={cn(
-                'inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider backdrop-blur-md',
-                isTikTok
-                  ? 'bg-black/60 text-white ring-1 ring-white/10'
-                  : 'bg-gradient-to-r from-purple-600/90 to-pink-600/90 text-white ring-1 ring-white/10',
+                'trend-card__meta-zone',
+                onToggleSave && 'trend-card__meta-zone--with-save',
               )}
             >
-              {isTikTok ? 'TikTok' : 'Reels'}
-            </span>
-            {trend.contentBreakdown?.audioTrend && (
-              <span className="inline-flex max-w-[9rem] truncate rounded-full bg-zinc-950/55 px-2 py-0.5 text-[8px] font-medium text-zinc-300 ring-1 ring-white/5 backdrop-blur-md sm:max-w-[11rem]">
-                ♪ {trend.contentBreakdown.audioTrend.split('—')[0].trim().slice(0, 28)}
+              <span
+                className={cn(
+                  'trend-card__pill trend-card__pill--platform',
+                  isTikTok
+                    ? 'bg-black/60 text-white ring-1 ring-white/10'
+                    : 'bg-gradient-to-r from-purple-600/90 to-pink-600/90 text-white ring-1 ring-white/10',
+                )}
+              >
+                {isTikTok ? 'TikTok' : 'Reels'}
               </span>
-            )}
-            {isSaved && (
-              <span className="rounded-full bg-violet-500/30 px-1.5 py-0.5 text-[9px] font-medium text-violet-200 backdrop-blur-sm">
-                ★
-              </span>
+              {trend.contentBreakdown?.audioTrend && (
+                <span className="trend-card__pill trend-card__pill--audio">
+                  ♪ {trend.contentBreakdown.audioTrend.split('—')[0].trim().slice(0, 28)}
+                </span>
+              )}
+              {trend.niche && (
+                <span className="trend-card__pill trend-card__pill--niche">{trend.niche}</span>
+              )}
+              {trend.trendState && (
+                <span className="trend-card__pill trend-card__pill--state pointer-events-auto shrink-0">
+                  <TrendStateBadge state={trend.trendState} />
+                </span>
+              )}
+            </div>
+
+            {onToggleSave && (
+              <div className="trend-card__save-zone pointer-events-auto">
+                <button
+                  type="button"
+                  aria-label={isSaved ? 'Trend entfernen' : 'Trend speichern'}
+                  aria-pressed={isSaved}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onToggleSave(trend)
+                  }}
+                  className={cn(
+                    'trend-card__save',
+                    isSaved
+                      ? 'trend-card__save--active'
+                      : 'trend-card__save--idle',
+                  )}
+                >
+                  {isSaved ? (
+                    <BookmarkFilledIcon className="size-4" aria-hidden />
+                  ) : (
+                    <BookmarkIcon className="size-4" aria-hidden />
+                  )}
+                </button>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[20] bg-gradient-to-t from-black/85 via-black/35 to-transparent p-3 pt-12">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[20] bg-gradient-to-t from-black/85 via-black/35 to-transparent p-3 pb-3.5 pt-14 sm:pt-12">
           <div className="flex items-end justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <img
@@ -155,7 +197,7 @@ function TrendCardComponent({
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <div className="flex shrink-0 flex-col items-end gap-1.5 pl-1">
               <ViralScoreRing score={trend.viralScore} size="sm" animate={priority} />
               <span
                 className={cn(
@@ -181,6 +223,13 @@ function TrendCardComponent({
             </p>
           )}
         </div>
+
+        <TrendScoreStrip
+          momentum={trend.momentumScore}
+          competition={trend.competitionScore}
+          opportunity={trend.opportunityScore}
+          compact
+        />
 
         <TrendMetricsStrip trend={trend} variant="card" />
 
@@ -208,6 +257,13 @@ function TrendCardComponent({
             </span>
           ))}
         </div>
+
+        {trend.aiInsight && (
+          <div className="flex items-start gap-2 rounded-xl border border-violet-500/15 bg-violet-500/[0.06] px-3 py-2">
+            <SparklesIcon className="mt-0.5 size-3.5 shrink-0 text-violet-400/90" aria-hidden />
+            <p className="text-[11px] leading-snug text-violet-200/90">{trend.aiInsight}</p>
+          </div>
+        )}
 
         <div className="mt-auto flex items-center justify-between rounded-xl border border-zinc-800/40 bg-zinc-950/40 px-3 py-2.5">
           <div className="min-w-0 flex-1">
@@ -237,6 +293,7 @@ export const TrendCard = memo(TrendCardComponent, (prev, next) => {
     prev.feedIndex === next.feedIndex &&
     prev.preloadTier === next.preloadTier &&
     prev.isSaved === next.isSaved &&
+    prev.onToggleSave === next.onToggleSave &&
     prev.onClick === next.onClick
   )
 })

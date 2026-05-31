@@ -1,18 +1,51 @@
+import { lazy, memo, Suspense } from 'react'
 import { isImmersiveTool, type DashboardToolId } from '@/lib'
 import { ToolPageHeader } from '@/components/layout/ToolPageHeader'
+import { PageLoadingFallback } from '@/components/ui/PageLoadingFallback'
 import { DashboardPage } from '@/pages/DashboardPage'
-import { TrendIntelligencePage } from '@/pages/trend-intelligence/TrendIntelligencePage'
-import { SavedTrendsPage } from '@/pages/SavedTrendsPage'
-import { MyAiVideosPage } from '@/pages/MyAiVideosPage'
-import { AiStudioPage } from '@/pages/AiStudioPage'
-import { HookGeneratorPage } from '@/pages/HookGeneratorPage'
-import { SettingsPage } from '@/pages/SettingsPage'
-import { PricingPage } from '@/pages/PricingPage'
-import { BillingPage } from '@/pages/BillingPage'
-import { AdCopyGeneratorPage } from '@/pages/tools/AdCopyGeneratorPage'
-import { SeoTitleGeneratorPage } from '@/pages/tools/SeoTitleGeneratorPage'
-import { LandingPageAnalyzerPage } from '@/pages/tools/LandingPageAnalyzerPage'
 import { cn } from '@/lib'
+
+const TrendIntelligencePage = lazy(() =>
+  import('@/pages/trend-intelligence/TrendIntelligencePage').then((m) => ({
+    default: m.TrendIntelligencePage,
+  })),
+)
+const SavedTrendsPage = lazy(() =>
+  import('@/pages/SavedTrendsPage').then((m) => ({ default: m.SavedTrendsPage })),
+)
+const MyAiVideosPage = lazy(() =>
+  import('@/pages/MyAiVideosPage').then((m) => ({ default: m.MyAiVideosPage })),
+)
+const AiStudioPage = lazy(() =>
+  import('@/pages/AiStudioPage').then((m) => ({ default: m.AiStudioPage })),
+)
+const HookGeneratorPage = lazy(() =>
+  import('@/pages/HookGeneratorPage').then((m) => ({ default: m.HookGeneratorPage })),
+)
+const SettingsPage = lazy(() =>
+  import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+)
+const PricingPage = lazy(() =>
+  import('@/pages/PricingPage').then((m) => ({ default: m.PricingPage })),
+)
+const BillingPage = lazy(() =>
+  import('@/pages/BillingPage').then((m) => ({ default: m.BillingPage })),
+)
+const AdCopyGeneratorPage = lazy(() =>
+  import('@/pages/tools/AdCopyGeneratorPage').then((m) => ({
+    default: m.AdCopyGeneratorPage,
+  })),
+)
+const SeoTitleGeneratorPage = lazy(() =>
+  import('@/pages/tools/SeoTitleGeneratorPage').then((m) => ({
+    default: m.SeoTitleGeneratorPage,
+  })),
+)
+const LandingPageAnalyzerPage = lazy(() =>
+  import('@/pages/tools/LandingPageAnalyzerPage').then((m) => ({
+    default: m.LandingPageAnalyzerPage,
+  })),
+)
 
 type DashboardMainProps = {
   activeTool: DashboardToolId
@@ -49,7 +82,7 @@ function renderPage(activeTool: DashboardToolId, onSelectTool: (tool: DashboardT
   }
 }
 
-export function DashboardMain({ activeTool, onSelectTool }: DashboardMainProps) {
+function DashboardMainInner({ activeTool, onSelectTool }: DashboardMainProps) {
   const immersive = isImmersiveTool(activeTool)
   const isDashboard = activeTool === 'dashboard'
 
@@ -93,9 +126,13 @@ export function DashboardMain({ activeTool, onSelectTool }: DashboardMainProps) 
       >
         <ToolPageHeader activeTool={activeTool} onBack={() => onSelectTool('dashboard')} />
         <div key={activeTool} className="page-transition-enter nex-page-enter">
-          {renderPage(activeTool, onSelectTool)}
+          <Suspense fallback={<PageLoadingFallback tool={activeTool} />}>
+            {renderPage(activeTool, onSelectTool)}
+          </Suspense>
         </div>
       </div>
     </div>
   )
 }
+
+export const DashboardMain = memo(DashboardMainInner)

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components'
 import { DashboardMain } from '@/components/dashboard/DashboardMain'
+import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
 import { UpgradeModal } from '@/components/subscription'
 import type { DashboardToolId } from '@/lib'
 import {
@@ -63,6 +64,9 @@ export function HomePage() {
       <DashboardLayout activeTool={activeTool} onSelectTool={handleSelectTool}>
         <DashboardMain activeTool={activeTool} onSelectTool={handleSelectTool} />
       </DashboardLayout>
+      {activeTool === 'dashboard' && (
+        <OnboardingOverlay onNavigate={handleSelectTool} />
+      )}
       <UpgradeModal />
     </>
   )

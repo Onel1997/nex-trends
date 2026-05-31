@@ -21,7 +21,7 @@ export type PersistedTrendSession = {
 }
 
 function isScoutPlatform(value: unknown): value is ScoutPlatform {
-  return value === 'all' || value === 'tiktok' || value === 'instagram'
+  return value === 'all' || value === 'tiktok' || value === 'instagram' || value === 'youtube'
 }
 
 function isTrendsView(value: unknown): value is TrendsView {

@@ -1,5 +1,7 @@
 export type TrendVelocity = 'rising' | 'peak' | 'stable' | 'cooling'
 
+export type TrendState = 'exploding' | 'rising' | 'stable' | 'saturated'
+
 export type HeatLevel = 'cold' | 'warm' | 'hot' | 'viral'
 
 export type HookStyle = 'aggressive' | 'luxury' | 'storytelling' | 'faceless' | 'ugc'
@@ -66,6 +68,15 @@ export type TrendIntelligence = {
   growthIndicator?: GrowthIndicator
   engagementScore?: number
   savedAt?: string
+  /** Derived intelligence signals (Phase 2 dashboard) */
+  trendState?: TrendState
+  momentumScore?: number
+  competitionScore?: number
+  opportunityScore?: number
+  aiInsight?: string
+  risingKeywords?: string[]
+  ctaAngles?: string[]
+  monetizationPotential?: string
 }
 
 export type TrendSearchHistoryEntry = {

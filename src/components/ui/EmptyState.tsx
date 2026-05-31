@@ -74,7 +74,7 @@ export function EmptyState({
       >
         {description}
       </p>
-      {action && <div className="mt-7">{action}</div>}
+      {action && <div className="mt-8 sm:mt-9">{action}</div>}
     </div>
   )
 }

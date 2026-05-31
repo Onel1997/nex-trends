@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMobileKeyboardViewport } from '@/hooks/useMobileKeyboardViewport'
 import { SubscriptionProvider } from '@/context/SubscriptionContext'
 import { ToastProvider } from '@/context/ToastContext'
+import { ErrorBoundary } from '@/components/app/ErrorBoundary'
 import { Spinner } from '@/components/ui/Spinner'
 import { useSubscription } from '@/hooks/useSubscription'
 import { CheckoutHandler } from '@/components/app/CheckoutHandler'
@@ -52,10 +53,12 @@ export default function App() {
   useMobileKeyboardViewport()
 
   return (
-    <ToastProvider>
-      <SubscriptionProvider>
-        <AppContent />
-      </SubscriptionProvider>
-    </ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <SubscriptionProvider>
+          <AppContent />
+        </SubscriptionProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   )
 }

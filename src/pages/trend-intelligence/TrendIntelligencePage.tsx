@@ -3,7 +3,7 @@ import { TrendIntelligencePanel } from '@/components/trends'
 
 export function TrendIntelligencePage() {
   return (
-    <div className="trend-intelligence-page min-h-full">
+    <div className="trend-intelligence-page min-h-full overflow-x-hidden">
       <header className="ti-header mb-6 animate-fade-in sm:mb-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -12,15 +12,16 @@ export function TrendIntelligencePage() {
               AI Trend Intelligence
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl lg:text-4xl">
-              Virale Signale entdecken
+              Creator Signal Engine
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-500">
-              Feed, Analytics, Hooks & AI Insights — dein Research-Studio für TikTok & Instagram.
+              Discover exploding trends, viral hooks, opportunity scores & AI insights — built for
+              daily creator research on TikTok, Instagram & YouTube.
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/20 bg-violet-500/8 px-3 py-1 text-[11px] font-medium text-violet-300/90">
             <span className="size-1.5 animate-pulse-soft rounded-full bg-violet-400" aria-hidden />
-            Live KI-Analyse
+            Live Intelligence
           </span>
         </div>
       </header>

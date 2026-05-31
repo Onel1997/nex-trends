@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { DashboardSkeleton } from '@/components/ui/Skeleton'
+import { ErrorBanner } from '@/components/ui/ErrorBanner'
+import { OnboardingTip } from '@/components/onboarding/OnboardingTip'
 import {
   DashboardActivityTimeline,
   DashboardCoreProducts,
@@ -23,7 +25,7 @@ type DashboardPageProps = {
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const { isLoading, error, user, weeklyUsage, usage } = useDashboardData()
+  const { isLoading, error, user, weeklyUsage, usage, refresh } = useDashboardData()
   const { stats, videos, loadingVideos } = useDashboardStats(weeklyUsage)
   const { savedHooks } = useSavedHooks()
   const usageOverview = useDashboardUsageOverview(savedHooks, usage)
@@ -60,14 +62,15 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
       </div>
 
       <div className="dashboard-os__content relative flex flex-col">
-        {error && (
-          <div
-            role="alert"
-            className="animate-fade-in rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-sm text-red-300"
-          >
-            {error}
-          </div>
-        )}
+        {error && <ErrorBanner error={error} onRetry={() => void refresh()} />}
+
+        <OnboardingTip
+          tipId="dashboard-credits"
+          title="Credits im Blick behalten"
+          message="Dein monatliches Kontingent erneuert sich automatisch. Pro-Nutzer haben unbegrenzte Generierungen."
+          action={{ label: 'Credits ansehen', onClick: () => onNavigate('billing') }}
+          className="mb-1"
+        />
 
         <DashboardHero user={user} stats={stats} />
 

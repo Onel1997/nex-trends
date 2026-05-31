@@ -38,6 +38,8 @@ type TrendsGridProps = {
   onTryDemo?: () => void
   isSaved?: (id: string) => boolean
   onToggleSave?: (trend: TrendIntelligence) => boolean
+  autoOpenTrendId?: string | null
+  onAutoOpenHandled?: () => void
 }
 
 const TrendFeedItem = memo(function TrendFeedItem({
@@ -46,6 +48,7 @@ const TrendFeedItem = memo(function TrendFeedItem({
   preloadTier,
   onSelect,
   isSaved,
+  onToggleSave,
   feedVideoUrls,
 }: {
   trend: DisplayTrend
@@ -53,6 +56,7 @@ const TrendFeedItem = memo(function TrendFeedItem({
   preloadTier: VideoPreloadTier
   onSelect: (t: DisplayTrend) => void
   isSaved?: (id: string) => boolean
+  onToggleSave?: (trend: TrendIntelligence) => boolean
   feedVideoUrls: readonly string[]
 }) {
   return (
@@ -67,6 +71,7 @@ const TrendFeedItem = memo(function TrendFeedItem({
         feedIndex={index}
         preloadTier={preloadTier}
         isSaved={isSaved?.(trend.id)}
+        onToggleSave={onToggleSave}
         feedVideoUrls={feedVideoUrls}
       />
     </div>
@@ -138,9 +143,20 @@ export function TrendsGrid({
   onTryDemo,
   isSaved,
   onToggleSave,
+  autoOpenTrendId,
+  onAutoOpenHandled,
 }: TrendsGridProps) {
   const [selectedTrend, setSelectedTrend] = useState<DisplayTrend | null>(null)
   const [activeFeedIndex, setActiveFeedIndex] = useState(0)
+
+  useEffect(() => {
+    if (!autoOpenTrendId) return
+    const match = trends.find((t) => t.id === autoOpenTrendId || t.id.startsWith(autoOpenTrendId))
+    if (match) {
+      setSelectedTrend(match)
+      onAutoOpenHandled?.()
+    }
+  }, [autoOpenTrendId, trends, onAutoOpenHandled])
 
   const displayTrends = useMemo(
     () =>
@@ -180,9 +196,15 @@ export function TrendsGrid({
         description: `Für „${searchQuery || 'deine Suche'}“ gibt es keine ${platformFilter}-Treffer. Wähle „Alle“ oder probiere eine andere Nische.`,
       }
     }
+    if (searchQuery) {
+      return {
+        title: 'Keine Trends gefunden',
+        description: `Für „${searchQuery}“ konnten wir keine passenden Signale finden. Probiere eine andere Nische oder einen breiteren Suchbegriff.`,
+      }
+    }
     return {
-      title: 'Keine Trends gefunden',
-      description: `Für „${searchQuery}“ konnten wir keine passenden Signale finden. Probiere eine andere Nische oder einen breiteren Suchbegriff.`,
+      title: 'Keine Treffer für diesen Filter',
+      description: 'Passe Plattform oder Kategorie an, um mehr Signale zu sehen.',
     }
   }, [platformFilter, searchQuery])
 
@@ -316,6 +338,7 @@ export function TrendsGrid({
               preloadTier={tierForFeedIndex(index, activeFeedIndex)}
               onSelect={setSelectedTrend}
               isSaved={isSaved}
+              onToggleSave={onToggleSave}
               feedVideoUrls={feedVideoUrls}
             />
           ))}

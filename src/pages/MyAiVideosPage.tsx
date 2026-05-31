@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AiStudioEmptyIllustration } from '@/components/ai-studio/AiStudioEmptyIllustration'
 import { navigateToTool } from '@/lib/navigation'
+import { ErrorBanner } from '@/components/ui/ErrorBanner'
 import {
   VideoLibraryCard,
   VideoLibraryFilters,
@@ -82,11 +83,7 @@ export function MyAiVideosPage() {
         />
       </div>
 
-      {error && (
-        <p className="animate-fade-in rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-          {error}
-        </p>
-      )}
+      {error && <ErrorBanner error={error} onRetry={() => void refresh()} />}
 
       {loading && videos.length === 0 ? (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">

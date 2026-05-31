@@ -14,6 +14,7 @@ export {
   type NavToolId,
 } from './constants'
 export { cn, generateId } from './utils'
+export { normalizeError, normalizeSupabaseError, type NormalizedError, type NexErrorCode } from './errors'
 export { supabase } from './supabase'
 export { isAdminEmail, getAdminUsageResult } from './admin'
 export {
