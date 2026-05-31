@@ -3,6 +3,12 @@ import {
   retryVideoJob,
   waitForVideoJob,
 } from '@/lib/video-api'
+import {
+  logVideoPipelineError,
+  premiumRenderingMessage,
+  premiumRetryMessage,
+  PREMIUM_PIPELINE_MESSAGES,
+} from '@/lib/video-pipeline-messages'
 import type { GeneratedVideoJob } from '@/types/generated-video'
 import type { StudioCreateOptions } from '@/lib/ai-studio'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
@@ -24,9 +30,14 @@ export type VideoGenerationResult = {
   hasAudio: boolean
   hookText?: string
   captions?: string[]
+  scenePrompt?: string
+  pacing?: string
+  motionStyle?: string
+  visualMood?: string
   voiceoverUrl?: string
   musicUrl?: string
   provider?: string
+  /** Internal diagnostic only — never render in UI */
   message?: string
 }
 
@@ -60,13 +71,14 @@ function toResult(job: GeneratedVideoJob): VideoGenerationResult {
     hasAudio: job.hasAudio ?? Boolean(job.voiceoverUrl || job.musicUrl),
     hookText: job.hookText,
     captions: job.captions,
+    scenePrompt: job.scenePrompt,
+    pacing: job.pacing,
+    motionStyle: job.motionStyle,
+    visualMood: job.visualMood,
     voiceoverUrl: job.voiceoverUrl,
     musicUrl: job.musicUrl,
     provider: job.provider,
-    message:
-      job.provider === 'synthetic'
-        ? 'Premium-Kurzvideo mit KI-Hook, Captions & Voiceover. Für echte KI-Clips: REPLICATE_API_TOKEN setzen.'
-        : 'Einzigartiges KI-Video — tippe für Wiedergabe mit Audio.',
+    message: PREMIUM_PIPELINE_MESSAGES.success,
   }
 }
 
@@ -75,18 +87,15 @@ export type RunVideoJobOptions = {
   retryJobId?: string
   signal?: AbortSignal
   studio?: StudioCreateOptions
+  onRetry?: (attempt: number) => void
 }
 
-/**
- * Runs real AI video generation via Supabase edge function (Replicate / Luma).
- * Falls back to synthetic unique composition when no provider keys are configured.
- */
 export async function runVideoGenerationJob(
   trend: TrendIntelligence,
-  onStatus?: (status: VideoJobStatus, detail?: string) => void,
+  onStatus?: (status: VideoJobStatus, detail?: string, meta?: { retryAttempt?: number }) => void,
   options?: RunVideoJobOptions,
 ): Promise<VideoGenerationResult> {
-  onStatus?.('queued', 'Video-Job wird erstellt …')
+  onStatus?.('queued', PREMIUM_PIPELINE_MESSAGES.rendering[0])
   log('start', { trendId: trend.id, retry: options?.retryJobId })
 
   let attempt = 0
@@ -104,30 +113,29 @@ export async function runVideoGenerationJob(
         job = await createVideoJob(trend, options?.generationId, options?.studio)
       }
 
-      onStatus?.(mapStatus(job.status), 'Provider-Job gestartet …')
+      onStatus?.(mapStatus(job.status), premiumRenderingMessage(job.status, attempt))
 
       if (job.status === 'completed' && job.videoUrl) {
-        onStatus?.('completed', 'Video bereit')
+        onStatus?.('completed', PREMIUM_PIPELINE_MESSAGES.success)
         return toResult(job)
       }
 
       const final = await waitForVideoJob(
         job.id,
-        (updated, detail) => {
-          onStatus?.(mapStatus(updated.status), detail)
+        (updated) => {
+          onStatus?.(mapStatus(updated.status), premiumRenderingMessage(updated.status, attempt))
         },
         options?.signal,
       )
 
-      onStatus?.('completed', 'Video bereit')
+      onStatus?.('completed', PREMIUM_PIPELINE_MESSAGES.success)
       log('ok', { jobId: final.id, provider: final.provider })
       return toResult(final)
     } catch (err) {
-      lastError = err instanceof Error ? err.message : 'Unbekannter Fehler'
-      log('attempt failed', { attempt, lastError })
+      lastError = err instanceof Error ? err.message : 'Unknown error'
+      logVideoPipelineError(`attempt-${attempt}`, err, { trendId: trend.id })
 
       if (options?.signal?.aborted) {
-        onStatus?.('failed', 'Abgebrochen')
         return {
           status: 'failed',
           videoUrl: '',
@@ -140,18 +148,21 @@ export async function runVideoGenerationJob(
 
       attempt += 1
       if (attempt <= MAX_RETRIES) {
-        onStatus?.('generating', `Erneuter Versuch (${attempt}/${MAX_RETRIES}) …`)
+        options?.onRetry?.(attempt)
+        onStatus?.('generating', premiumRetryMessage(attempt), { retryAttempt: attempt })
+        await new Promise((r) => window.setTimeout(r, 800 + attempt * 400))
       }
     }
   }
 
-  onStatus?.('failed', lastError)
+  logVideoPipelineError('exhausted', lastError, { attempts: attempt })
+
   return {
     status: 'failed',
     videoUrl: '',
     posterUrl: trend.thumbnailUrl ?? '',
     duration: trend.videoDuration ?? '0:15',
     hasAudio: false,
-    message: lastError ?? 'Video-Generierung fehlgeschlagen.',
+    message: lastError,
   }
 }

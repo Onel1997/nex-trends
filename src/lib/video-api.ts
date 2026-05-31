@@ -28,6 +28,7 @@ type HistoryRow = GeneratedVideoHistoryItem & {
   video_url?: string
   poster_url?: string
   hook_text?: string
+  scene_prompt?: string
   voiceover_url?: string
   music_url?: string
   has_audio?: boolean
@@ -120,6 +121,7 @@ export async function fetchVideoHistory(
     posterUrl: row.poster_url ?? row.posterUrl,
     hookText: row.hook_text ?? row.hookText,
     captions: Array.isArray(row.captions) ? row.captions : [],
+    scenePrompt: row.scene_prompt ?? row.scenePrompt,
     voiceoverUrl: row.voiceover_url ?? row.voiceoverUrl,
     musicUrl: row.music_url ?? row.musicUrl,
     duration: row.duration ?? '0:15',

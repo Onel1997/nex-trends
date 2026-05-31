@@ -17,12 +17,12 @@ const STUDIO_STEPS = [
 const LAST_STEP_INDEX = STUDIO_STEPS.length - 1
 
 const AI_PHASE_MESSAGES = [
-  'Queued in AI pipeline…',
-  'Generating script…',
-  'Rendering AI video…',
-  'Rendering voiceover…',
-  'Building captions & final render…',
-  'Optimizing viral hooks…',
+  'AI Video wird generiert …',
+  'Script & Hook werden geschrieben …',
+  'KI rendert cinematic Szenen …',
+  'Voiceover wird generiert …',
+  'Captions & Final Render …',
+  'Virale Hooks werden optimiert …',
 ] as const
 
 function getAiPhaseMessage(
@@ -98,19 +98,19 @@ function PipelineStepBadge({ completed, active, success }: PipelineStepBadgeProp
 type AiStudioPipelineProps = {
   status: VideoJobStatus
   detail?: string | null
-  error?: string | null
   provider?: string | null
   className?: string
   onCancel?: () => void
+  onRetry?: () => void
 }
 
 export function AiStudioPipeline({
   status,
   detail,
-  error,
   provider,
   className,
   onCancel,
+  onRetry,
 }: AiStudioPipelineProps) {
   const active = studioStepIndex(status, detail)
   const prevActive = useRef(active)
@@ -165,7 +165,16 @@ export function AiStudioPipeline({
             onClick={onCancel}
             className="btn-press rounded-lg px-2 py-1 text-xs text-zinc-500 transition-smooth hover:bg-zinc-800/50 hover:text-zinc-300"
           >
-            Cancel
+            Abbrechen
+          </button>
+        ) : null}
+        {failed && onRetry ? (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-lg border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300 transition hover:border-violet-400/50 hover:bg-violet-500/20"
+          >
+            Erneut versuchen
           </button>
         ) : null}
       </div>
@@ -294,13 +303,7 @@ export function AiStudioPipeline({
         </div>
       ) : succeeded ? (
         <p className="mt-4 animate-fade-in text-sm font-medium text-emerald-300/90">
-          Video generated successfully
-        </p>
-      ) : null}
-
-      {error ? (
-        <p className="mt-3 animate-fade-in rounded-xl border border-red-900/40 bg-red-950/30 px-3 py-2.5 text-sm text-red-300/90">
-          {error}
+          Dein AI Video ist bereit — cinematic Quality unlocked.
         </p>
       ) : null}
 

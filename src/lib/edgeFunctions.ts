@@ -5,32 +5,27 @@ import {
   formatEdgeFunctionNetworkError,
   type PipelineErrorPayload,
 } from '@/lib/video-pipeline-errors'
+import { logVideoPipelineError } from '@/lib/video-pipeline-messages'
 
 type EdgeFunctionErrorBody = PipelineErrorPayload
 
 export type InvokeEdgeFunctionOptions = {
-  /** HTTP statuses that return parsed JSON instead of throwing (e.g. 402 for credits). */
   okStatuses?: number[]
 }
 
-function getSupabaseFunctionsUrl(functionName: string): string {
+function assertSupabaseConfigured(): void {
   const baseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
 
   if (!baseUrl || !anonKey) {
-    throw new Error(
-      'Supabase ist nicht konfiguriert. Bitte VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY in .env setzen.',
-    )
+    logVideoPipelineError('env-missing', 'Supabase env not configured', { baseUrl: !!baseUrl })
+    throw new Error('SUPABASE_NOT_CONFIGURED')
   }
 
   if (isLocalSupabaseUrl(baseUrl)) {
-    throw new Error(
-      `Edge Functions laufen nicht auf lokalem Supabase (${baseUrl}). ` +
-        'Setze VITE_SUPABASE_URL auf https://<project-ref>.supabase.co (Dashboard → Settings → API).',
-    )
+    logVideoPipelineError('env-local', 'Local Supabase URL in production client', { baseUrl })
+    throw new Error('SUPABASE_LOCAL_URL')
   }
-
-  return `${baseUrl.replace(/\/$/, '')}/functions/v1/${functionName}`
 }
 
 function isCreditConsumeShape(payload: unknown): boolean {
@@ -49,37 +44,38 @@ function isFatalEdgePayload(payload: unknown): payload is EdgeFunctionErrorBody 
   return typeof record.error === 'string' || typeof record.message === 'string'
 }
 
-function parseEdgeErrorMessage(
+function parseEdgeErrorForLog(
   functionName: string,
   status: number,
   body: unknown,
   fallback?: string,
 ): string {
   const payload = body as EdgeFunctionErrorBody | null
-
   if (payload && isFatalEdgePayload(payload)) {
     return formatPipelineError(payload, fallback, functionName)
   }
-
   if (isCreditConsumeShape(body)) {
     const credit = body as { error?: string }
     if (credit.error) return credit.error
   }
+  return coerceErrorMessage(fallback) || `HTTP ${status} from ${functionName}`
+}
 
-  const fb = coerceErrorMessage(fallback)
+function throwVideoEdgeError(
+  functionName: string,
+  status: number,
+  body: unknown,
+  fallback?: string,
+): never {
+  const technical = parseEdgeErrorForLog(functionName, status, body, fallback)
+  logVideoPipelineError(`edge-${functionName}`, technical, { status, body })
 
-  if (status === 401) return 'Sitzung abgelaufen. Bitte melde dich erneut an.'
-  if (status === 404) {
-    return (
-      `Die Edge Function „${functionName}“ ist nicht deployed. ` +
-      `Deploy: supabase functions deploy ${functionName}`
-    )
+  if (status === 401) throw new Error('AUTH_REQUIRED')
+  if (status === 402) throw new Error('insufficient_credits')
+  if (isNetworkFetchError(new Error(technical))) {
+    throw new Error(formatEdgeFunctionNetworkError(functionName))
   }
-
-  return (
-    formatPipelineError({ error: fb }, fb, functionName) ||
-    `Anfrage an „${functionName}“ fehlgeschlagen (HTTP ${status}).`
-  )
+  throw new Error('EDGE_FUNCTION_ERROR')
 }
 
 function isNetworkFetchError(err: unknown): boolean {
@@ -89,7 +85,8 @@ function isNetworkFetchError(err: unknown): boolean {
     msg.includes('failed to fetch') ||
     msg.includes('load failed') ||
     msg.includes('networkerror') ||
-    msg.includes('failed to send a request')
+    msg.includes('failed to send a request') ||
+    msg.includes('edge_function_unreachable')
   )
 }
 
@@ -106,22 +103,26 @@ function parseJsonBody<T>(raw: unknown): T | null {
   return null
 }
 
+function extractFunctionsErrorStatus(error: { context?: Response } & Error): number {
+  return error.context?.status ?? 0
+}
+
 export async function invokeEdgeFunction<T>(
   functionName: string,
   body: Record<string, unknown>,
   options?: InvokeEdgeFunctionOptions,
 ): Promise<T> {
+  assertSupabaseConfigured()
+
   const {
     data: { session },
     error: sessionError,
   } = await supabase.auth.getSession()
 
   if (sessionError || !session?.access_token) {
-    throw new Error('Nicht authentifiziert. Bitte melde dich erneut an.')
+    throw new Error('AUTH_REQUIRED')
   }
 
-  const url = getSupabaseFunctionsUrl(functionName)
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!.trim()
   const extraOk = options?.okStatuses ?? []
 
   const debug =
@@ -130,87 +131,35 @@ export async function invokeEdgeFunction<T>(
     import.meta.env.VITE_VIDEO_DEBUG === 'true'
 
   if (debug) {
-    console.debug(`[EdgeFunction] ${functionName} → POST ${url}`, {
+    console.debug(`[EdgeFunction] ${functionName} → invoke`, {
       action: body.action,
       supabaseHost: new URL(SUPABASE_URL).host,
     })
   }
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: anonKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
+  const { data, error } = await supabase.functions.invoke(functionName, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body,
+  })
 
-    let payload: T | null = null
+  const payload = parseJsonBody<T & EdgeFunctionErrorBody>(data) ?? (data as T | null)
+  const httpStatus = error ? extractFunctionsErrorStatus(error as Error & { context?: Response }) : 200
 
-    try {
-      payload = (await response.json()) as T
-    } catch {
-      payload = null
+  if (error) {
+    if (extraOk.includes(httpStatus) && payload !== null) {
+      return payload as T
     }
-
-    const isAcceptedStatus =
-      response.ok || extraOk.includes(response.status)
-
-    if (isAcceptedStatus && payload !== null) {
-      if (isFatalEdgePayload(payload)) {
-        throw new Error(formatPipelineError(payload, undefined, functionName))
-      }
-      return payload
-    }
-
-    if (!response.ok) {
-      console.error(`[EdgeFunction] ${functionName} HTTP ${response.status}`, payload)
-      throw new Error(
-        parseEdgeErrorMessage(functionName, response.status, payload),
-      )
-    }
-
-    throw new Error(
-      `Leere Antwort von „${functionName}“ (HTTP ${response.status}).`,
-    )
-  } catch (err) {
-    if (err instanceof Error && !isNetworkFetchError(err)) {
-      throw err
-    }
-
-    console.warn(`[EdgeFunction] ${functionName} fetch failed, trying SDK invoke`, err)
-
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-      body,
-    })
-
-    if (error) {
-      const sdkBody = parseJsonBody<EdgeFunctionErrorBody & T>(data) ?? (data as T | null)
-      const sdkMessage = parseEdgeErrorMessage(
-        functionName,
-        0,
-        sdkBody,
-        coerceErrorMessage(error),
-      )
-      if (
-        isNetworkFetchError(error) ||
-        sdkMessage.toLowerCase().includes('failed to fetch') ||
-        sdkMessage.includes('nicht erreichbar')
-      ) {
-        throw new Error(formatEdgeFunctionNetworkError(functionName))
-      }
-      throw new Error(sdkMessage)
-    }
-
-    const result = parseJsonBody<T & EdgeFunctionErrorBody>(data) ?? (data as T)
-
-    if (result && isFatalEdgePayload(result)) {
-      throw new Error(formatPipelineError(result, undefined, functionName))
-    }
-
-    return result as T
+    throwVideoEdgeError(functionName, httpStatus, payload, coerceErrorMessage(error))
   }
+
+  if (payload && isFatalEdgePayload(payload)) {
+    throwVideoEdgeError(functionName, httpStatus || 500, payload)
+  }
+
+  if (payload !== null) {
+    return payload as T
+  }
+
+  logVideoPipelineError(`edge-${functionName}`, 'Empty response')
+  throw new Error('EDGE_FUNCTION_EMPTY')
 }

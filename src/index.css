@@ -5075,3 +5075,218 @@ html.nex-reduced-motion *::after {
     margin-inline: -0.125rem;
   }
 }
+
+/* ── Creator Blueprint OS ── */
+
+.creator-blueprint-loading {
+  background: linear-gradient(
+    145deg,
+    rgb(9 9 15 / 0.95) 0%,
+    rgb(46 16 101 / 0.35) 45%,
+    rgb(9 9 15 / 0.95) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgb(139 92 246 / 0.15),
+    0 0 48px -16px rgb(139 92 246 / 0.4);
+}
+
+.creator-loading-gradient {
+  background: linear-gradient(
+    125deg,
+    rgb(139 92 246 / 0.2),
+    rgb(217 70 239 / 0.12),
+    rgb(6 182 212 / 0.08),
+    rgb(139 92 246 / 0.18)
+  );
+  background-size: 300% 300%;
+  animation: creator-gradient-shift 6s ease-in-out infinite;
+}
+
+.creator-loading-grid {
+  background-image:
+    linear-gradient(rgb(139 92 246 / 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(139 92 246 / 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes creator-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.creator-orb-wrap {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+}
+
+.creator-orb {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgb(139 92 246),
+    rgb(217 70 239),
+    rgb(6 182 212),
+    rgb(139 92 246)
+  );
+  animation: creator-orb-spin 4s linear infinite;
+  filter: blur(1px);
+}
+
+.creator-orb-core {
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgb(255 255 255 / 0.25), rgb(9 9 15) 70%);
+  box-shadow:
+    inset 0 0 20px rgb(139 92 246 / 0.4),
+    0 0 24px rgb(139 92 246 / 0.35);
+}
+
+.creator-orb-ring {
+  position: absolute;
+  inset: -8%;
+  border-radius: 50%;
+  border: 1px solid rgb(139 92 246 / 0.25);
+}
+
+.creator-orb-ring--1 {
+  animation: creator-orb-pulse 2.5s ease-in-out infinite;
+}
+
+.creator-orb-ring--2 {
+  inset: -16%;
+  border-color: rgb(217 70 239 / 0.15);
+  animation: creator-orb-pulse 2.5s ease-in-out infinite 0.6s;
+}
+
+@keyframes creator-orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes creator-orb-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+.creator-loading-message {
+  animation: creator-message-in 0.45s var(--ease-out-expo, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+@keyframes creator-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.creator-blueprint-panel {
+  animation: creator-panel-in 0.55s var(--ease-out-expo, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+@keyframes creator-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.creator-badge-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid rgb(16 185 129 / 0.35);
+  background: rgb(16 185 129 / 0.1);
+  padding: 0.125rem 0.625rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(110 231 183 / 0.95);
+}
+
+.creator-badge-live::before {
+  content: '';
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: rgb(52 211 153);
+  box-shadow: 0 0 8px rgb(52 211 153 / 0.8);
+  animation: creator-badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes creator-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.blueprint-scene-card {
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.blueprint-scene-card:hover {
+  border-color: rgb(139 92 246 / 0.25);
+  box-shadow: 0 0 24px -12px rgb(139 92 246 / 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .creator-orb,
+  .creator-orb-ring--1,
+  .creator-orb-ring--2,
+  .creator-loading-gradient,
+  .creator-badge-live::before {
+    animation: none;
+  }
+}
+
+.creator-blueprint-loading--retry {
+  border-color: rgb(217 70 239 / 0.3);
+}
+
+.creator-orb-wrap--retry .creator-orb {
+  animation-duration: 2.5s;
+}
+
+.creator-fallback-card {
+  animation: creator-panel-in 0.55s var(--ease-out-expo, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+.creator-fallback-glow {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    rgb(139 92 246 / 0.12),
+    transparent 70%
+  );
+}

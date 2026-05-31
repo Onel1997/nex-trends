@@ -1,9 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { VideoBlueprintLoading } from '@/components/trends/VideoBlueprintLoading'
+import { VideoBlueprintPanel } from '@/components/trends/VideoBlueprintPanel'
+import { VideoGenerationFallback } from '@/components/trends/VideoGenerationFallback'
 import { VideoGenerationHistory } from '@/components/trends/VideoGenerationHistory'
-import { VideoGenerationProgress } from '@/components/trends/VideoGenerationProgress'
 import { VideoPreview } from '@/components/trends/VideoPreview'
-import { useVideoGeneration } from '@/hooks/useVideoGeneration'
+import { useVideoGeneration, VIDEO_LOADING_MESSAGE } from '@/hooks/useVideoGeneration'
 import { pickNextFallbackMedia } from '@/lib/trend-media-assignment'
 import { TrendAnalysisSummary } from '@/components/trends/TrendAnalysisSummary'
 import { TrendMetricsStrip } from '@/components/trends/TrendMetricsStrip'
@@ -62,7 +64,7 @@ export function TrendDetailModal({
   isSaved = false,
   onToggleSave,
 }: TrendDetailModalProps) {
-  const { showToast } = useToast()
+  const { showToast, showLoadingToast, updateToast } = useToast()
   const videoGen = useVideoGeneration()
   const failedVideosRef = useRef(new Set<string>())
   const [media, setMedia] = useState({
@@ -80,6 +82,41 @@ export function TrendDetailModal({
       videoDuration: trend.videoDuration,
     })
   }, [trend?.id, trend?.videoUrl, trend?.thumbnailUrl, trend?.videoDuration])
+
+  const handleGenerateVideo = useCallback(async () => {
+    if (!trend || videoGen.showStudioLoading) return
+
+    const toastId = showLoadingToast(
+      VIDEO_LOADING_MESSAGE,
+      'Cinematic Pipeline — Hook, Szenen & Audio werden erstellt.',
+    )
+
+    const result = await videoGen.generate(trend, { consumeCredits: true })
+
+    if (result?.status === 'completed') {
+      setMedia({
+        videoUrl: result.videoUrl,
+        thumbnailUrl: result.posterUrl,
+        videoDuration: result.duration,
+      })
+      updateToast(toastId, {
+        type: 'success',
+        title: 'Creator Blueprint bereit',
+        message: result.hasAudio
+          ? 'Viral Blueprint + Video mit Voiceover — tippe zum Abspielen.'
+          : 'Dein vollständiger Video-Blueprint ist bereit.',
+        persistent: false,
+      })
+      return
+    }
+
+    updateToast(toastId, {
+      type: 'info',
+      title: 'Creator Pipeline',
+      message: 'Bitte versuche es gleich erneut.',
+      persistent: false,
+    })
+  }, [trend, videoGen, showLoadingToast, updateToast])
 
   const handleVideoUnavailable = useCallback(() => {
     if (!trend) return
@@ -255,44 +292,51 @@ export function TrendDetailModal({
               <Button
                 variant="pro"
                 size="md"
-                loading={videoGen.isLoading}
-                disabled={videoGen.isLoading}
-                onClick={() => {
-                  void videoGen.generate(trend, { consumeCredits: true }).then((result) => {
-                    if (result?.status === 'completed') {
-                      setMedia({
-                        videoUrl: result.videoUrl,
-                        thumbnailUrl: result.posterUrl,
-                        videoDuration: result.duration,
-                      })
-                      showToast({
-                        type: 'success',
-                        title: 'AI Video bereit',
-                        message: result.hasAudio
-                          ? 'Tippe auf das Video für Wiedergabe mit Voiceover & Musik.'
-                          : result.message,
-                      })
-                    } else if (videoGen.error) {
-                      showToast({
-                        type: 'error',
-                        title: 'Video-Generierung',
-                        message: videoGen.error,
-                      })
-                    }
-                  })
-                }}
+                loading={videoGen.showStudioLoading}
+                disabled={videoGen.showStudioLoading}
+                onClick={() => void handleGenerateVideo()}
               >
                 <SparklesIcon className="size-4" aria-hidden />
-                AI Video generieren
+                {videoGen.showStudioLoading ? VIDEO_LOADING_MESSAGE : 'AI Video generieren'}
               </Button>
-              <VideoGenerationProgress
-                status={videoGen.status}
-                detail={videoGen.detail}
-                error={videoGen.error}
-                provider={videoGen.provider}
-                onCancel={videoGen.cancel}
-                onRetry={() => void videoGen.retry(trend)}
-              />
+
+              {videoGen.showStudioLoading ? (
+                <VideoBlueprintLoading
+                  message={videoGen.detail ?? VIDEO_LOADING_MESSAGE}
+                  phase={
+                    videoGen.isRetrying
+                      ? 'retrying'
+                      : videoGen.isCrafting
+                        ? 'crafting'
+                        : 'rendering'
+                  }
+                  status={videoGen.status}
+                  retryAttempt={videoGen.retryAttempt}
+                />
+              ) : null}
+
+              {videoGen.showFailure ? (
+                <VideoGenerationFallback
+                  kind={videoGen.failureKind ?? 'exhausted'}
+                  onRetry={
+                    videoGen.retryable
+                      ? () => void videoGen.retry(trend)
+                      : undefined
+                  }
+                  onClose={videoGen.dismissFailure}
+                />
+              ) : null}
+
+              {videoGen.blueprint ? (
+                <VideoBlueprintPanel
+                  blueprint={videoGen.blueprint}
+                  onRegenerate={() => void handleGenerateVideo()}
+                  onCopyToast={(title) =>
+                    showToast({ type: 'success', title, durationMs: 2500 })
+                  }
+                />
+              ) : null}
+
               <VideoGenerationHistory
                 onSelect={(url, poster) => {
                   setMedia({

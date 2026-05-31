@@ -1,9 +1,10 @@
 import { cn } from '@/lib'
 import { SpinnerInline } from '@/components/ui/Spinner'
+import { VIDEO_LOADING_MESSAGE } from '@/hooks/useVideoGeneration'
 import type { VideoJobStatus } from '@/lib/video-generation-pipeline'
 
 const STEPS: { id: VideoJobStatus; label: string }[] = [
-  { id: 'queued', label: 'Warteschlange' },
+  { id: 'queued', label: 'Briefing' },
   { id: 'generating', label: 'KI-Video' },
   { id: 'processing', label: 'Audio' },
   { id: 'completed', label: 'Fertig' },
@@ -19,33 +20,30 @@ function stepIndex(status: VideoJobStatus): number {
 type VideoGenerationProgressProps = {
   status: VideoJobStatus
   detail?: string | null
-  error?: string | null
   provider?: string | null
   className?: string
   onCancel?: () => void
-  onRetry?: () => void
 }
 
 export function VideoGenerationProgress({
   status,
   detail,
-  error,
   provider,
   className,
   onCancel,
-  onRetry,
 }: VideoGenerationProgressProps) {
   const active = stepIndex(status)
-  const failed = status === 'failed'
   const loading =
     status === 'queued' || status === 'generating' || status === 'processing'
+  const loadingMessage = loading ? (detail?.trim() || VIDEO_LOADING_MESSAGE) : detail
 
-  if (status === 'idle') return null
+  if (status === 'idle' || status === 'failed') return null
 
   return (
     <div
       className={cn(
-        'rounded-2xl border border-zinc-800/60 bg-zinc-950/70 p-4',
+        'rounded-2xl border border-violet-500/20 bg-gradient-to-br from-zinc-950/90 via-violet-950/20 to-zinc-950/90 p-4',
+        'shadow-[0_0_32px_-16px_rgba(139,92,246,0.4)]',
         className,
       )}
       role="status"
@@ -53,7 +51,14 @@ export function VideoGenerationProgress({
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          {loading ? <SpinnerInline size="sm" className="text-violet-400" /> : null}
+          {loading ? (
+            <SpinnerInline size="sm" className="text-violet-400" aria-hidden />
+          ) : (
+            <span
+              className="size-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]"
+              aria-hidden
+            />
+          )}
           <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
             AI Video Pipeline
             {provider ? (
@@ -63,32 +68,21 @@ export function VideoGenerationProgress({
             ) : null}
           </p>
         </div>
-        <div className="flex gap-2">
-          {loading && onCancel ? (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="text-xs text-zinc-500 transition hover:text-zinc-300"
-            >
-              Abbrechen
-            </button>
-          ) : null}
-          {failed && onRetry ? (
-            <button
-              type="button"
-              onClick={onRetry}
-              className="text-xs font-medium text-violet-400 transition hover:text-violet-300"
-            >
-              Erneut versuchen
-            </button>
-          ) : null}
-        </div>
+        {loading && onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-xs text-zinc-500 transition hover:text-zinc-300"
+          >
+            Abbrechen
+          </button>
+        ) : null}
       </div>
 
       <div className="flex gap-1.5">
         {STEPS.map((step, i) => {
-          const done = !failed && active > i
-          const current = !failed && active === i
+          const done = active > i
+          const current = active === i
           return (
             <div key={step.id} className="flex flex-1 flex-col gap-1">
               <div
@@ -97,7 +91,6 @@ export function VideoGenerationProgress({
                   done && 'bg-gradient-to-r from-violet-600 to-fuchsia-600',
                   current && 'animate-pulse bg-violet-500/80',
                   !done && !current && 'bg-zinc-800',
-                  failed && i <= 1 && 'bg-red-900/60',
                 )}
               />
               <span
@@ -113,20 +106,22 @@ export function VideoGenerationProgress({
         })}
       </div>
 
-      {detail ? (
-        <p className="mt-3 text-sm text-zinc-400">{detail}</p>
-      ) : null}
-
-      {error ? (
-        <p className="mt-2 rounded-lg border border-red-900/40 bg-red-950/30 px-3 py-2 text-sm text-red-300/90">
-          {error}
-        </p>
+      {loadingMessage ? (
+        <div className="mt-3 flex items-start gap-3 rounded-xl border border-violet-500/15 bg-violet-500/5 px-3 py-2.5">
+          {loading ? (
+            <span className="relative mt-1.5 flex size-2 shrink-0 items-center justify-center">
+              <span className="ai-pulse-ring absolute inset-0 rounded-full bg-violet-400/50" />
+              <span className="relative size-1.5 rounded-full bg-violet-400" />
+            </span>
+          ) : null}
+          <p className="text-sm leading-relaxed text-violet-200/90">{loadingMessage}</p>
+        </div>
       ) : null}
 
       {loading && (
         <div className="mt-3 h-1 overflow-hidden rounded-full bg-zinc-800">
           <div
-            className="h-full animate-progress-indeterminate rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-violet-600"
+            className="h-full animate-progress-indeterminate rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-violet-600 shadow-[0_0_10px_rgba(139,92,246,0.45)]"
             style={{ width: '40%' }}
           />
         </div>

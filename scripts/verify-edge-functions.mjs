@@ -7,23 +7,29 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const ROOT = resolve(import.meta.dirname, '..')
-const ENV_PATH = resolve(ROOT, '.env')
 
 function loadEnv() {
-  try {
-    const raw = readFileSync(ENV_PATH, 'utf8')
-    return Object.fromEntries(
-      raw
-        .split('\n')
-        .filter((line) => line && !line.startsWith('#'))
-        .map((line) => {
-          const i = line.indexOf('=')
-          return [line.slice(0, i), line.slice(i + 1)]
-        }),
-    )
-  } catch {
-    return {}
+  const paths = [
+    resolve(ROOT, '.env.local'),
+    resolve(ROOT, '.env'),
+  ]
+  for (const envPath of paths) {
+    try {
+      const raw = readFileSync(envPath, 'utf8')
+      return Object.fromEntries(
+        raw
+          .split('\n')
+          .filter((line) => line && !line.startsWith('#'))
+          .map((line) => {
+            const i = line.indexOf('=')
+            return [line.slice(0, i), line.slice(i + 1)]
+          }),
+      )
+    } catch {
+      continue
+    }
   }
+  return {}
 }
 
 const env = loadEnv()

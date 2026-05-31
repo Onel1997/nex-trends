@@ -853,6 +853,8 @@ function formatJobRow(
     posterUrl = `${appOrigin.replace(/\/$/, "")}${posterUrl}`;
   }
 
+  const meta = (row.metadata ?? {}) as Record<string, string>;
+
   return {
     id: row.id,
     status: row.status,
@@ -861,6 +863,10 @@ function formatJobRow(
     posterUrl,
     hookText: row.hook_text,
     captions: row.captions ?? [],
+    scenePrompt: row.scene_prompt ?? row.prompt,
+    pacing: meta.pacing,
+    motionStyle: meta.motionStyle,
+    visualMood: meta.visualMood,
     voiceoverUrl: row.voiceover_url,
     musicUrl: row.music_url,
     duration: row.duration ?? "0:15",

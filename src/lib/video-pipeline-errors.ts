@@ -1,4 +1,4 @@
-/** Maps structured edge-function pipeline errors to user-facing copy. */
+import { classifyVideoFailure, getPremiumFailure, logVideoPipelineError } from '@/lib/video-pipeline-messages'
 
 export type PipelineStep =
   | 'auth'
@@ -14,21 +14,6 @@ export type PipelineStep =
   | 'history'
   | 'unknown'
 
-const STEP_LABELS: Record<PipelineStep, string> = {
-  auth: 'Authentifizierung',
-  env: 'Server-Konfiguration',
-  queue: 'Warteschlange',
-  prompt: 'Prompt / Briefing',
-  video_generation: 'KI-Video (Replicate/Luma)',
-  audio_generation: 'Voiceover (OpenAI)',
-  upload: 'Upload',
-  storage: 'Supabase Storage',
-  compose: 'Finalisierung',
-  poll: 'Status-Abfrage',
-  history: 'Verlauf',
-  unknown: 'Pipeline',
-}
-
 export type PipelineErrorPayload = {
   error?: string
   message?: string
@@ -36,22 +21,56 @@ export type PipelineErrorPayload = {
   details?: Record<string, unknown>
 }
 
-export function formatEdgeFunctionNetworkError(functionName: string): string {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''
-  const host = (() => {
-    try {
-      return new URL(baseUrl).host
-    } catch {
-      return baseUrl || 'dein Supabase-Projekt'
-    }
-  })()
+/** Internal/throw helper — logs to console, returns technical string for Error objects. */
+export function formatPipelineError(
+  payload: PipelineErrorPayload | null | undefined,
+  fallback?: string,
+  functionName?: string,
+): string {
+  const raw =
+    errorValueToString(payload?.error) ||
+    errorValueToString(payload?.message) ||
+    fallback ||
+    'Unknown pipeline error'
 
-  return (
-    `Die Edge Function „${functionName}“ ist nicht erreichbar. ` +
-    `Prüfe: (1) VITE_SUPABASE_URL zeigt auf https://<ref>.supabase.co (aktuell: ${host}), ` +
-    `(2) Function deployed: supabase functions deploy ${functionName}, ` +
-    '(3) Im Dashboard unter Edge Functions sichtbar, (4) Du bist angemeldet.'
-  )
+  logVideoPipelineError('formatPipelineError', raw, {
+    functionName,
+    step: payload?.step,
+    details: payload?.details,
+  })
+
+  return raw
+}
+
+/** @deprecated Use logVideoPipelineError + throw — kept for edge function invoke paths. */
+export function formatEdgeFunctionNetworkError(functionName: string): string {
+  logVideoPipelineError('edge-function-network', 'Network or unreachable edge function', {
+    functionName,
+    url: import.meta.env.VITE_SUPABASE_URL,
+  })
+  return 'EDGE_FUNCTION_UNREACHABLE'
+}
+
+export type PremiumVideoError = {
+  kind: 'exhausted' | 'credits' | 'auth'
+  title: string
+  message: string
+  retryable: boolean
+}
+
+/** Always returns premium copy safe for UI — never deploy hints or env vars. */
+export function formatUserFacingVideoError(error: unknown): PremiumVideoError {
+  logVideoPipelineError('user-facing-wrap', error)
+
+  const kind = classifyVideoFailure(error)
+  const copy = getPremiumFailure(kind)
+
+  return {
+    kind,
+    title: copy.title,
+    message: copy.description,
+    retryable: kind === 'exhausted',
+  }
 }
 
 function errorValueToString(value: unknown): string {
@@ -65,49 +84,8 @@ function errorValueToString(value: unknown): string {
     try {
       return JSON.stringify(value)
     } catch {
-      return 'Unbekannter Fehler'
+      return 'Unknown error'
     }
   }
   return String(value)
-}
-
-export function formatPipelineError(
-  payload: PipelineErrorPayload | null | undefined,
-  fallback?: string,
-  functionName?: string,
-): string {
-  const raw =
-    errorValueToString(payload?.error) ||
-    errorValueToString(payload?.message) ||
-    fallback ||
-    'Unbekannter Fehler'
-  const step = (payload?.step ?? 'unknown') as PipelineStep
-  const label = STEP_LABELS[step] ?? step
-
-  if (payload?.step && payload?.error) {
-    let msg = `${label}: ${errorValueToString(payload.error)}`
-
-    const details = payload.details
-    if (details && import.meta.env.DEV) {
-      const hint = details.missing as string[] | undefined
-      if (hint?.length) {
-        msg += ` (fehlend: ${hint.join(', ')})`
-      }
-      if (typeof details.provider === 'string') {
-        msg += ` [${details.provider}]`
-      }
-    }
-
-    return msg
-  }
-
-  if (
-    raw.toLowerCase().includes('load failed') ||
-    raw.includes('Failed to fetch') ||
-    raw.includes('Failed to send a request')
-  ) {
-    return formatEdgeFunctionNetworkError(functionName ?? 'edge-function')
-  }
-
-  return raw
 }

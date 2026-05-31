@@ -13,6 +13,10 @@ export type GeneratedVideoJob = {
   posterUrl?: string
   hookText?: string
   captions?: string[]
+  scenePrompt?: string
+  pacing?: string
+  motionStyle?: string
+  visualMood?: string
   voiceoverUrl?: string
   musicUrl?: string
   duration?: string
