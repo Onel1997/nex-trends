@@ -52,7 +52,6 @@ export function ToolAccessGate({
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <Button
           variant="pro"
-          className="btn-glow-pro"
           onClick={() => requestUpgrade(routeId)}
         >
           <CrownIcon className="size-4" aria-hidden />

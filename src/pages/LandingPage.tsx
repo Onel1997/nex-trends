@@ -1,3 +1,4 @@
+import { LandingAiVideoStudio } from '@/components/landing/LandingAiVideoStudio'
 import { LandingFeatures } from '@/components/landing/LandingFeatures'
 import { LandingFooter } from '@/components/landing/LandingFooter'
 import { LandingHeader } from '@/components/landing/LandingHeader'
@@ -6,6 +7,7 @@ import { LandingLogin } from '@/components/landing/LandingLogin'
 import { LandingPricing } from '@/components/landing/LandingPricing'
 import { LandingSocialProof } from '@/components/landing/LandingSocialProof'
 import { LandingStickyCta } from '@/components/landing/LandingStickyCta'
+import { LandingTrust } from '@/components/landing/LandingTrust'
 import { LandingWorkflow } from '@/components/landing/LandingWorkflow'
 
 export default function LandingPage() {
@@ -14,7 +16,9 @@ export default function LandingPage() {
       <LandingHeader />
       <main className="pb-[4.5rem] sm:pb-0">
         <LandingHero />
+        <LandingTrust />
         <LandingWorkflow />
+        <LandingAiVideoStudio />
         <LandingFeatures />
         <LandingSocialProof />
         <LandingPricing />

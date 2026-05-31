@@ -42,7 +42,7 @@ export function UsageLimitWarning() {
         <button
           type="button"
           onClick={() => void openStripeCheckout()}
-          className="relative mt-5 w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-fuchsia-900/40 transition-smooth hover:from-fuchsia-500 hover:to-violet-500 hover:shadow-[0_0_24px_rgba(217,70,239,0.45)]"
+          className="nex-btn nex-btn--primary relative mt-5 w-full min-h-[2.625rem] rounded-[10px] px-5 py-2.5 text-sm font-semibold"
         >
           <span className="inline-flex items-center justify-center gap-2">
             <CrownIcon className="size-4" aria-hidden />

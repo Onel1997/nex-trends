@@ -73,7 +73,7 @@ export function LandingShowcase() {
 
             <button
               type="button"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 transition-all duration-300 hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-violet-800/50 sm:w-auto"
+              className="nex-btn nex-btn--primary w-full min-h-[2.625rem] rounded-[10px] px-5 py-2.5 text-sm font-semibold sm:w-auto"
             >
               <SparklesIcon className="size-4" aria-hidden />
               Generieren

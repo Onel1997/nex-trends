@@ -111,7 +111,7 @@ function PricingCard({
         <button
           type="button"
           onClick={handleCta}
-          className="landing-btn-secondary mt-5 w-full min-h-11 rounded-xl border border-zinc-700/80 bg-zinc-900/60 py-2.5 text-xs font-semibold text-zinc-200 transition-all hover:border-cyan-500/40 hover:text-white"
+          className="landing-btn-secondary mt-6 w-full text-xs"
         >
           {tier.cta}
         </button>
@@ -120,7 +120,7 @@ function PricingCard({
           label={tier.cta}
           variant={isFeatured ? 'gradient' : 'outline'}
           size="md"
-          className={cn('mt-5 !w-full', isFeatured && 'btn-glow-pro')}
+          className="mt-6 !w-full"
         />
       )}
     </article>

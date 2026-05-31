@@ -65,7 +65,7 @@ export function EmailLoginForm({
         onClick={() => void handleEmailSignIn()}
         disabled={status === 'loading'}
         className={cn(
-          'mt-3 w-full rounded-xl bg-zinc-800 px-4 py-3 text-white hover:bg-zinc-700 disabled:opacity-60',
+          'nex-btn nex-btn--secondary mt-3 w-full min-h-[2.625rem] rounded-[10px] px-4 py-2.5 text-sm font-semibold disabled:opacity-60',
           buttonClassName,
         )}
       >

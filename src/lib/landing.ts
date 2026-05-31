@@ -127,8 +127,8 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
   },
   {
     id: 'studio',
-    title: 'AI Video Studio',
-    description: 'Shorts, Voiceovers & Captions — Premium.',
+    title: 'AI Video rendern',
+    description: 'Shorts, Voiceovers & Captions — Studio exklusiv.',
     Icon: ClapperboardIcon,
     premium: true,
   },
@@ -159,7 +159,7 @@ export const LANDING_PRICING_TIERS: readonly LandingPricingTier[] = [
       'Basic Dashboard',
       'Wasserzeichen-Exporte',
     ],
-    cta: 'Kostenlos starten',
+    cta: 'Jetzt kostenlos starten',
   },
   {
     id: 'creator',
@@ -189,7 +189,7 @@ export const LANDING_PRICING_TIERS: readonly LandingPricingTier[] = [
       'Priorisierte Generation',
       'Erweiterte Analytics',
     ],
-    cta: 'Pro Creator wählen',
+    cta: 'Pro Creator freischalten',
     featured: true,
   },
   {
@@ -205,7 +205,7 @@ export const LANDING_PRICING_TIERS: readonly LandingPricingTier[] = [
       'Schnellere Render Pipeline',
       'Team Workspace',
     ],
-    cta: 'Auf Studio upgraden',
+    cta: 'Studio aktivieren',
   },
   {
     id: 'agency',
@@ -220,7 +220,7 @@ export const LANDING_PRICING_TIERS: readonly LandingPricingTier[] = [
       'Client Management',
       'Priorisierte Infrastruktur',
     ],
-    cta: 'Vertrieb kontaktieren',
+    cta: 'Agency Demo buchen',
     contactOnly: true,
   },
 ]
@@ -233,9 +233,33 @@ export const HERO_STATS = [
 
 export const TRUST_BADGES = [
   'Keine Kreditkarte',
-  'In 30 Sek. startklar',
   'DSGVO-konform',
-  'Jederzeit kündbar',
+  'In unter 60 Sekunden startklar',
+] as const
+
+export const HERO_FLOATING_SIGNALS = [
+  { id: 'trend', label: 'Trend erkannt', metric: '+87%', tone: 'violet' as const },
+  { id: 'hook', label: 'Hook generiert', metric: 'Live', tone: 'fuchsia' as const },
+  { id: 'ctr', label: 'TikTok CTR steigt', metric: '+42%', tone: 'emerald' as const },
+  { id: 'video', label: 'AI Video bereit', metric: 'Queue', tone: 'cyan' as const },
+  { id: 'seo', label: 'SEO optimiert', metric: 'CTR ↑', tone: 'violet' as const },
+] as const
+
+export const AI_STUDIO_FEATURES = [
+  'Voiceovers',
+  'Captions',
+  'Auto Scenes',
+  'AI Rendering',
+  'Templates',
+  'Export Pipeline',
+] as const
+
+export const TRUST_TEAMS = [
+  'TikTok Creator',
+  'Instagram Brands',
+  'E-Commerce',
+  'Agencies',
+  'Marketing Teams',
 ] as const
 
 export const SOCIAL_STATS = [

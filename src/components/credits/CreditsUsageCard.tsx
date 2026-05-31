@@ -83,11 +83,7 @@ export function CreditsUsageCard({ className, onUpgrade }: CreditsUsageCardProps
         <button
           type="button"
           onClick={() => void handleUpgrade()}
-          className={cn(
-            'relative mt-3 w-full rounded-lg px-3 py-2 text-[11px] font-semibold text-white',
-            'bg-gradient-to-r from-violet-600 to-fuchsia-600',
-            'transition-smooth hover:brightness-110',
-          )}
+          className="nex-btn nex-btn--primary relative mt-3 w-full min-h-[2.375rem] rounded-[10px] px-3 py-2 text-[11px] font-semibold"
         >
           Upgrade for more credits
         </button>

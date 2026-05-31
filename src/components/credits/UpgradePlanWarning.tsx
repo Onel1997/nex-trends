@@ -48,12 +48,7 @@ export function UpgradePlanWarning({
       <button
         type="button"
         onClick={() => void openUpgradeModal()}
-        className={cn(
-          'shrink-0 rounded-lg px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-white',
-          'bg-gradient-to-r from-violet-600 to-fuchsia-600',
-          'shadow-[0_0_20px_-6px_rgba(139,92,246,0.6)]',
-          'transition-smooth hover:brightness-110 active:scale-[0.98]',
-        )}
+        className="nex-btn nex-btn--primary shrink-0 rounded-[8px] px-4 py-2 text-[11px] font-semibold uppercase tracking-wide"
       >
         Upgrade plan
       </button>

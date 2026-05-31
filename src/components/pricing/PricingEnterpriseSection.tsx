@@ -52,7 +52,7 @@ export function PricingEnterpriseSection({ onContact }: PricingEnterpriseSection
 
         <div className="flex shrink-0 flex-col gap-2 sm:min-w-[200px]">
           <Button variant="primary" size="lg" fullWidth onClick={() => onContact('agency')}>
-            Vertrieb kontaktieren
+            Agency Demo buchen
           </Button>
           <a
             href={`mailto:${ENTERPRISE_CONTACT_EMAIL}?subject=NexTrends%20Agency%20Plan`}

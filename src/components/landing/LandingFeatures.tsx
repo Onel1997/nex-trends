@@ -71,8 +71,8 @@ function FeatureCard({
       className={cn(
         'landing-feature-card group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1',
         premium
-          ? 'border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-950/30 via-zinc-950/90 to-violet-950/20 hover:border-fuchsia-500/50 hover:shadow-[0_0_56px_-12px_rgba(217,70,239,0.4)]'
-          : 'border-zinc-800/70 bg-zinc-950/70 hover:border-violet-500/35 hover:shadow-[0_0_48px_-12px_rgba(139,92,246,0.3)]',
+          ? 'border-cyan-500/20 bg-gradient-to-br from-cyan-950/20 via-zinc-950/90 to-zinc-950/95 hover:border-cyan-500/30 hover:shadow-[0_16px_48px_-24px_rgba(34,211,238,0.18)]'
+          : 'border-zinc-800/60 bg-zinc-950/60 hover:border-violet-500/20 hover:shadow-[0_16px_48px_-24px_rgba(139,92,246,0.12)]',
         large ? 'p-6 sm:p-8' : wide ? 'p-5 sm:p-6' : 'p-5 sm:p-6',
         className,
       )}
@@ -80,7 +80,7 @@ function FeatureCard({
       <div
         className={cn(
           'pointer-events-none absolute -right-12 -top-12 size-40 rounded-full blur-3xl transition-opacity duration-500 group-hover:opacity-100',
-          premium ? 'bg-fuchsia-600/15 opacity-60' : 'bg-violet-600/12 opacity-0',
+          premium ? 'bg-cyan-600/10 opacity-50' : 'bg-violet-600/8 opacity-0',
         )}
         aria-hidden
       />
@@ -91,8 +91,8 @@ function FeatureCard({
             className={cn(
               'inline-flex items-center justify-center rounded-xl ring-1 transition-all duration-300',
               premium
-                ? 'size-12 bg-fuchsia-500/15 text-fuchsia-400 ring-fuchsia-500/25 group-hover:bg-fuchsia-500/20'
-                : 'size-11 bg-violet-500/12 text-violet-400 ring-violet-500/20 group-hover:bg-violet-500/18',
+                ? 'size-12 bg-cyan-500/12 text-cyan-400 ring-cyan-500/20 group-hover:bg-cyan-500/16'
+                : 'size-11 bg-violet-500/10 text-violet-400 ring-violet-500/15 group-hover:bg-violet-500/14',
               large && 'size-14',
             )}
           >
@@ -104,8 +104,8 @@ function FeatureCard({
                 className={cn(
                   'rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider',
                   premium
-                    ? 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300'
-                    : 'border-zinc-700/60 bg-zinc-900/60 text-zinc-400',
+                    ? 'border-cyan-500/25 bg-cyan-500/[0.08] text-cyan-300'
+                    : 'border-zinc-700/50 bg-zinc-900/50 text-zinc-400',
                 )}
               >
                 {status}
@@ -115,8 +115,8 @@ function FeatureCard({
               className={cn(
                 'rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider',
                 premium
-                  ? 'border-fuchsia-500/25 bg-fuchsia-500/10 text-fuchsia-200'
-                  : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
+                  ? 'border-cyan-500/20 bg-cyan-500/[0.08] text-cyan-200'
+                  : 'border-emerald-500/15 bg-emerald-500/[0.08] text-emerald-400/90',
               )}
             >
               {benefit}

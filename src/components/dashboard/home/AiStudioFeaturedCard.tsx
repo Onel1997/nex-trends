@@ -54,9 +54,7 @@ export function AiStudioFeaturedCard({ onNavigate }: AiStudioFeaturedCardProps) 
 
         <span
           className={cn(
-            'inline-flex shrink-0 items-center gap-1.5 self-start rounded-xl px-4 py-2.5 text-sm font-semibold sm:self-center',
-            'bg-violet-600/90 text-white shadow-md shadow-violet-900/30',
-            'transition-smooth group-hover:bg-violet-500',
+            'nex-btn nex-btn--primary inline-flex shrink-0 items-center gap-1.5 self-start rounded-[10px] px-4 py-2.5 text-sm font-semibold sm:self-center',
           )}
         >
           Open Studio

@@ -82,7 +82,7 @@ export const PRICING_PLANS: readonly PricingPlan[] = [
     accent: 'fuchsia',
     badge: 'Beliebteste Wahl',
     featured: true,
-    cta: 'Pro Creator wählen',
+    cta: 'Pro Creator freischalten',
   },
   {
     id: 'studio',
@@ -101,7 +101,7 @@ export const PRICING_PLANS: readonly PricingPlan[] = [
       'Mehrere Workspaces',
     ],
     accent: 'emerald',
-    cta: 'Auf Studio upgraden',
+    cta: 'Studio aktivieren',
   },
   {
     id: 'agency',
@@ -119,7 +119,7 @@ export const PRICING_PLANS: readonly PricingPlan[] = [
       'Priorisierte Infrastruktur',
     ],
     accent: 'cyan',
-    cta: 'Vertrieb kontaktieren',
+    cta: 'Agency Demo buchen',
     contactOnly: true,
   },
   {

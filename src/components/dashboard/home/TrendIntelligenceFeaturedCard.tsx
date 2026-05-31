@@ -57,9 +57,7 @@ export function TrendIntelligenceFeaturedCard({ onNavigate }: TrendIntelligenceF
 
         <span
           className={cn(
-            'inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold',
-            'bg-violet-600 text-white shadow-md shadow-violet-900/30 transition-smooth',
-            'group-hover:bg-violet-500 sm:self-center',
+            'nex-btn nex-btn--primary inline-flex shrink-0 items-center justify-center gap-2 rounded-[10px] px-5 py-2.5 text-sm font-semibold sm:self-center',
           )}
         >
           Öffnen

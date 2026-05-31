@@ -125,7 +125,6 @@ export function VideoLibraryGrid({
               <Button
                 variant="pro"
                 size="md"
-                className="btn-glow-pro btn-press shadow-[0_0_36px_-8px_rgba(139,92,246,0.55)]"
                 onClick={() => {
                   const form = document.getElementById('ai-studio-form')
                   if (form) {

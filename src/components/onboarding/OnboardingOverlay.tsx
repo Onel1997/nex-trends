@@ -108,7 +108,6 @@ function OnboardingOverlayInner({ onNavigate }: OnboardingOverlayProps) {
             <Button
               variant="pro"
               fullWidth
-              className="btn-glow-pro btn-press"
               onClick={() => {
                 advance()
                 onNavigate('hook')

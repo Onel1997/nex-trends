@@ -107,7 +107,6 @@ export function MyAiVideosPage() {
             <Button
               variant="pro"
               size="md"
-              className="btn-glow-pro btn-press shadow-[0_0_36px_-8px_rgba(139,92,246,0.55)]"
               onClick={() => navigateToTool('ai-studio')}
             >
               <SparklesIcon className="size-4" />

@@ -36,7 +36,7 @@ export function LandingLogin() {
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4">
-            <GoogleSignInButton label="Kostenlos starten" className="!w-full sm:!w-auto" />
+            <GoogleSignInButton label="Jetzt kostenlos starten" className="!w-full sm:!w-auto" />
 
             <p className="text-xs text-zinc-500">oder</p>
 

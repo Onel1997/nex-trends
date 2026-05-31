@@ -6,6 +6,7 @@ import { CloseIcon, MenuIcon } from '@/components/ui/icons'
 
 const NAV_LINKS = [
   { id: 'workflow', label: 'Workflow' },
+  { id: 'ai-video-studio', label: 'AI Video' },
   { id: 'features', label: 'Features' },
   { id: 'social-proof', label: 'Erfolge' },
   { id: 'pricing', label: 'Preise' },
@@ -59,7 +60,7 @@ export function LandingHeader() {
           <button
             type="button"
             onClick={() => handleNav('login')}
-            className="hidden rounded-xl border border-zinc-800/80 bg-zinc-900/50 px-4 py-2 text-sm font-medium text-zinc-200 transition-smooth hover:border-violet-500/30 hover:bg-zinc-800/80 hover:text-white sm:inline-flex active:scale-[0.98]"
+            className="landing-btn-secondary hidden !min-h-[2.375rem] !px-4 !py-2 !text-sm sm:inline-flex"
           >
             Anmelden
           </button>

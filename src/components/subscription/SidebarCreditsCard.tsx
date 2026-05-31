@@ -66,12 +66,7 @@ export function SidebarCreditsCard({ onUpgrade, className }: SidebarCreditsCardP
           <button
             type="button"
             onClick={() => void onUpgrade()}
-            className={cn(
-              'shrink-0 rounded-lg px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white',
-              'bg-gradient-to-r from-violet-600 to-fuchsia-600',
-              'shadow-[0_0_16px_-4px_rgba(139,92,246,0.65)]',
-              'transition-smooth hover:brightness-110 active:scale-[0.97]',
-            )}
+            className="nex-btn nex-btn--primary shrink-0 rounded-[8px] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide"
           >
             <span className="flex items-center gap-1">
               <CrownIcon className="size-3" aria-hidden />

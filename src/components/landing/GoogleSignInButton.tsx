@@ -4,7 +4,7 @@ import { signInWithGoogle } from '@/lib/auth'
 
 function GoogleIcon() {
   return (
-    <svg className="size-5 shrink-0" viewBox="0 0 24 24" aria-hidden>
+    <svg className="size-[1.125rem] shrink-0" viewBox="0 0 24 24" aria-hidden>
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -60,14 +60,14 @@ export function GoogleSignInButton({
         onClick={() => void handleClick()}
         disabled={isLoading}
         className={cn(
-          'group inline-flex items-center justify-center gap-3 rounded-xl font-semibold transition-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400/70 active:scale-[0.98] disabled:opacity-60',
-          size === 'lg' ? 'min-h-14 px-8 py-4 text-base' : 'min-h-11 px-6 py-2.5 text-sm',
-          variant === 'gradient' &&
-            'w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-xl shadow-violet-900/40 hover:scale-[1.02] hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-violet-800/50 sm:w-auto',
+          'nex-btn inline-flex w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-[10px] font-semibold tracking-[-0.01em] disabled:opacity-60 sm:w-auto',
+          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400/50',
+          size === 'lg' && 'min-h-[2.625rem] px-5 py-2.5 text-sm',
+          size === 'md' && 'min-h-[2.375rem] px-4 py-2 text-sm',
+          variant === 'gradient' && 'nex-btn--primary',
           variant === 'white' &&
-            'w-full bg-white text-zinc-900 hover:scale-[1.02] hover:bg-zinc-100',
-          variant === 'outline' &&
-            'w-full border border-zinc-700 text-white hover:border-violet-500/50 hover:bg-zinc-900',
+            'border border-zinc-700/60 bg-white text-zinc-900 hover:border-zinc-600 hover:bg-zinc-50',
+          variant === 'outline' && 'nex-btn--secondary',
           className,
         )}
       >

@@ -179,7 +179,7 @@ export function PricingCard({
           fullWidth
           disabled={disabled}
           className={cn(
-            'mt-5',
+            'mt-6',
             isAdminCard &&
               'border-amber-500/30 bg-gradient-to-r from-amber-600/80 to-orange-600/80 hover:brightness-110',
             isCurrent && 'opacity-70',

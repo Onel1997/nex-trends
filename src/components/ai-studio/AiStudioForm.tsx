@@ -197,7 +197,6 @@ export function AiStudioForm({
         fullWidth
         loading={loading}
         disabled={!canSubmit}
-        className="btn-glow-pro btn-press shadow-[0_0_36px_-8px_rgba(139,92,246,0.55)]"
       >
         <SparklesIcon className="size-4" />
         Generate AI Video

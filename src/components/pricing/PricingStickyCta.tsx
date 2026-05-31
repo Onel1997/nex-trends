@@ -37,7 +37,7 @@ export function PricingStickyCta({
         <Button
           variant="pro"
           size="md"
-          className="btn-glow-pro shrink-0 px-3 text-xs"
+          className="shrink-0 px-3 text-xs"
           onClick={onUpgrade}
         >
           <CrownIcon className="size-3.5" aria-hidden />

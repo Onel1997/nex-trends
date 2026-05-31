@@ -11,7 +11,7 @@ export function BillingCancelPage() {
         </p>
         <Button
           variant="pro"
-          className="btn-glow-pro mt-6 w-full"
+          className="mt-6 w-full"
           onClick={() => navigateToTool('pricing')}
         >
           Back to pricing

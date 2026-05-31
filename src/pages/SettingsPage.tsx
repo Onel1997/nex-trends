@@ -126,7 +126,6 @@ export function SettingsPage() {
               variant="pro"
               fullWidth
               onClick={() => void openStripeCheckout()}
-              className="btn-glow-pro btn-press"
             >
               Upgrade to Pro
             </Button>

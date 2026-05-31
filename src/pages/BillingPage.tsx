@@ -107,7 +107,6 @@ export function BillingPage() {
             {!isAdmin && !paid && (
               <Button
                 variant="pro"
-                className="btn-glow-pro"
                 onClick={() => void openStripeCheckout({ planId: 'pro_creator' })}
               >
                 <CrownIcon className="size-4" aria-hidden />
