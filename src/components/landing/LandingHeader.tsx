@@ -31,16 +31,16 @@ export function LandingHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800/50 glass-subtle">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6 lg:px-8">
         <a
           href="/"
-          className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-white"
+          className="flex min-w-0 shrink items-center gap-2 text-base font-bold tracking-tight text-white sm:gap-2.5 sm:text-lg"
           aria-label={`${APP_NAME} Startseite`}
         >
-          <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 text-xs font-black text-white">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 text-[10px] font-black text-white sm:size-8 sm:text-xs">
             NT
           </span>
-          {APP_NAME}
+          <span className="truncate">{APP_NAME}</span>
         </a>
 
         <nav className="hidden items-center gap-8 md:flex" aria-label="Hauptnavigation">
@@ -56,7 +56,7 @@ export function LandingHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <button
             type="button"
             onClick={() => handleNav('login')}

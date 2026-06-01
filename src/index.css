@@ -5659,3 +5659,53 @@ html.nex-reduced-motion *::after {
   }
 }
 
+/* ── NexTrends premium hero ── */
+
+@keyframes hero-glow-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(16px, -20px, 0);
+  }
+}
+
+.hero-fade-in {
+  animation: hero-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-fade-in--1 {
+  animation-delay: 0.08s;
+}
+.hero-fade-in--2 {
+  animation-delay: 0.16s;
+}
+.hero-fade-in--3 {
+  animation-delay: 0.24s;
+}
+.hero-fade-in--4 {
+  animation-delay: 0.32s;
+}
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-fade-in {
+    animation: none;
+  }
+
+  .hero-glow-orb {
+    animation: none !important;
+  }
+}
+
