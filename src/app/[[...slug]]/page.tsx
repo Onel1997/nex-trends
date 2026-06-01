@@ -1,11 +1,15 @@
-import ProductionHome from '@/components/app/ProductionHome'
-
-/**
- * Production-safe entry: server-rendered static homepage.
- * No providers, auth, or client JS required for first paint.
- *
- * To re-enable the full SPA: set NEXT_PUBLIC_FULL_APP=true and use FullAppShell.
- */
-export default function AppPage() {
-  return <ProductionHome />
+export default function Page() {
+  return (
+    <div style={{
+      background: "black",
+      color: "white",
+      minHeight: "100vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      fontSize: "40px"
+    }}>
+      NexTrends läuft 🚀
+    </div>
+  )
 }
