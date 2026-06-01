@@ -10,7 +10,7 @@ export function LandingTrust() {
     <LandingSection
       id="trust"
       glow="bottom"
-      className="!py-16 sm:!py-20"
+      className="!py-12 sm:!py-20"
       ariaLabelledBy="trust-heading"
     >
       <LandingReveal>
@@ -50,7 +50,7 @@ export function LandingTrust() {
       </LandingReveal>
 
       <LandingReveal delay={140}>
-        <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 border-t border-white/[0.04] pt-10 sm:mt-12">
+        <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 border-t border-white/[0.04] pt-8 sm:mt-12 sm:gap-x-10 sm:pt-10">
           {LOGO_CLOUD.map((name) => (
             <li
               key={name}

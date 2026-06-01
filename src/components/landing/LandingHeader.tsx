@@ -20,17 +20,30 @@ export function LandingHeader() {
 
   function handleNav(id: string) {
     setMobileOpen(false)
-    document.body.style.overflow = ''
+    document.body.style.removeProperty('overflow')
+    document.documentElement.style.removeProperty('overflow')
     scrollToSection(id)
   }
 
   useEffect(() => {
-    if (!mobileOpen) return
+    if (!mobileOpen) {
+      document.body.style.removeProperty('overflow')
+      document.documentElement.style.removeProperty('overflow')
+      return
+    }
     document.body.style.overflow = 'hidden'
     return () => {
-      document.body.style.overflow = ''
+      document.body.style.removeProperty('overflow')
+      document.documentElement.style.removeProperty('overflow')
     }
   }, [mobileOpen])
+
+  useEffect(() => {
+    return () => {
+      document.body.style.removeProperty('overflow')
+      document.documentElement.style.removeProperty('overflow')
+    }
+  }, [])
 
   useEffect(() => {
     function onScroll() {

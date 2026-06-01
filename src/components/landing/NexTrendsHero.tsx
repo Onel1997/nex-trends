@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { LandingHeroParticles } from '@/components/landing/LandingHeroParticles'
 import { TrustedCreatorsBadge } from '@/components/landing/TrustedCreatorsBadge'
 import { cn } from '@/lib/utils'
 
@@ -15,12 +16,25 @@ export type NexTrendsHeroProps = {
   children?: ReactNode
 }
 
+export const HERO_PRIMARY_CTA_CLASS =
+  'landing-hero-cta landing-btn-primary landing-cta-pulse inline-flex items-center justify-center'
+
+export const HERO_GLASS_CTA_CLASS =
+  'landing-hero-cta landing-btn-glass inline-flex items-center justify-center'
+
+function HeroPlayIcon() {
+  return (
+    <span className="landing-btn-glass__play" aria-hidden>
+      <svg className="ml-0.5 size-2.5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5.14v13.72c0 .88 1.01 1.38 1.71.86l10.12-6.86a1 1 0 0 0 0-1.72L9.71 4.28A1 1 0 0 0 8 5.14Z" />
+      </svg>
+    </span>
+  )
+}
+
 function DefaultPrimaryCta() {
   return (
-    <a
-      href="/login"
-      className="landing-btn-primary inline-flex w-full max-w-sm items-center justify-center rounded-2xl px-6 py-3.5 text-base font-semibold sm:w-auto sm:max-w-none sm:px-8 sm:py-4 sm:text-lg"
-    >
+    <a href="/login" className={HERO_PRIMARY_CTA_CLASS}>
       Kostenlos starten
     </a>
   )
@@ -30,20 +44,24 @@ function LiveDemoButton({
   onLiveDemo,
   demoHref = '#workflow',
 }: Pick<NexTrendsHeroProps, 'onLiveDemo' | 'demoHref'>) {
-  const className =
-    'landing-btn-secondary inline-flex w-full max-w-sm items-center justify-center rounded-2xl px-6 py-3.5 text-base font-semibold sm:w-auto sm:max-w-none sm:px-8 sm:py-4 sm:text-lg'
+  const content = (
+    <>
+      <HeroPlayIcon />
+      Live Demo ansehen
+    </>
+  )
 
   if (onLiveDemo) {
     return (
-      <button type="button" onClick={onLiveDemo} className={className}>
-        Live Demo
+      <button type="button" onClick={onLiveDemo} className={HERO_GLASS_CTA_CLASS}>
+        {content}
       </button>
     )
   }
 
   return (
-    <a href={demoHref} className={className}>
-      Live Demo
+    <a href={demoHref} className={HERO_GLASS_CTA_CLASS}>
+      {content}
     </a>
   )
 }
@@ -60,36 +78,32 @@ export function NexTrendsHero({
   return (
     <section
       className={cn(
-        'landing-hero-unified relative overflow-x-hidden bg-black text-white',
+        'landing-hero-unified relative isolate bg-black text-white',
         className,
       )}
     >
-      {/* Ambient background */}
-      <div className="landing-hero__bg pointer-events-none absolute inset-0" aria-hidden />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage: `linear-gradient(rgb(255 255 255 / 0.02) 1px, transparent 1px),
+      <div className="landing-hero-decor pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        <LandingHeroParticles />
+        <div className="landing-hero__bg absolute inset-0" />
+        <div
+          className="absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage: `linear-gradient(rgb(255 255 255 / 0.02) 1px, transparent 1px),
             linear-gradient(90deg, rgb(255 255 255 / 0.02) 1px, transparent 1px)`,
-          backgroundSize: '64px 64px',
-          maskImage: 'radial-gradient(ellipse 70% 60% at 50% 0%, black 20%, transparent 75%)',
-        }}
-        aria-hidden
-      />
-
-      {/* Animated glow orbs */}
-      <div
-        className="hero-glow-orb pointer-events-none absolute top-[-8%] left-1/2 h-[min(320px,85vw)] w-[min(480px,95vw)] -translate-x-1/2 rounded-full bg-purple-600/25 blur-[100px] sm:h-[520px] sm:w-[720px] sm:blur-[140px]"
-        aria-hidden
-      />
-      <div
-        className="hero-glow-orb hero-glow-orb--secondary pointer-events-none absolute top-[12%] right-[-12%] h-[min(200px,45vw)] w-[min(200px,45vw)] rounded-full bg-violet-500/15 blur-[80px] sm:h-[280px] sm:w-[280px] sm:blur-[100px]"
-        aria-hidden
-      />
-      <div
-        className="hero-glow-orb hero-glow-orb--tertiary pointer-events-none absolute bottom-[20%] left-[-10%] h-[min(180px,40vw)] w-[min(180px,40vw)] rounded-full bg-fuchsia-600/10 blur-[70px] sm:h-[240px] sm:w-[240px]"
-        aria-hidden
-      />
+            backgroundSize: '64px 64px',
+            maskImage: 'radial-gradient(ellipse 70% 60% at 50% 0%, black 20%, transparent 75%)',
+          }}
+        />
+        <div
+          className="hero-glow-orb absolute top-[-8%] left-1/2 h-[min(280px,70vw)] w-[min(400px,85vw)] -translate-x-1/2 rounded-full bg-purple-600/25 blur-[80px] sm:h-[420px] sm:w-[600px] sm:blur-[120px]"
+        />
+        <div
+          className="hero-glow-orb hero-glow-orb--secondary absolute top-[12%] right-[-8%] h-[min(160px,38vw)] w-[min(160px,38vw)] rounded-full bg-violet-500/15 blur-[60px] sm:right-[-6%] sm:h-[220px] sm:w-[220px] sm:blur-[90px]"
+        />
+        <div
+          className="hero-glow-orb hero-glow-orb--tertiary absolute bottom-[18%] left-[-6%] h-[min(140px,34vw)] w-[min(140px,34vw)] rounded-full bg-fuchsia-600/10 blur-[55px] sm:h-[200px] sm:w-[200px]"
+        />
+      </div>
 
       {showNav ? (
         <nav className="hero-fade-in relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:gap-4 sm:px-6 sm:py-5 md:px-12 md:py-6">
@@ -126,7 +140,7 @@ export function NexTrendsHero({
           'px-4 text-center sm:px-6 lg:px-8',
           showNav
             ? 'pt-12 pb-14 sm:pt-16 sm:pb-16 md:pt-20 md:pb-20'
-            : 'pt-16 pb-14 sm:pt-20 sm:pb-16 md:pt-24 md:pb-20',
+            : 'pt-14 pb-10 sm:pt-20 sm:pb-16 md:pt-24 md:pb-20',
         )}
       >
         {/* Badge */}
@@ -174,16 +188,9 @@ export function NexTrendsHero({
         </p>
 
         {/* CTAs */}
-        <div
-          className={cn(
-            'hero-fade-in hero-fade-in--4 mt-9 flex w-full max-w-sm flex-col items-stretch gap-3',
-            'sm:mt-11 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-4',
-          )}
-        >
-          <div className="w-full sm:w-auto">{primaryCta ?? <DefaultPrimaryCta />}</div>
-          <div className="w-full sm:w-auto">
-            <LiveDemoButton onLiveDemo={onLiveDemo} demoHref={demoHref} />
-          </div>
+        <div className="hero-fade-in hero-fade-in--4 landing-hero-ctas mt-9 sm:mt-11">
+          {primaryCta ?? <DefaultPrimaryCta />}
+          <LiveDemoButton onLiveDemo={onLiveDemo} demoHref={demoHref} />
         </div>
 
         {showTrustBadge ? (

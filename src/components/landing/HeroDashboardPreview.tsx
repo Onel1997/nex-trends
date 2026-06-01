@@ -129,38 +129,34 @@ export function HeroDashboardPreview() {
   }, [inView])
 
   return (
-    <div ref={ref} className="landing-ai-dashboard-wrap group/preview relative w-full">
-      <div
-        className="landing-hero-preview__ambient pointer-events-none absolute -inset-8 rounded-[2rem] opacity-90 sm:-inset-12"
-        aria-hidden
-      />
-
-      <article className="landing-ai-dashboard landing-hero-preview__frame relative overflow-hidden rounded-2xl bg-zinc-950/80 shadow-[0_40px_120px_-48px_rgba(0,0,0,0.9)] backdrop-blur-2xl sm:rounded-[1.25rem]">
-        {/* Window chrome */}
-        <header className="flex items-center gap-2 border-b border-white/[0.06] bg-zinc-900/60 px-3 py-2.5 backdrop-blur-md sm:gap-3 sm:px-4 sm:py-3">
-          <div className="flex gap-1.5" aria-hidden>
-            <span className="size-2.5 rounded-full bg-[#FF5F57]/90 sm:size-2" />
-            <span className="size-2.5 rounded-full bg-[#FEBC2E]/90 sm:size-2" />
-            <span className="size-2.5 rounded-full bg-[#28C840]/90 sm:size-2" />
+    <div ref={ref} className="landing-ai-dashboard-wrap group/preview relative w-full min-w-0">
+      <article className="landing-ai-dashboard relative flex w-full min-w-0 flex-col overflow-hidden bg-zinc-950">
+        <header className="landing-dashboard-chrome flex h-11 shrink-0 items-center gap-3 border-b border-white/[0.06] bg-zinc-900/90 px-3 sm:h-12 sm:gap-3 sm:px-4">
+          <div className="flex shrink-0 items-center gap-1.5" aria-hidden>
+            <span className="size-2.5 rounded-full bg-[#FF5F57]" />
+            <span className="size-2.5 rounded-full bg-[#FEBC2E]" />
+            <span className="size-2.5 rounded-full bg-[#28C840]" />
           </div>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 text-[9px] font-black text-white sm:size-7">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-purple-700 text-[9px] font-black text-white">
               NT
             </span>
-            <div className="min-w-0">
-              <p className="truncate text-[11px] font-semibold text-white sm:text-xs">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[11px] font-semibold leading-tight text-white sm:text-xs">
                 NexTrends · AI Marketing OS
               </p>
-              <p className="truncate text-[9px] text-zinc-500">TikTok & Instagram Command Center</p>
+              <p className="truncate text-[9px] leading-tight text-zinc-500">
+                TikTok &amp; Instagram Command Center
+              </p>
             </div>
           </div>
-          <span className="landing-live-dot flex shrink-0 items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/[0.08] px-2 py-1 text-[9px] font-semibold text-emerald-300">
-            <span className="size-1.5 rounded-full bg-emerald-400" aria-hidden />
+          <span className="landing-live-dot flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-emerald-500/25 bg-emerald-500/[0.08] px-2 text-[9px] font-semibold text-emerald-300">
+            <span className="landing-dash-live-pulse size-1.5 rounded-full bg-emerald-400" aria-hidden />
             Live
           </span>
         </header>
 
-        <div className="space-y-2.5 p-2.5 sm:space-y-3 sm:p-3.5 md:p-4">
+        <div className="landing-dashboard-body space-y-2.5 p-2.5 sm:space-y-3 sm:p-3.5 md:p-4">
           {/* KPI strip */}
           <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
             {KPI_METRICS.map((kpi) => {
@@ -398,30 +394,6 @@ export function HeroDashboardPreview() {
         </div>
       </article>
 
-      {/* Floating metric chips — desktop */}
-      <div
-        className="pointer-events-none absolute -left-2 top-[28%] hidden rounded-xl border border-violet-500/25 bg-violet-950/70 px-2.5 py-1.5 text-[10px] backdrop-blur-md lg:block landing-signal landing-signal--ml"
-        aria-hidden
-      >
-        <p className="text-zinc-500">Viral Score</p>
-        <p className="font-bold tabular-nums text-violet-200">{Math.round(viralScore)}</p>
-      </div>
-      <div
-        className="pointer-events-none absolute -right-1 top-[18%] hidden rounded-xl border border-fuchsia-500/25 bg-fuchsia-950/60 px-2.5 py-1.5 text-[10px] backdrop-blur-md lg:block landing-signal landing-signal--tr"
-        style={{ animationDelay: '0.5s' }}
-        aria-hidden
-      >
-        <p className="text-zinc-500">Hook CTR</p>
-        <p className="font-bold tabular-nums text-fuchsia-200">+{Math.round(hookPerf - 73)}%</p>
-      </div>
-      <div
-        className="pointer-events-none absolute -right-2 bottom-[22%] hidden rounded-xl border border-emerald-500/25 bg-emerald-950/50 px-2.5 py-1.5 text-[10px] backdrop-blur-md lg:block landing-signal landing-signal--br"
-        style={{ animationDelay: '1s' }}
-        aria-hidden
-      >
-        <p className="text-zinc-500">Engagement</p>
-        <p className="font-bold tabular-nums text-emerald-200">{formatMetric(engagement, true)}%</p>
-      </div>
     </div>
   )
 }

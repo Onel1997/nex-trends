@@ -18,7 +18,7 @@ export function LandingFeatureGrid() {
         />
       </LandingReveal>
 
-      <div className="mt-12 grid gap-4 sm:mt-14 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+      <div className="mt-8 grid w-full min-w-0 grid-cols-1 gap-3 sm:mt-14 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
         {LANDING_FEATURES.map((feature, index) => {
           const { Icon, title, description, benefit, premium, status } = feature
           return (

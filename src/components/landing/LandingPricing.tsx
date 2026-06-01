@@ -22,13 +22,13 @@ export function LandingPricing() {
       </LandingReveal>
 
       <LandingReveal delay={80}>
-        <div
-          className="landing-pricing-carousel mt-10 flex gap-3 overflow-x-auto pb-3 pt-2 scrollbar-hide lg:hidden"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          {LANDING_PRICING_TIERS.map((tier) => (
-            <PricingCard key={tier.id} tier={tier} mobile />
-          ))}
+        <div className="relative mt-8 min-w-0 lg:hidden">
+          <div className="landing-pricing-carousel -mx-4 flex gap-4 overflow-x-auto overscroll-x-contain px-4 pb-4 pt-2 scrollbar-hide sm:-mx-6 sm:gap-4 sm:px-6">
+            {LANDING_PRICING_TIERS.map((tier) => (
+              <PricingCard key={tier.id} tier={tier} mobile />
+            ))}
+            <span className="w-px shrink-0 snap-none sm:w-2" aria-hidden />
+          </div>
         </div>
       </LandingReveal>
 
@@ -40,7 +40,7 @@ export function LandingPricing() {
         </div>
       </LandingReveal>
 
-      <p className="relative mt-8 text-center text-xs text-zinc-600">
+      <p className="relative mt-6 text-center text-[11px] leading-relaxed text-zinc-600 sm:mt-8 sm:text-xs">
         AI Video Studio ist ab Studio (99 €/Mo.) verfügbar — nicht in Pro Creator enthalten.
       </p>
     </LandingSection>
@@ -66,7 +66,8 @@ function PricingCard({
     <article
       className={cn(
         'landing-pricing-card landing-glass-card relative flex flex-col rounded-2xl p-5 transition-all duration-300',
-        mobile && 'w-[min(82vw,18rem)] shrink-0 snap-center',
+        mobile &&
+          'w-[min(calc(100vw-2.5rem),18.5rem)] max-w-full shrink-0 snap-start scroll-ml-4 first:scroll-ml-0',
         isFeatured
           ? 'z-[1] border-fuchsia-500/45 bg-gradient-to-b from-fuchsia-950/25 via-zinc-950/95 to-zinc-950 shadow-[0_0_56px_-12px_rgba(217,70,239,0.4)] lg:scale-[1.03]'
           : 'hover:border-violet-500/20',

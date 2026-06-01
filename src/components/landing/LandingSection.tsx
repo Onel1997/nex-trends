@@ -1,4 +1,8 @@
+'use client'
+
 import type { ReactNode } from 'react'
+import { useInView } from '@/hooks/useInView'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { cn } from '@/lib/utils'
 
 type LandingSectionGlow = 'none' | 'top' | 'center' | 'bottom'
@@ -22,13 +26,24 @@ export function LandingSection({
   bordered = true,
   ariaLabelledBy,
 }: LandingSectionProps) {
+  const reducedMotion = usePrefersReducedMotion()
+  const { ref, inView } = useInView<HTMLElement>({
+    rootMargin: '0px 0px -8% 0px',
+    threshold: 0.06,
+    once: true,
+  })
+
+  const visible = reducedMotion || inView
+
   return (
     <section
+      ref={ref}
       id={id}
       aria-labelledby={ariaLabelledBy}
       className={cn(
-        'landing-section-premium relative overflow-hidden px-4 py-20 sm:px-6 sm:py-28 lg:px-8',
+        'landing-section-premium relative px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-28',
         bordered && 'border-t border-white/[0.04]',
+        visible && 'landing-section-premium--visible',
         className,
       )}
     >
@@ -52,9 +67,7 @@ export function LandingSection({
         aria-hidden
       />
 
-      <div className={cn('relative z-[1] mx-auto w-full max-w-6xl', innerClassName)}>
-        {children}
-      </div>
+      <div className={cn('relative z-[1] mx-auto w-full max-w-6xl', innerClassName)}>{children}</div>
     </section>
   )
 }

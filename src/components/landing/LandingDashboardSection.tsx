@@ -1,5 +1,6 @@
 'use client'
 
+import { LandingCountUp } from '@/components/landing/LandingCountUp'
 import { HeroDashboardPreview } from '@/components/landing/HeroDashboardPreview'
 import { LandingReveal } from '@/components/landing/LandingReveal'
 import { LandingSection } from '@/components/landing/LandingSection'
@@ -11,7 +12,7 @@ export function LandingDashboardSection() {
     <LandingSection
       id="dashboard"
       glow="center"
-      className="landing-dashboard-section"
+      className="landing-dashboard-section !pt-10 sm:!pt-14"
       ariaLabelledBy="dashboard-heading"
     >
       <LandingReveal>
@@ -23,24 +24,17 @@ export function LandingDashboardSection() {
         />
       </LandingReveal>
 
-      <LandingReveal delay={100} className="relative mt-14 sm:mt-20">
-        <div
-          className="pointer-events-none absolute -inset-x-12 top-1/4 h-3/4 bg-gradient-to-b from-violet-600/30 via-purple-600/12 to-transparent blur-3xl"
-          aria-hidden
-        />
-
-        <div className="landing-dashboard-float-wrap mx-auto max-w-5xl">
-          <div className="landing-dashboard-float">
-            <div className="landing-glass-panel landing-dashboard-frame rounded-[1.25rem] p-1 sm:rounded-[1.5rem] sm:p-1.5">
-              <HeroDashboardPreview />
-            </div>
+      <LandingReveal delay={100} className="mt-10 sm:mt-20">
+        <div className="landing-dashboard-stage mx-auto w-full min-w-0 max-w-[min(100%,56rem)]">
+          <div className="landing-dashboard-shell">
+            <HeroDashboardPreview />
           </div>
         </div>
       </LandingReveal>
 
       <LandingReveal delay={180}>
         <ul
-          className="mt-12 flex flex-wrap justify-center gap-2 sm:mt-14 sm:gap-2.5"
+          className="mt-8 flex flex-wrap justify-center gap-2 sm:mt-14 sm:gap-2.5"
           aria-label="Produktfunktionen"
         >
           {HERO_PILLS.map((pill) => (
@@ -52,14 +46,14 @@ export function LandingDashboardSection() {
       </LandingReveal>
 
       <LandingReveal delay={240}>
-        <dl className="mt-14 grid grid-cols-3 gap-3 sm:mt-16 sm:gap-5">
+        <dl className="mt-10 grid min-w-0 grid-cols-3 gap-2 sm:mt-16 sm:gap-5">
           {HERO_STATS.map(({ value, label }) => (
             <div
               key={label}
-              className="landing-stat-card rounded-2xl px-3 py-5 text-center sm:px-5 sm:py-6"
+              className="landing-stat-card min-w-0 rounded-2xl px-2 py-4 text-center sm:px-5 sm:py-6"
             >
-              <dt className="landing-stat-value text-xl font-bold tabular-nums sm:text-3xl lg:text-4xl">
-                {value}
+              <dt className="landing-stat-value text-lg font-bold min-[390px]:text-xl sm:text-3xl lg:text-4xl">
+                <LandingCountUp value={value} />
               </dt>
               <dd className="mt-2 text-[10px] font-medium leading-snug text-zinc-500 sm:text-xs">
                 {label}

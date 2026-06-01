@@ -12,21 +12,21 @@ import { LandingWorkflow } from '@/components/landing/LandingWorkflow'
 
 export default function LandingPage() {
   return (
-    <div className="landing-page relative min-h-svh overflow-x-hidden bg-black text-zinc-100 antialiased">
+    <div className="landing-page">
       <LandingAmbientBackground />
 
-      <LandingHeader />
+      <div className="landing-page-content">
+        <LandingHeader />
 
-      <main className="relative z-10">
-        <LandingHero />
-        <LandingDashboardSection />
-        <LandingTrust />
-        <LandingFeatureGrid />
-        <LandingWorkflow />
-        <LandingPricing />
-      </main>
+        <main className="landing-page-main">
+          <LandingHero />
+          <LandingDashboardSection />
+          <LandingTrust />
+          <LandingFeatureGrid />
+          <LandingWorkflow />
+          <LandingPricing />
+        </main>
 
-      <div className="relative z-10">
         <LandingFooter />
       </div>
     </div>
