@@ -2,20 +2,22 @@ import { ClapperboardIcon, SparklesIcon } from '@/components/ui/icons'
 import { AI_STUDIO_FEATURES } from '@/lib/landing'
 import { scrollToSection } from '@/lib/scroll'
 import { LandingReveal } from '@/components/landing/LandingReveal'
+import { LandingSection } from '@/components/landing/LandingSection'
 import { LandingSectionHeader } from '@/components/landing/LandingSectionHeader'
 import { cn } from '@/lib'
 
 export function LandingAiVideoStudio() {
   return (
-    <section
+    <LandingSection
       id="ai-video-studio"
-      aria-labelledby="studio-heading"
-      className="landing-section landing-studio relative overflow-hidden border-t border-white/[0.04] px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
+      glow="center"
+      className="landing-studio overflow-hidden"
+      ariaLabelledBy="studio-heading"
     >
       <div className="landing-studio__gradient pointer-events-none absolute inset-0" aria-hidden />
       <div className="landing-hero-orb landing-hero-orb--3 pointer-events-none absolute opacity-60" aria-hidden />
 
-      <div className="relative mx-auto max-w-6xl">
+      <div className="relative">
         <LandingReveal>
           <LandingSectionHeader
             eyebrow="AI Video Studio"
@@ -126,6 +128,6 @@ export function LandingAiVideoStudio() {
           </LandingReveal>
         </div>
       </div>
-    </section>
+    </LandingSection>
   )
 }

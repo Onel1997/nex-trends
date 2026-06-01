@@ -1,4 +1,8 @@
+'use client'
+
 import { GoogleSignInButton } from '@/components/landing/GoogleSignInButton'
+import { LandingReveal } from '@/components/landing/LandingReveal'
+import { LandingSection } from '@/components/landing/LandingSection'
 import { LandingSectionHeader } from '@/components/landing/LandingSectionHeader'
 import { LANDING_PRICING_TIERS } from '@/lib/landing'
 import { cn } from '@/lib'
@@ -7,25 +11,17 @@ const ENTERPRISE_EMAIL = 'agency@nextrends.ai'
 
 export function LandingPricing() {
   return (
-    <section
-      id="pricing"
-      aria-labelledby="pricing-heading"
-      className="landing-section relative border-t border-white/[0.04] px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
-    >
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 size-[min(100%,40rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-600/8 blur-[100px]"
-        aria-hidden
-      />
-
-      <div className="relative mx-auto max-w-6xl">
+    <LandingSection id="pricing" glow="bottom" ariaLabelledBy="pricing-heading">
+      <LandingReveal>
         <LandingSectionHeader
           eyebrow="Preise"
           title="Skaliere mit dem richtigen Plan."
           titleAccent="Pro Creator ist das Herzstück."
           description="Vom kostenlosen Einstieg bis zur Agentur-Infrastruktur — AI Video Studio exklusiv ab Studio."
         />
+      </LandingReveal>
 
-        {/* Mobile carousel */}
+      <LandingReveal delay={80}>
         <div
           className="landing-pricing-carousel mt-10 flex gap-3 overflow-x-auto pb-3 pt-2 scrollbar-hide lg:hidden"
           style={{ WebkitOverflowScrolling: 'touch' }}
@@ -34,19 +30,20 @@ export function LandingPricing() {
             <PricingCard key={tier.id} tier={tier} mobile />
           ))}
         </div>
+      </LandingReveal>
 
-        {/* Desktop grid */}
+      <LandingReveal delay={120}>
         <div className="mt-12 hidden gap-4 lg:grid lg:grid-cols-5 lg:gap-3 xl:gap-4">
           {LANDING_PRICING_TIERS.map((tier) => (
             <PricingCard key={tier.id} tier={tier} />
           ))}
         </div>
+      </LandingReveal>
 
-        <p className="mt-8 text-center text-xs text-zinc-600">
-          AI Video Studio ist ab Studio (99 €/Mo.) verfügbar — nicht in Pro Creator enthalten.
-        </p>
-      </div>
-    </section>
+      <p className="relative mt-8 text-center text-xs text-zinc-600">
+        AI Video Studio ist ab Studio (99 €/Mo.) verfügbar — nicht in Pro Creator enthalten.
+      </p>
+    </LandingSection>
   )
 }
 
@@ -68,20 +65,25 @@ function PricingCard({
   return (
     <article
       className={cn(
-        'landing-pricing-card relative flex flex-col rounded-2xl border p-5 transition-all duration-300',
+        'landing-pricing-card landing-glass-card relative flex flex-col rounded-2xl p-5 transition-all duration-300',
         mobile && 'w-[min(82vw,18rem)] shrink-0 snap-center',
         isFeatured
           ? 'z-[1] border-fuchsia-500/45 bg-gradient-to-b from-fuchsia-950/25 via-zinc-950/95 to-zinc-950 shadow-[0_0_56px_-12px_rgba(217,70,239,0.4)] lg:scale-[1.03]'
-          : 'border-zinc-800/70 bg-zinc-950/80 hover:border-zinc-700/80 hover:shadow-[0_0_40px_-16px_rgba(139,92,246,0.2)]',
+          : 'hover:border-violet-500/20',
       )}
     >
-      {isFeatured && (
+      {isFeatured ? (
         <span className="absolute -top-2.5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-lg shadow-fuchsia-900/40">
           Beliebteste Wahl
         </span>
-      )}
+      ) : null}
 
-      <p className={cn('text-xs font-semibold uppercase tracking-wider', isFeatured ? 'text-fuchsia-300' : 'text-zinc-500')}>
+      <p
+        className={cn(
+          'text-xs font-semibold uppercase tracking-wider',
+          isFeatured ? 'text-fuchsia-300' : 'text-zinc-500',
+        )}
+      >
         {tier.name}
       </p>
       <p className="mt-2 flex flex-wrap items-baseline gap-x-1">

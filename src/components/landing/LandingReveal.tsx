@@ -1,6 +1,8 @@
+'use client'
+
 import type { ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib'
-import { useInView } from '@/hooks/useInView'
 
 type LandingRevealProps = {
   children: ReactNode
@@ -8,8 +10,42 @@ type LandingRevealProps = {
   delay?: number
 }
 
+function isInViewport(node: HTMLElement) {
+  const rect = node.getBoundingClientRect()
+  return rect.top < window.innerHeight * 0.92 && rect.bottom > 0
+}
+
 export function LandingReveal({ children, className, delay = 0 }: LandingRevealProps) {
-  const { ref, inView } = useInView({ threshold: 0.08, rootMargin: '0px 0px -6% 0px' })
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [inView, setInView] = useState(false)
+
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+
+    if (isInViewport(node)) {
+      setInView(true)
+      return
+    }
+
+    if (typeof IntersectionObserver === 'undefined') {
+      setInView(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '0px 0px -4% 0px', threshold: 0.05 },
+    )
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <div

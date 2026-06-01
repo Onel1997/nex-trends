@@ -1,226 +1,427 @@
-import { useEffect, useState } from 'react'
+'use client'
+
+import { useEffect, useState, type ReactNode } from 'react'
 import {
+  BoltIcon,
   ChartBarIcon,
   ClapperboardIcon,
   SparklesIcon,
   TrendingUpIcon,
 } from '@/components/ui/icons'
-import { HERO_FLOATING_SIGNALS } from '@/lib/landing'
 import { useInView } from '@/hooks/useInView'
 import { cn } from '@/lib'
 
-const ACTIVITY_FEED = [
+const KPI_METRICS = [
+  { id: 'viral', label: 'Viral Score', value: 94, suffix: '/100', delta: '+12', tone: 'violet' as const },
+  { id: 'engagement', label: 'Engagement Rate', value: 8.7, suffix: '%', delta: '+2.4%', tone: 'fuchsia' as const },
+  { id: 'velocity', label: 'Trend Velocity', value: 3.2, suffix: '×', delta: 'Exploding', tone: 'emerald' as const },
+  { id: 'hook', label: 'AI Hook Performance', value: 91, suffix: '%', delta: '+18%', tone: 'cyan' as const },
+] as const
+
+const ENGAGEMENT_BARS = [42, 58, 48, 72, 65, 88, 76, 92] as const
+const TREND_BARS = [35, 52, 68, 84, 78, 94] as const
+
+const TRENDING_NICHES = [
+  { platform: 'TikTok', topic: 'AI Skincare Routines', score: 94, tag: 'Explodiert' },
+  { platform: 'Instagram', topic: 'GRWM · Clean Girl', score: 87, tag: 'Steigend' },
+] as const
+
+const AI_HOOKS = [
+  '„Du machst Skincare falsch — hier ist der Beweis in 15 Sekunden."',
+  '„Dieser TikTok-Trend bringt dir 10× mehr Saves — wenn du ihn richtig machst."',
+] as const
+
+const PLATFORM_STATS = [
+  { platform: 'TikTok', views: '2.4M', ctr: '4.8%', growth: '+34%' },
+  { platform: 'Instagram', views: '890K', ctr: '3.2%', growth: '+21%' },
+] as const
+
+const ACTIVITY = [
+  'Viral Score aktualisiert · 94',
   'Hook generiert · Skincare Niche',
-  'Ad Copy · Meta Conversion',
-  'Trend Score aktualisiert · 94',
-  'SEO Title · +18% CTR Prognose',
-  'Video Render · 78% abgeschlossen',
+  'Instagram Reel · Trend Match 87%',
+  'Ad Copy · 3 Varianten bereit',
 ] as const
 
-const CHART_BARS = [38, 52, 45, 68, 58, 74, 82] as const
-
-const FLOAT_POSITIONS = [
-  'landing-signal--tl',
-  'landing-signal--tr',
-  'landing-signal--ml',
-  'landing-signal--br',
-  'landing-signal--bc',
-] as const
-
-function useLiveMetric(base: number, active: boolean) {
+function useAnimatedMetric(
+  base: number,
+  active: boolean,
+  opts?: { decimals?: boolean; max?: number; min?: number },
+) {
   const [value, setValue] = useState(base)
+  const { decimals = false, max = 99, min } = opts ?? {}
 
   useEffect(() => {
     if (!active) return
     const id = window.setInterval(() => {
       setValue((v) => {
-        const delta = Math.random() > 0.5 ? 1 : -1
-        return Math.min(99, Math.max(base - 5, v + delta))
+        const step = decimals ? 0.1 : 1
+        const delta = Math.random() > 0.45 ? step : -step
+        const next = decimals ? Math.round((v + delta) * 10) / 10 : v + delta
+        const floor = min ?? (decimals ? base - 0.8 : base - 4)
+        return Math.min(max, Math.max(floor, next))
       })
-    }, 3200)
+    }, 2800)
     return () => window.clearInterval(id)
-  }, [active, base])
+  }, [active, base, decimals, max, min])
 
   return value
 }
 
+function formatMetric(value: number, decimals?: boolean) {
+  return decimals ? value.toFixed(1) : String(Math.round(value))
+}
+
+type DashPanelProps = {
+  children: ReactNode
+  className?: string
+  glow?: boolean
+}
+
+function DashPanel({ children, className, glow }: DashPanelProps) {
+  return (
+    <div
+      className={cn(
+        'landing-dash-glass group/panel relative overflow-hidden rounded-xl transition-all duration-300',
+        glow && 'landing-dash-glow',
+        'hover:border-violet-500/25 hover:bg-zinc-900/50',
+        className,
+      )}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-500/[0.03] to-transparent opacity-0 transition-opacity duration-300 group-hover/panel:opacity-100"
+        aria-hidden
+      />
+      <div className="relative">{children}</div>
+    </div>
+  )
+}
+
 export function HeroDashboardPreview() {
-  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.15 })
-  const trendScore = useLiveMetric(94, inView)
-  const watchtime = useLiveMetric(42, inView)
+  const { ref, inView } = useInView<HTMLDivElement>({ threshold: 0.12 })
+  const viralScore = useAnimatedMetric(94, inView)
+  const engagement = useAnimatedMetric(8.7, inView, { decimals: true, max: 9.9, min: 7.5 })
+  const velocity = useAnimatedMetric(3.2, inView, { decimals: true, max: 4.5, min: 2.4 })
+  const hookPerf = useAnimatedMetric(91, inView)
+  const [hookIndex, setHookIndex] = useState(0)
   const [feedIndex, setFeedIndex] = useState(0)
-  const [queueProgress, setQueueProgress] = useState(72)
+  const [queueProgress, setQueueProgress] = useState(78)
+
+  const liveKpis = {
+    viral: viralScore,
+    engagement,
+    velocity,
+    hook: hookPerf,
+  }
 
   useEffect(() => {
     if (!inView) return
-    const feedId = window.setInterval(() => {
-      setFeedIndex((i) => (i + 1) % ACTIVITY_FEED.length)
-    }, 4000)
+    const hookId = window.setInterval(() => setHookIndex((i) => (i + 1) % AI_HOOKS.length), 5000)
+    const feedId = window.setInterval(() => setFeedIndex((i) => (i + 1) % ACTIVITY.length), 3500)
     const queueId = window.setInterval(() => {
-      setQueueProgress((p) => (p >= 96 ? 58 : p + Math.floor(Math.random() * 8) + 2))
-    }, 4500)
+      setQueueProgress((p) => (p >= 95 ? 62 : p + Math.floor(Math.random() * 6) + 2))
+    }, 4200)
     return () => {
+      window.clearInterval(hookId)
       window.clearInterval(feedId)
       window.clearInterval(queueId)
     }
   }, [inView])
 
   return (
-    <div ref={ref} className="landing-hero-preview relative w-full">
-      <div className="landing-hero-preview__ambient pointer-events-none absolute -inset-8 rounded-[2rem] opacity-70" aria-hidden />
+    <div ref={ref} className="landing-ai-dashboard-wrap group/preview relative w-full">
+      <div
+        className="landing-hero-preview__ambient pointer-events-none absolute -inset-8 rounded-[2rem] opacity-90 sm:-inset-12"
+        aria-hidden
+      />
 
-      <article className="landing-hero-preview__frame relative overflow-hidden rounded-2xl border border-white/[0.07] bg-zinc-950/85 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.04)] backdrop-blur-xl">
-        <header className="flex items-center gap-3 border-b border-white/[0.05] bg-zinc-900/70 px-3.5 py-2.5 sm:px-4 sm:py-3">
+      <article className="landing-ai-dashboard landing-hero-preview__frame relative overflow-hidden rounded-2xl bg-zinc-950/80 shadow-[0_40px_120px_-48px_rgba(0,0,0,0.9)] backdrop-blur-2xl sm:rounded-[1.25rem]">
+        {/* Window chrome */}
+        <header className="flex items-center gap-2 border-b border-white/[0.06] bg-zinc-900/60 px-3 py-2.5 backdrop-blur-md sm:gap-3 sm:px-4 sm:py-3">
           <div className="flex gap-1.5" aria-hidden>
-            <span className="size-2 rounded-full bg-[#FF5F57]/90" />
-            <span className="size-2 rounded-full bg-[#FEBC2E]/90" />
-            <span className="size-2 rounded-full bg-[#28C840]/90" />
+            <span className="size-2.5 rounded-full bg-[#FF5F57]/90 sm:size-2" />
+            <span className="size-2.5 rounded-full bg-[#FEBC2E]/90 sm:size-2" />
+            <span className="size-2.5 rounded-full bg-[#28C840]/90 sm:size-2" />
           </div>
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <TrendingUpIcon className="size-3.5 shrink-0 text-violet-400/90" aria-hidden />
-            <span className="truncate text-[11px] font-medium text-zinc-300 sm:text-xs">
-              NexTrends Creator OS
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 text-[9px] font-black text-white sm:size-7">
+              NT
             </span>
+            <div className="min-w-0">
+              <p className="truncate text-[11px] font-semibold text-white sm:text-xs">
+                NexTrends · AI Marketing OS
+              </p>
+              <p className="truncate text-[9px] text-zinc-500">TikTok & Instagram Command Center</p>
+            </div>
           </div>
-          <span className="landing-live-dot flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-semibold text-emerald-300/90">
+          <span className="landing-live-dot flex shrink-0 items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/[0.08] px-2 py-1 text-[9px] font-semibold text-emerald-300">
             <span className="size-1.5 rounded-full bg-emerald-400" aria-hidden />
             Live
           </span>
         </header>
 
-        <div className="grid gap-2 p-2.5 sm:grid-cols-[1fr_7.5rem] sm:gap-3 sm:p-3.5 lg:grid-cols-[1fr_8.5rem]">
-          <div className="grid gap-2 sm:gap-2.5">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="landing-dash-panel rounded-xl border border-violet-500/15 bg-violet-500/[0.04] p-2.5 sm:p-3">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-violet-400/90">
-                  Trend Intelligence
-                </p>
-                <p className="mt-1.5 text-xs font-semibold leading-snug text-white sm:text-sm">
-                  „AI Skincare Routines"
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {['TikTok', `Score ${trendScore}`, 'Explodiert'].map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-md border border-zinc-700/50 bg-zinc-900/50 px-1.5 py-0.5 text-[9px] text-zinc-400"
-                    >
-                      {tag}
+        <div className="space-y-2.5 p-2.5 sm:space-y-3 sm:p-3.5 md:p-4">
+          {/* KPI strip */}
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            {KPI_METRICS.map((kpi) => {
+              const live =
+                kpi.id === 'viral'
+                  ? liveKpis.viral
+                  : kpi.id === 'engagement'
+                    ? liveKpis.engagement
+                    : kpi.id === 'velocity'
+                      ? liveKpis.velocity
+                      : liveKpis.hook
+              const isDecimal = kpi.id === 'engagement' || kpi.id === 'velocity'
+              return (
+                <DashPanel
+                  key={kpi.id}
+                  glow
+                  className={cn(
+                    'p-2.5 sm:p-3',
+                    kpi.tone === 'violet' && 'border-violet-500/20',
+                    kpi.tone === 'fuchsia' && 'border-fuchsia-500/20',
+                    kpi.tone === 'emerald' && 'border-emerald-500/20',
+                    kpi.tone === 'cyan' && 'border-cyan-500/20',
+                  )}
+                >
+                  <p className="text-[8px] font-bold uppercase tracking-[0.12em] text-zinc-500 sm:text-[9px]">
+                    {kpi.label}
+                  </p>
+                  <p className="mt-1 flex items-baseline gap-0.5">
+                    <span className="text-lg font-bold tabular-nums text-white sm:text-xl">
+                      {formatMetric(live, isDecimal)}
                     </span>
-                  ))}
-                </div>
-              </div>
+                    <span className="text-[10px] text-zinc-500">{kpi.suffix}</span>
+                  </p>
+                  <span
+                    className={cn(
+                      'mt-1 inline-block text-[9px] font-semibold',
+                      kpi.tone === 'violet' && 'text-violet-400',
+                      kpi.tone === 'fuchsia' && 'text-fuchsia-400',
+                      kpi.tone === 'emerald' && 'text-emerald-400',
+                      kpi.tone === 'cyan' && 'text-cyan-400',
+                    )}
+                  >
+                    {kpi.delta}
+                  </span>
+                </DashPanel>
+              )
+            })}
+          </div>
 
-              <div className="landing-dash-panel rounded-xl border border-zinc-800/60 bg-zinc-900/35 p-2.5 sm:p-3">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                  Creator KPIs
-                </p>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-lg font-bold tabular-nums text-white sm:text-xl">+{watchtime}%</p>
-                    <p className="text-[9px] text-zinc-500">Watchtime</p>
+          {/* Main grid */}
+          <div className="grid gap-2.5 lg:grid-cols-12 lg:gap-3">
+            {/* Trend cards */}
+            <div className="grid gap-2 sm:grid-cols-2 lg:col-span-5 lg:grid-cols-1">
+              {TRENDING_NICHES.map((trend) => (
+                <DashPanel
+                  key={trend.topic}
+                  className="border-violet-500/15 bg-violet-500/[0.04] p-2.5 sm:p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <TrendingUpIcon className="size-3.5 text-violet-400" aria-hidden />
+                      <span
+                        className={cn(
+                          'rounded-md px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider',
+                          trend.platform === 'TikTok'
+                            ? 'bg-zinc-800/80 text-zinc-300'
+                            : 'bg-gradient-to-r from-fuchsia-600/20 to-orange-500/20 text-fuchsia-200',
+                        )}
+                      >
+                        {trend.platform}
+                      </span>
+                    </div>
+                    <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-1.5 py-0.5 text-[8px] font-semibold text-emerald-300">
+                      {trend.tag}
+                    </span>
                   </div>
-                  <div>
-                    <p className="text-lg font-bold tabular-nums text-white sm:text-xl">847</p>
-                    <p className="text-[9px] text-zinc-500">Credits</p>
+                  <p className="mt-2 text-xs font-semibold leading-snug text-white sm:text-sm">
+                    {trend.topic}
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-[9px] text-zinc-500">Opportunity Score</span>
+                    <span className="text-sm font-bold tabular-nums text-violet-300">{trend.score}</span>
                   </div>
-                </div>
-                <div className="mt-2 flex h-8 items-end gap-0.5" aria-hidden>
-                  {CHART_BARS.map((h, i) => (
-                    <span
-                      key={i}
-                      className="landing-chart-bar flex-1 rounded-sm bg-violet-500/35"
-                      style={{ height: `${h}%`, animationDelay: `${i * 80}ms` }}
+                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-zinc-800/80">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 transition-[width] duration-700"
+                      style={{ width: `${trend.score}%` }}
                     />
-                  ))}
-                </div>
-              </div>
+                  </div>
+                </DashPanel>
+              ))}
             </div>
 
-            <div className="landing-dash-panel rounded-xl border border-zinc-800/55 bg-zinc-900/30 p-2.5 sm:p-3">
-              <div className="flex items-center gap-2">
-                <SparklesIcon className="size-3.5 text-fuchsia-400/80" aria-hidden />
-                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                  Hook Generator · Output
-                </p>
-              </div>
-              <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-300 sm:text-xs">
-                „Du machst Skincare falsch — und hier ist der Beweis in 15 Sekunden."
-              </p>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="landing-dash-panel rounded-xl border border-zinc-800/55 bg-zinc-900/30 p-2.5">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                  AI Ad Copy
-                </p>
-                <p className="mt-1 text-[10px] leading-relaxed text-zinc-400">
-                  Meta · Conversion · 3 Varianten bereit
-                </p>
-              </div>
-              <div className="landing-dash-panel rounded-xl border border-cyan-500/15 bg-cyan-500/[0.04] p-2.5">
+            {/* Analytics chart */}
+            <DashPanel glow className="lg:col-span-4 p-2.5 sm:p-3">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
-                  <ClapperboardIcon className="size-3.5 text-cyan-400/80" aria-hidden />
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-cyan-400/90">
-                    AI Video Queue
+                  <ChartBarIcon className="size-3.5 text-violet-400" aria-hidden />
+                  <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                    Engagement Analytics
                   </p>
                 </div>
-                <div className="mt-2 h-1 overflow-hidden rounded-full bg-zinc-800/80">
-                  <div
-                    className="landing-queue-bar h-full rounded-full bg-gradient-to-r from-violet-600/90 to-cyan-500/80 transition-[width] duration-700 ease-out"
-                    style={{ width: `${queueProgress}%` }}
-                  />
-                </div>
-                <p className="mt-1 text-[9px] tabular-nums text-zinc-500">{queueProgress}% · Rendering</p>
+                <span className="text-[9px] font-medium text-emerald-400">7 Tage · +{formatMetric(engagement, true)}%</span>
               </div>
+              <div className="mt-3 flex h-20 items-end gap-1 sm:h-24" aria-hidden>
+                {ENGAGEMENT_BARS.map((h, i) => (
+                  <span
+                    key={i}
+                    className="landing-chart-bar flex-1 rounded-sm bg-gradient-to-t from-violet-600/80 to-violet-400/30"
+                    style={{ height: `${h}%`, animationDelay: `${i * 60}ms` }}
+                  />
+                ))}
+              </div>
+              <div className="mt-2 flex justify-between text-[8px] text-zinc-600">
+                <span>Mo</span>
+                <span>Di</span>
+                <span>Mi</span>
+                <span>Do</span>
+                <span>Fr</span>
+                <span>Sa</span>
+                <span>So</span>
+                <span className="text-violet-400">Heute</span>
+              </div>
+            </DashPanel>
+
+            {/* Platform widgets */}
+            <div className="grid gap-2 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-1">
+              {PLATFORM_STATS.map((p) => (
+                <DashPanel key={p.platform} className="p-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+                      {p.platform}
+                    </span>
+                    <span className="text-[9px] font-semibold text-emerald-400">{p.growth}</span>
+                  </div>
+                  <p className="mt-1.5 text-base font-bold tabular-nums text-white sm:text-lg">{p.views}</p>
+                  <p className="text-[9px] text-zinc-500">
+                    Reach · CTR <span className="text-zinc-300">{p.ctr}</span>
+                  </p>
+                  <div className="mt-2 flex h-6 items-end gap-0.5" aria-hidden>
+                    {TREND_BARS.slice(0, 5).map((h, i) => (
+                      <span
+                        key={i}
+                        className={cn(
+                          'flex-1 rounded-sm',
+                          p.platform === 'TikTok' ? 'bg-violet-500/40' : 'bg-fuchsia-500/35',
+                        )}
+                        style={{ height: `${h * 0.7}%` }}
+                      />
+                    ))}
+                  </div>
+                </DashPanel>
+              ))}
             </div>
           </div>
 
-          <aside className="landing-dash-panel hidden rounded-xl border border-zinc-800/55 bg-zinc-900/25 p-2.5 sm:block">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-              Activity
+          {/* AI Hook + secondary row */}
+          <div className="grid gap-2.5 lg:grid-cols-12 lg:gap-3">
+            <DashPanel glow className="border-fuchsia-500/15 bg-fuchsia-500/[0.03] p-2.5 sm:p-3 lg:col-span-7">
+              <div className="flex items-center gap-2">
+                <SparklesIcon className="size-4 text-fuchsia-400" aria-hidden />
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-fuchsia-300/90">
+                  AI Hook Generator · Live Output
+                </p>
+                <span className="ml-auto rounded-full border border-fuchsia-500/20 bg-fuchsia-500/10 px-1.5 py-0.5 text-[8px] font-semibold text-fuchsia-300">
+                  {hookPerf}% Performance
+                </span>
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-zinc-200 transition-opacity duration-500 sm:text-sm">
+                {AI_HOOKS[hookIndex]}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {['Scroll-Stopper', 'TikTok', '15s Format'].map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-md border border-zinc-700/50 bg-zinc-900/60 px-1.5 py-0.5 text-[8px] text-zinc-400"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </DashPanel>
+
+            <DashPanel className="p-2.5 sm:p-3 lg:col-span-2">
+              <div className="flex items-center gap-1.5">
+                <BoltIcon className="size-3.5 text-violet-400" aria-hidden />
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">Ad Copy</p>
+              </div>
+              <p className="mt-2 text-[10px] leading-relaxed text-zinc-400">
+                Meta · Conversion
+                <br />
+                <span className="text-zinc-300">3 Varianten bereit</span>
+              </p>
+            </DashPanel>
+
+            <DashPanel className="border-cyan-500/15 bg-cyan-500/[0.03] p-2.5 sm:p-3 lg:col-span-3">
+              <div className="flex items-center gap-1.5">
+                <ClapperboardIcon className="size-3.5 text-cyan-400" aria-hidden />
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-cyan-400/90">
+                  AI Video Queue
+                </p>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800/80">
+                <div
+                  className="landing-queue-bar h-full rounded-full bg-gradient-to-r from-violet-600 to-cyan-500 transition-[width] duration-700"
+                  style={{ width: `${queueProgress}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-[9px] tabular-nums text-zinc-500">{queueProgress}% · Rendering</p>
+            </DashPanel>
+          </div>
+
+          {/* Activity strip — mobile + desktop */}
+          <DashPanel className="p-2.5 sm:p-3">
+            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+              Live Activity Stream
             </p>
-            <ul className="mt-2 space-y-2">
-              {ACTIVITY_FEED.slice(0, 4).map((item, i) => (
+            <ul className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
+              {ACTIVITY.map((item, i) => (
                 <li
                   key={item}
                   className={cn(
-                    'flex items-start gap-1.5 text-[9px] leading-snug transition-opacity duration-500',
-                    i === feedIndex % 4 ? 'text-zinc-300 opacity-100' : 'text-zinc-600 opacity-60',
+                    'flex items-center gap-1.5 text-[9px] transition-opacity duration-500 sm:text-[10px]',
+                    i === feedIndex % ACTIVITY.length
+                      ? 'text-zinc-200 opacity-100'
+                      : 'text-zinc-600 opacity-50',
                   )}
                 >
-                  <span className="mt-1 size-1 shrink-0 rounded-full bg-violet-500/60" aria-hidden />
+                  <span className="size-1 shrink-0 rounded-full bg-violet-500" aria-hidden />
                   {item}
                 </li>
               ))}
             </ul>
-            <div className="mt-3 border-t border-zinc-800/50 pt-2">
-              <ChartBarIcon className="size-3.5 text-emerald-400/70" aria-hidden />
-              <p className="mt-1 text-[9px] text-zinc-500">Analytics</p>
-              <p className="text-sm font-semibold tabular-nums text-white">+{watchtime}%</p>
-            </div>
-          </aside>
+          </DashPanel>
         </div>
       </article>
 
-      {HERO_FLOATING_SIGNALS.map((signal, i) => (
-        <div
-          key={signal.id}
-          className={cn(
-            'landing-signal pointer-events-none absolute hidden rounded-xl border px-2.5 py-1.5 backdrop-blur-md sm:flex',
-            FLOAT_POSITIONS[i],
-            signal.tone === 'violet' && 'border-violet-500/20 bg-violet-950/40 text-violet-200',
-            signal.tone === 'fuchsia' && 'border-fuchsia-500/20 bg-fuchsia-950/35 text-fuchsia-200',
-            signal.tone === 'emerald' && 'border-emerald-500/20 bg-emerald-950/35 text-emerald-200',
-            signal.tone === 'cyan' && 'border-cyan-500/20 bg-cyan-950/35 text-cyan-200',
-          )}
-          style={{ animationDelay: `${i * 0.7}s` }}
-        >
-          <div>
-            <p className="text-[9px] font-medium text-zinc-400">{signal.label}</p>
-            <p className="text-[11px] font-semibold tabular-nums">{signal.metric}</p>
-          </div>
-        </div>
-      ))}
+      {/* Floating metric chips — desktop */}
+      <div
+        className="pointer-events-none absolute -left-2 top-[28%] hidden rounded-xl border border-violet-500/25 bg-violet-950/70 px-2.5 py-1.5 text-[10px] backdrop-blur-md lg:block landing-signal landing-signal--ml"
+        aria-hidden
+      >
+        <p className="text-zinc-500">Viral Score</p>
+        <p className="font-bold tabular-nums text-violet-200">{Math.round(viralScore)}</p>
+      </div>
+      <div
+        className="pointer-events-none absolute -right-1 top-[18%] hidden rounded-xl border border-fuchsia-500/25 bg-fuchsia-950/60 px-2.5 py-1.5 text-[10px] backdrop-blur-md lg:block landing-signal landing-signal--tr"
+        style={{ animationDelay: '0.5s' }}
+        aria-hidden
+      >
+        <p className="text-zinc-500">Hook CTR</p>
+        <p className="font-bold tabular-nums text-fuchsia-200">+{Math.round(hookPerf - 73)}%</p>
+      </div>
+      <div
+        className="pointer-events-none absolute -right-2 bottom-[22%] hidden rounded-xl border border-emerald-500/25 bg-emerald-950/50 px-2.5 py-1.5 text-[10px] backdrop-blur-md lg:block landing-signal landing-signal--br"
+        style={{ animationDelay: '1s' }}
+        aria-hidden
+      >
+        <p className="text-zinc-500">Engagement</p>
+        <p className="font-bold tabular-nums text-emerald-200">{formatMetric(engagement, true)}%</p>
+      </div>
     </div>
   )
 }

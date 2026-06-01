@@ -1,3 +1,6 @@
+'use client'
+
+import { LandingSection } from '@/components/landing/LandingSection'
 import { LandingSectionHeader } from '@/components/landing/LandingSectionHeader'
 import { LandingReveal } from '@/components/landing/LandingReveal'
 import { WORKFLOW_STEPS } from '@/lib/landing'
@@ -14,17 +17,7 @@ const WORKFLOW_PREVIEWS: Record<string, { label: string; value: string; bars?: n
 
 export function LandingWorkflow() {
   return (
-    <section
-      id="workflow"
-      aria-labelledby="workflow-heading"
-      className="landing-section relative border-t border-white/[0.04] px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
-    >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/20 to-transparent"
-        aria-hidden
-      />
-
-      <div className="mx-auto max-w-6xl">
+    <LandingSection id="workflow" glow="top" ariaLabelledBy="workflow-heading">
         <LandingReveal>
           <LandingSectionHeader
             eyebrow="Workflow"
@@ -174,7 +167,6 @@ export function LandingWorkflow() {
             )
           })}
         </div>
-      </div>
-    </section>
+    </LandingSection>
   )
 }

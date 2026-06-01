@@ -1,4 +1,6 @@
 import { LANDING_FEATURES } from '@/lib/landing'
+import { LandingReveal } from '@/components/landing/LandingReveal'
+import { LandingSection } from '@/components/landing/LandingSection'
 import { LandingSectionHeader } from '@/components/landing/LandingSectionHeader'
 import { cn } from '@/lib'
 
@@ -7,18 +9,15 @@ export function LandingFeatures() {
   const others = LANDING_FEATURES.filter((f) => !f.featured)
 
   return (
-    <section
-      id="features"
-      aria-labelledby="features-heading"
-      className="landing-section relative border-t border-white/[0.04] px-4 py-16 sm:px-6 sm:py-24 lg:px-8"
-    >
-      <div className="mx-auto max-w-6xl">
+    <LandingSection id="features" glow="center" ariaLabelledBy="features-heading">
+      <LandingReveal>
         <LandingSectionHeader
-          eyebrow="Features"
+          eyebrow="Creator OS"
           title="Alles in einem Creator OS."
           titleAccent="Kein Tool-Chaos mehr."
           description="Trend Intelligence, Content-Generierung, CRO und Video-Produktion — modular, aber nahtlos verbunden."
         />
+      </LandingReveal>
 
         <div className="mt-12 grid gap-4 lg:grid-cols-12 lg:gap-5">
           {featured && (
@@ -48,8 +47,7 @@ export function LandingFeatures() {
             />
           ))}
         </div>
-      </div>
-    </section>
+    </LandingSection>
   )
 }
 
@@ -69,10 +67,11 @@ function FeatureCard({
   return (
     <article
       className={cn(
-        'landing-feature-card group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1',
+        'landing-feature-card landing-glass-card group relative overflow-hidden rounded-2xl transition-all duration-500',
+        'hover:-translate-y-1 hover:shadow-[0_24px_64px_-28px_rgba(0,0,0,0.7)]',
         premium
-          ? 'border-cyan-500/20 bg-gradient-to-br from-cyan-950/20 via-zinc-950/90 to-zinc-950/95 hover:border-cyan-500/30 hover:shadow-[0_16px_48px_-24px_rgba(34,211,238,0.18)]'
-          : 'border-zinc-800/60 bg-zinc-950/60 hover:border-violet-500/20 hover:shadow-[0_16px_48px_-24px_rgba(139,92,246,0.12)]',
+          ? 'border-cyan-500/15 bg-gradient-to-br from-cyan-950/25 via-zinc-950/80 to-zinc-950/90 hover:border-cyan-500/30 hover:shadow-[0_24px_64px_-24px_rgba(34,211,238,0.2)]'
+          : 'border-white/[0.06] bg-zinc-950/50 hover:border-violet-500/25 hover:shadow-[0_24px_64px_-24px_rgba(139,92,246,0.18)]',
         large ? 'p-6 sm:p-8' : wide ? 'p-5 sm:p-6' : 'p-5 sm:p-6',
         className,
       )}

@@ -1,16 +1,18 @@
+'use client'
+
 import { APP_NAME } from '@/lib'
 import { scrollToSection } from '@/lib/scroll'
 
 const FOOTER_LINKS = [
-  { id: 'features', label: 'Features' },
-  { id: 'social-proof', label: 'Erfolge' },
+  { id: 'dashboard', label: 'Produkt' },
+  { id: 'feature-grid', label: 'Features' },
+  { id: 'workflow', label: 'Workflow' },
   { id: 'pricing', label: 'Preise' },
-  { id: 'login', label: 'Anmelden' },
 ] as const
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-zinc-900 px-4 py-12 sm:px-6 lg:px-8">
+    <footer className="relative z-10 border-t border-white/[0.06] bg-black px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -27,7 +29,7 @@ export function LandingFooter() {
 
           <nav aria-label="Footer Navigation">
             <p className="text-xs font-semibold uppercase tracking-wider text-zinc-600">
-              Produkt
+              Navigation
             </p>
             <ul className="mt-3 space-y-2">
               {FOOTER_LINKS.map(({ id, label }) => (
@@ -35,7 +37,7 @@ export function LandingFooter() {
                   <button
                     type="button"
                     onClick={() => scrollToSection(id)}
-                    className="text-sm text-zinc-400 transition-colors hover:text-white"
+                    className="text-sm text-zinc-400 transition-colors duration-300 hover:text-white"
                   >
                     {label}
                   </button>
@@ -45,13 +47,11 @@ export function LandingFooter() {
           </nav>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-zinc-900 pt-8 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-8 sm:flex-row">
           <p className="text-xs text-zinc-600">
             © {new Date().getFullYear()} {APP_NAME}. Alle Rechte vorbehalten.
           </p>
-          <p className="text-xs text-zinc-600">
-            Made for creators · Powered by AI
-          </p>
+          <p className="text-xs text-zinc-600">Made for creators · Powered by AI</p>
         </div>
       </div>
     </footer>
