@@ -28,8 +28,8 @@ export function LandingSection({
 }: LandingSectionProps) {
   const reducedMotion = usePrefersReducedMotion()
   const { ref, inView } = useInView<HTMLElement>({
-    rootMargin: '0px 0px -8% 0px',
-    threshold: 0.06,
+    rootMargin: '0px 0px 2% 0px',
+    threshold: 0,
     once: true,
   })
 
@@ -41,7 +41,7 @@ export function LandingSection({
       id={id}
       aria-labelledby={ariaLabelledBy}
       className={cn(
-        'landing-section-premium relative px-4 py-14 sm:px-6 sm:py-20 lg:px-8 lg:py-28',
+        'landing-section-premium relative isolate z-[1] px-4 py-[4.5rem] sm:px-6 sm:py-20 lg:px-8 lg:py-28',
         bordered && 'border-t border-white/[0.04]',
         visible && 'landing-section-premium--visible',
         className,
@@ -50,7 +50,7 @@ export function LandingSection({
       {glow !== 'none' ? (
         <div
           className={cn(
-            'landing-section-glow pointer-events-none absolute inset-0',
+            'landing-section-glow pointer-events-none absolute inset-0 z-0',
             glow === 'top' && 'landing-section-glow--top',
             glow === 'center' && 'landing-section-glow--center',
             glow === 'bottom' && 'landing-section-glow--bottom',

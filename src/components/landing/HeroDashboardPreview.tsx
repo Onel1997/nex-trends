@@ -131,32 +131,32 @@ export function HeroDashboardPreview() {
   return (
     <div ref={ref} className="landing-ai-dashboard-wrap group/preview relative w-full min-w-0">
       <article className="landing-ai-dashboard relative flex w-full min-w-0 flex-col overflow-hidden bg-zinc-950">
-        <header className="landing-dashboard-chrome flex h-11 shrink-0 items-center gap-3 border-b border-white/[0.06] bg-zinc-900/90 px-3 sm:h-12 sm:gap-3 sm:px-4">
-          <div className="flex shrink-0 items-center gap-1.5" aria-hidden>
-            <span className="size-2.5 rounded-full bg-[#FF5F57]" />
-            <span className="size-2.5 rounded-full bg-[#FEBC2E]" />
-            <span className="size-2.5 rounded-full bg-[#28C840]" />
+        <header className="landing-dashboard-chrome flex h-9 shrink-0 items-center gap-2 border-b border-white/[0.06] bg-zinc-900/90 px-2.5 sm:h-12 sm:gap-3 sm:px-4">
+          <div className="flex shrink-0 items-center gap-1" aria-hidden>
+            <span className="size-2 rounded-full bg-[#FF5F57] sm:size-2.5" />
+            <span className="size-2 rounded-full bg-[#FEBC2E] sm:size-2.5" />
+            <span className="size-2 rounded-full bg-[#28C840] sm:size-2.5" />
           </div>
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-purple-700 text-[9px] font-black text-white">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-purple-700 text-[8px] font-black text-white sm:size-7 sm:text-[9px]">
               NT
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[11px] font-semibold leading-tight text-white sm:text-xs">
+              <p className="truncate text-[10px] font-semibold leading-tight text-white sm:text-xs">
                 NexTrends · AI Marketing OS
               </p>
-              <p className="truncate text-[9px] leading-tight text-zinc-500">
+              <p className="hidden truncate text-[9px] leading-tight text-zinc-500 sm:block">
                 TikTok &amp; Instagram Command Center
               </p>
             </div>
           </div>
-          <span className="landing-live-dot flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-emerald-500/25 bg-emerald-500/[0.08] px-2 text-[9px] font-semibold text-emerald-300">
+          <span className="landing-live-dot flex h-6 shrink-0 items-center gap-1 rounded-md border border-emerald-500/25 bg-emerald-500/[0.08] px-1.5 text-[8px] font-semibold text-emerald-300 sm:h-7 sm:gap-1.5 sm:px-2 sm:text-[9px]">
             <span className="landing-dash-live-pulse size-1.5 rounded-full bg-emerald-400" aria-hidden />
             Live
           </span>
         </header>
 
-        <div className="landing-dashboard-body space-y-2.5 p-2.5 sm:space-y-3 sm:p-3.5 md:p-4">
+        <div className="landing-dashboard-body space-y-2 p-2 sm:space-y-3 sm:p-3.5 md:p-4">
           {/* KPI strip */}
           <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
             {KPI_METRICS.map((kpi) => {

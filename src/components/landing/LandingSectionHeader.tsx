@@ -20,13 +20,13 @@ export function LandingSectionHeader({
   return (
     <div
       className={cn(
-        'max-w-3xl',
+        'landing-section-header max-w-3xl',
         align === 'center' && 'mx-auto text-center',
         className,
       )}
     >
       {eyebrow ? (
-        <p className="landing-eyebrow mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/[0.08] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300 backdrop-blur-md sm:mb-5 sm:px-3.5 sm:text-[11px]">
+        <p className="landing-eyebrow mb-3 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/[0.08] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300 backdrop-blur-md sm:mb-5 sm:px-3.5 sm:py-1.5 sm:text-[11px]">
           <span className="landing-live-dot size-1.5 rounded-full bg-violet-400" aria-hidden />
           {eyebrow}
         </p>
@@ -42,7 +42,7 @@ export function LandingSectionHeader({
         ) : null}
       </h2>
 
-      <p className="mt-4 text-[0.8125rem] leading-[1.65] text-zinc-400 sm:mt-6 sm:text-base sm:leading-[1.7] lg:text-lg lg:leading-relaxed">
+      <p className="landing-section-header__desc mt-3.5 text-[0.8125rem] leading-[1.62] text-zinc-400 sm:mt-6 sm:text-base sm:leading-[1.7] lg:text-lg lg:leading-relaxed">
         {description}
       </p>
     </div>

@@ -21,8 +21,8 @@ export function LandingReveal({
 }: LandingRevealProps) {
   const reducedMotion = usePrefersReducedMotion()
   const { ref, inView } = useInView<HTMLDivElement>({
-    rootMargin: '0px 0px -5% 0px',
-    threshold: 0.08,
+    rootMargin: '0px 0px 2% 0px',
+    threshold: 0,
     once: true,
   })
 

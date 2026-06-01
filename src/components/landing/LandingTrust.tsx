@@ -10,12 +10,12 @@ export function LandingTrust() {
     <LandingSection
       id="trust"
       glow="bottom"
-      className="!py-12 sm:!py-20"
+      className="!py-[4.5rem] sm:!py-20"
       ariaLabelledBy="trust-heading"
     >
       <LandingReveal>
-        <div className="landing-trust-card mx-auto max-w-2xl rounded-3xl border border-white/[0.06] bg-zinc-950/40 px-6 py-8 backdrop-blur-xl sm:px-10 sm:py-10">
-          <p className="mb-6 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-violet-400/90">
+        <div className="landing-trust-card mx-auto max-w-2xl rounded-2xl border border-white/[0.06] bg-zinc-950/40 px-5 py-6 backdrop-blur-xl sm:rounded-3xl sm:px-10 sm:py-10">
+          <p className="mb-5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-violet-400/90 sm:mb-6">
             Trusted by creators
           </p>
           <TrustedCreatorsBadge className="justify-center" />
@@ -40,7 +40,7 @@ export function LandingTrust() {
       </LandingReveal>
 
       <LandingReveal delay={80}>
-        <ul className="mt-12 flex flex-wrap items-center justify-center gap-2 sm:mt-14 sm:gap-3">
+        <ul className="mt-9 flex flex-wrap items-center justify-center gap-2 sm:mt-14 sm:gap-3">
           {TRUST_TEAMS.map((team) => (
             <li key={team}>
               <span className="landing-glass-pill text-zinc-400 hover:text-zinc-200">{team}</span>

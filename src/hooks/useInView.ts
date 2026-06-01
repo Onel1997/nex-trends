@@ -17,6 +17,12 @@ export function useInView<T extends HTMLElement = HTMLDivElement>(
     const node = ref.current
     if (!node) return
 
+    const isAlreadyVisible = () => {
+      const rect = node.getBoundingClientRect()
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+      return rect.top < viewportHeight && rect.bottom > 0
+    }
+
     if (typeof IntersectionObserver === 'undefined') {
       setInView(true)
       return
@@ -35,6 +41,24 @@ export function useInView<T extends HTMLElement = HTMLDivElement>(
     )
 
     observer.observe(node)
+
+    // iOS Safari / mobile: IO can miss elements already on screen at mount
+    if (isAlreadyVisible()) {
+      setInView(true)
+      if (once) observer.disconnect()
+    } else {
+      const raf = requestAnimationFrame(() => {
+        if (isAlreadyVisible()) {
+          setInView(true)
+          if (once) observer.disconnect()
+        }
+      })
+      return () => {
+        cancelAnimationFrame(raf)
+        observer.disconnect()
+      }
+    }
+
     return () => observer.disconnect()
   }, [rootMargin, threshold, once])
 

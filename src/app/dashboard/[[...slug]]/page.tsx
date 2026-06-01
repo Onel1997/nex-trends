@@ -3,7 +3,7 @@
 import { AppProviders } from '@/components/app/AppProviders'
 import { HomePage } from '@/views/HomePage'
 
-export default function App() {
+export default function DashboardAppPage() {
   return (
     <AppProviders>
       <HomePage />

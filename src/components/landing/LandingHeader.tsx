@@ -55,13 +55,13 @@ export function LandingHeader() {
   }, [])
 
   return (
-    <header className="sticky top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-4">
+    <header className="landing-header sticky top-0 z-50 px-3 pt-2 sm:px-4 sm:pt-4">
       <div
         className={cn(
-          'landing-nav-shell mx-auto flex max-w-6xl items-center justify-between gap-2 rounded-2xl border px-3 transition-all duration-500 sm:gap-3 sm:px-4',
+          'landing-nav-shell mx-auto flex max-w-6xl items-center justify-between gap-2 rounded-xl border px-2.5 transition-all duration-500 sm:gap-3 sm:rounded-2xl sm:px-4',
           scrolled
-            ? 'border-white/[0.08] bg-black/80 py-2 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.8),0_0_0_1px_rgba(139,92,246,0.06)] backdrop-blur-xl sm:py-2.5'
-            : 'border-white/[0.05] bg-black/50 py-2.5 backdrop-blur-md sm:py-3',
+            ? 'landing-nav-shell--scrolled border-white/[0.08] bg-black/65 py-1.5 shadow-[0_8px_32px_-14px_rgba(0,0,0,0.75),0_0_0_1px_rgba(139,92,246,0.05)] backdrop-blur-2xl sm:py-2.5'
+            : 'border-white/[0.06] bg-black/40 py-2 backdrop-blur-xl sm:py-3',
         )}
       >
         <a
@@ -69,7 +69,7 @@ export function LandingHeader() {
           className="group flex min-w-0 shrink items-center gap-2.5 text-base font-bold tracking-[-0.03em] text-white sm:gap-3"
           aria-label={`${APP_NAME} Startseite`}
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 text-[10px] font-black text-white shadow-[0_0_24px_-6px_rgba(139,92,246,0.55)] ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-105 sm:size-9 sm:text-xs">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 text-[9px] font-black text-white shadow-[0_0_20px_-6px_rgba(139,92,246,0.5)] ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-105 sm:size-9 sm:rounded-xl sm:text-xs">
             NT
           </span>
           <span className="truncate text-sm sm:text-base">
@@ -111,7 +111,7 @@ export function LandingHeader() {
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
             className={cn(
-              'inline-flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-300 backdrop-blur-sm transition-all duration-300 lg:hidden active:scale-95',
+              'inline-flex size-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-zinc-300 backdrop-blur-sm transition-all duration-300 sm:rounded-xl sm:size-9 lg:hidden active:scale-95',
               mobileOpen && 'border-violet-500/30 bg-violet-500/[0.08] text-white',
             )}
             aria-label={mobileOpen ? 'Menü schließen' : 'Menü öffnen'}
@@ -124,7 +124,7 @@ export function LandingHeader() {
 
       {mobileOpen ? (
         <nav
-          className="landing-nav-mobile mx-auto mt-2 max-w-6xl rounded-2xl border border-white/[0.08] bg-black/95 px-4 py-4 backdrop-blur-xl lg:hidden animate-fade-in"
+          className="landing-nav-mobile mx-auto mt-1.5 max-w-6xl rounded-xl border border-white/[0.08] bg-black/90 px-3 py-3 backdrop-blur-2xl sm:mt-2 sm:rounded-2xl sm:px-4 sm:py-4 lg:hidden animate-fade-in"
           aria-label="Mobile Navigation"
         >
           <ul className="space-y-1">

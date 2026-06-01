@@ -17,15 +17,15 @@ export type NexTrendsHeroProps = {
 }
 
 export const HERO_PRIMARY_CTA_CLASS =
-  'landing-hero-cta landing-btn-primary landing-cta-pulse inline-flex items-center justify-center'
+  'landing-hero-cta landing-btn-primary landing-cta-pulse inline-flex items-center justify-center gap-2 leading-none'
 
 export const HERO_GLASS_CTA_CLASS =
-  'landing-hero-cta landing-btn-glass inline-flex items-center justify-center'
+  'landing-hero-cta landing-btn-glass inline-flex items-center justify-center gap-2 leading-none'
 
 function HeroPlayIcon() {
   return (
     <span className="landing-btn-glass__play" aria-hidden>
-      <svg className="ml-0.5 size-2.5" viewBox="0 0 24 24" fill="currentColor">
+      <svg className="size-2.5" viewBox="0 0 24 24" fill="currentColor">
         <path d="M8 5.14v13.72c0 .88 1.01 1.38 1.71.86l10.12-6.86a1 1 0 0 0 0-1.72L9.71 4.28A1 1 0 0 0 8 5.14Z" />
       </svg>
     </span>
@@ -140,14 +140,14 @@ export function NexTrendsHero({
           'px-4 text-center sm:px-6 lg:px-8',
           showNav
             ? 'pt-12 pb-14 sm:pt-16 sm:pb-16 md:pt-20 md:pb-20'
-            : 'pt-14 pb-10 sm:pt-20 sm:pb-16 md:pt-24 md:pb-20',
+            : 'pt-12 pb-9 sm:pt-20 sm:pb-16 md:pt-24 md:pb-20',
         )}
       >
         {/* Badge */}
         <div
           className={cn(
-            'hero-fade-in hero-fade-in--1 mb-6 max-w-[calc(100vw-2rem)] rounded-full',
-            'border border-purple-500/25 bg-purple-500/[0.08] px-4 py-2',
+            'hero-fade-in hero-fade-in--1 mb-5 max-w-[calc(100vw-2rem)] rounded-full',
+            'border border-purple-500/25 bg-purple-500/[0.08] px-3.5 py-1.5',
             'text-[11px] font-medium tracking-wide text-purple-200/90 backdrop-blur-md',
             'shadow-[0_0_24px_-8px_rgb(139_92_246_/_0.35)] sm:mb-8 sm:px-5 sm:text-sm',
           )}
@@ -177,7 +177,7 @@ export function NexTrendsHero({
         {/* Subtitle */}
         <p
           className={cn(
-            'hero-fade-in hero-fade-in--3 mt-5 w-full max-w-lg text-pretty text-zinc-400',
+            'hero-fade-in hero-fade-in--3 mt-4 w-full max-w-lg text-pretty text-zinc-400',
             'text-[0.9375rem] leading-[1.65] font-normal tracking-[-0.01em]',
             'sm:mt-7 sm:max-w-2xl sm:text-lg sm:leading-relaxed',
             'md:text-xl md:leading-relaxed',
@@ -188,7 +188,7 @@ export function NexTrendsHero({
         </p>
 
         {/* CTAs */}
-        <div className="hero-fade-in hero-fade-in--4 landing-hero-ctas mt-9 sm:mt-11">
+        <div className="hero-fade-in hero-fade-in--4 landing-hero-ctas mt-8 sm:mt-11">
           {primaryCta ?? <DefaultPrimaryCta />}
           <LiveDemoButton onLiveDemo={onLiveDemo} demoHref={demoHref} />
         </div>

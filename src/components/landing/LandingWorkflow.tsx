@@ -75,7 +75,7 @@ function WorkflowCard({ step, index, variant }: WorkflowCardProps) {
     return (
       <article
         className={cn(
-          'landing-workflow-card w-full min-w-0 max-w-full rounded-2xl border p-4',
+          'landing-workflow-card w-full min-w-0 max-w-full rounded-xl border p-3.5 sm:rounded-2xl sm:p-4',
           step.premium
             ? 'border-cyan-500/20 bg-gradient-to-br from-cyan-950/15 to-zinc-950/90'
             : 'border-zinc-800/60 bg-zinc-950/60',
@@ -151,7 +151,7 @@ export function LandingWorkflow() {
       </LandingReveal>
 
       {/* Mobile & tablet: vertical stack */}
-      <div className="landing-workflow-grid mt-8 grid w-full min-w-0 grid-cols-1 gap-3 lg:hidden">
+      <div className="landing-workflow-grid mt-7 grid w-full min-w-0 grid-cols-1 gap-3.5 lg:hidden">
         {WORKFLOW_STEPS.map((step, index) => (
           <LandingReveal key={step.id} delay={index * 40}>
             <WorkflowCard step={step} index={index} variant="mobile" />

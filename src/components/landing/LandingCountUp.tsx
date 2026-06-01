@@ -22,7 +22,7 @@ function parseStatValue(raw: string) {
 }
 
 export function LandingCountUp({ value, className, duration = 1400 }: LandingCountUpProps) {
-  const { ref, inView } = useInView<HTMLSpanElement>({ threshold: 0.35, once: true })
+  const { ref, inView } = useInView<HTMLSpanElement>({ threshold: 0, once: true })
   const parsed = parseStatValue(value)
 
   const end = parsed?.num ?? 0

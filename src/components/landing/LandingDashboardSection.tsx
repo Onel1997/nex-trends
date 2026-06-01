@@ -12,7 +12,7 @@ export function LandingDashboardSection() {
     <LandingSection
       id="dashboard"
       glow="center"
-      className="landing-dashboard-section !pt-10 sm:!pt-14"
+      className="landing-dashboard-section !pt-8 sm:!pt-14"
       ariaLabelledBy="dashboard-heading"
     >
       <LandingReveal>
@@ -24,7 +24,7 @@ export function LandingDashboardSection() {
         />
       </LandingReveal>
 
-      <LandingReveal delay={100} className="mt-10 sm:mt-20">
+      <LandingReveal delay={100} className="mt-7 sm:mt-20">
         <div className="landing-dashboard-stage mx-auto w-full min-w-0 max-w-[min(100%,56rem)]">
           <div className="landing-dashboard-shell">
             <HeroDashboardPreview />
@@ -34,7 +34,7 @@ export function LandingDashboardSection() {
 
       <LandingReveal delay={180}>
         <ul
-          className="mt-8 flex flex-wrap justify-center gap-2 sm:mt-14 sm:gap-2.5"
+          className="mt-7 flex flex-wrap justify-center gap-2 sm:mt-14 sm:gap-2.5"
           aria-label="Produktfunktionen"
         >
           {HERO_PILLS.map((pill) => (
@@ -46,11 +46,11 @@ export function LandingDashboardSection() {
       </LandingReveal>
 
       <LandingReveal delay={240}>
-        <dl className="mt-10 grid min-w-0 grid-cols-3 gap-2 sm:mt-16 sm:gap-5">
+        <dl className="mt-8 grid min-w-0 grid-cols-3 gap-2.5 sm:mt-16 sm:gap-5">
           {HERO_STATS.map(({ value, label }) => (
             <div
               key={label}
-              className="landing-stat-card min-w-0 rounded-2xl px-2 py-4 text-center sm:px-5 sm:py-6"
+              className="landing-stat-card min-w-0 rounded-xl px-2.5 py-3.5 text-center sm:rounded-2xl sm:px-5 sm:py-6"
             >
               <dt className="landing-stat-value text-lg font-bold min-[390px]:text-xl sm:text-3xl lg:text-4xl">
                 <LandingCountUp value={value} />

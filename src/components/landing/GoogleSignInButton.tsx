@@ -4,9 +4,13 @@ import { useState } from 'react'
 import { cn } from '@/lib'
 import { signInWithGoogle } from '@/lib/auth'
 
-function GoogleIcon() {
+function GoogleIcon({ className }: { className?: string }) {
   return (
-    <svg className="size-[1.125rem] shrink-0" viewBox="0 0 24 24" aria-hidden>
+    <svg
+      className={cn('size-4 shrink-0 sm:size-[1.125rem]', className)}
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -32,6 +36,8 @@ type GoogleSignInButtonProps = {
   variant?: 'gradient' | 'white' | 'outline'
   className?: string
   size?: 'md' | 'lg'
+  /** Compact hero CTA — sizing comes from `.landing-hero-cta` */
+  layout?: 'default' | 'hero'
 }
 
 export function GoogleSignInButton({
@@ -39,7 +45,9 @@ export function GoogleSignInButton({
   variant = 'gradient',
   className,
   size = 'lg',
+  layout = 'default',
 }: GoogleSignInButtonProps) {
+  const isHero = layout === 'hero'
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -62,18 +70,22 @@ export function GoogleSignInButton({
         onClick={() => void handleClick()}
         disabled={isLoading}
         className={cn(
-          'nex-btn inline-flex w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-[10px] font-semibold tracking-[-0.01em] disabled:opacity-60 sm:w-auto',
+          'nex-btn inline-flex items-center justify-center whitespace-nowrap font-semibold tracking-[-0.01em] disabled:opacity-60',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400/50',
-          size === 'lg' && 'min-h-[2.625rem] px-5 py-2.5 text-sm',
-          size === 'md' && 'min-h-[2.375rem] px-4 py-2 text-sm',
-          variant === 'gradient' && 'nex-btn--primary',
-          variant === 'white' &&
+          isHero
+            ? 'w-full gap-2 leading-none sm:w-auto'
+            : 'w-full justify-center gap-2.5 rounded-[10px] sm:w-auto',
+          !isHero && size === 'lg' && 'min-h-[2.625rem] px-5 py-2.5 text-sm',
+          !isHero && size === 'md' && 'min-h-[2.375rem] px-4 py-2 text-sm',
+          !isHero && variant === 'gradient' && 'nex-btn--primary',
+          !isHero &&
+            variant === 'white' &&
             'border border-zinc-700/60 bg-white text-zinc-900 hover:border-zinc-600 hover:bg-zinc-50',
-          variant === 'outline' && 'nex-btn--secondary',
+          !isHero && variant === 'outline' && 'nex-btn--secondary',
           className,
         )}
       >
-        <GoogleIcon />
+        <GoogleIcon className={isHero ? 'landing-hero-cta__icon' : undefined} />
         {isLoading ? 'Weiterleitung…' : label}
       </button>
       {errorMessage && (

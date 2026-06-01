@@ -14,7 +14,8 @@ export function LandingHero() {
           <GoogleSignInButton
             label="Kostenlos starten"
             variant="gradient"
-            className={`${HERO_PRIMARY_CTA_CLASS} !w-full !min-h-0 !rounded-[1rem] !px-6 !py-0 sm:!w-auto sm:!px-8`}
+            layout="hero"
+            className={HERO_PRIMARY_CTA_CLASS}
           />
         }
         onLiveDemo={() => scrollToSection('dashboard')}

@@ -12,7 +12,7 @@ const FOOTER_LINKS = [
 
 export function LandingFooter() {
   return (
-    <footer className="relative z-10 border-t border-white/[0.06] bg-black px-4 py-12 sm:px-6 lg:px-8">
+    <footer className="relative z-10 border-t border-white/[0.06] bg-black px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
           <div>

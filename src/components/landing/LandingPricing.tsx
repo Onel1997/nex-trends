@@ -22,12 +22,18 @@ export function LandingPricing() {
       </LandingReveal>
 
       <LandingReveal delay={80}>
-        <div className="relative mt-8 min-w-0 lg:hidden">
-          <div className="landing-pricing-carousel -mx-4 flex gap-4 overflow-x-auto overscroll-x-contain px-4 pb-4 pt-2 scrollbar-hide sm:-mx-6 sm:gap-4 sm:px-6">
+        <div className="landing-pricing-carousel-shell relative mt-7 min-w-0 lg:hidden">
+          <div
+            className="landing-pricing-carousel scrollbar-hide flex overflow-x-auto overscroll-x-contain"
+            role="region"
+            aria-roledescription="Karussell"
+            aria-label="Preispläne"
+            tabIndex={0}
+          >
             {LANDING_PRICING_TIERS.map((tier) => (
               <PricingCard key={tier.id} tier={tier} mobile />
             ))}
-            <span className="w-px shrink-0 snap-none sm:w-2" aria-hidden />
+            <span className="landing-pricing-carousel__tail shrink-0" aria-hidden />
           </div>
         </div>
       </LandingReveal>
@@ -65,12 +71,14 @@ function PricingCard({
   return (
     <article
       className={cn(
-        'landing-pricing-card landing-glass-card relative flex flex-col rounded-2xl p-5 transition-all duration-300',
-        mobile &&
-          'w-[min(calc(100vw-2.5rem),18.5rem)] max-w-full shrink-0 snap-start scroll-ml-4 first:scroll-ml-0',
-        isFeatured
-          ? 'z-[1] border-fuchsia-500/45 bg-gradient-to-b from-fuchsia-950/25 via-zinc-950/95 to-zinc-950 shadow-[0_0_56px_-12px_rgba(217,70,239,0.4)] lg:scale-[1.03]'
-          : 'hover:border-violet-500/20',
+        'landing-pricing-card landing-glass-card relative flex flex-col transition-all duration-300',
+        mobile
+          ? 'landing-pricing-card--mobile shrink-0 rounded-2xl p-5 sm:p-5'
+          : 'rounded-2xl p-5',
+        isFeatured &&
+          'landing-pricing-card--featured z-[1] border-fuchsia-500/45 bg-gradient-to-b from-fuchsia-950/25 via-zinc-950/95 to-zinc-950 shadow-[0_0_56px_-12px_rgba(217,70,239,0.4)] lg:scale-[1.03]',
+        !isFeatured && 'hover:border-violet-500/20',
+        mobile && isFeatured && 'pt-6',
       )}
     >
       {isFeatured ? (
@@ -79,53 +87,86 @@ function PricingCard({
         </span>
       ) : null}
 
-      <p
-        className={cn(
-          'text-xs font-semibold uppercase tracking-wider',
-          isFeatured ? 'text-fuchsia-300' : 'text-zinc-500',
-        )}
-      >
-        {tier.name}
-      </p>
-      <p className="mt-2 flex flex-wrap items-baseline gap-x-1">
-        <span className="text-2xl font-bold tracking-tight text-white xl:text-3xl">{tier.price}</span>
-        <span className="text-xs text-zinc-500">{tier.suffix}</span>
-      </p>
-      <p className="mt-2 min-h-[2.5rem] text-xs leading-relaxed text-zinc-500">{tier.description}</p>
-
-      <ul className="mt-4 flex-1 space-y-2">
-        {tier.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2 text-xs text-zinc-300">
-            <span
-              className={cn(
-                'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold',
-                isFeatured ? 'bg-fuchsia-500/20 text-fuchsia-300' : 'bg-zinc-800 text-zinc-400',
-              )}
-              aria-hidden
-            >
-              ✓
-            </span>
-            {feature}
-          </li>
-        ))}
-      </ul>
-
-      {tier.contactOnly ? (
-        <button
-          type="button"
-          onClick={handleCta}
-          className="landing-btn-secondary mt-6 w-full text-xs"
+      <div className={cn('flex min-h-0 flex-1 flex-col', mobile && 'min-h-[17.5rem]')}>
+        <p
+          className={cn(
+            'text-[11px] font-semibold uppercase tracking-[0.12em] sm:text-xs',
+            isFeatured ? 'text-fuchsia-300' : 'text-zinc-500',
+          )}
         >
-          {tier.cta}
-        </button>
-      ) : (
-        <GoogleSignInButton
-          label={tier.cta}
-          variant={isFeatured ? 'gradient' : 'outline'}
-          size="md"
-          className="mt-6 !w-full"
-        />
-      )}
+          {tier.name}
+        </p>
+        <p className="mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+          <span
+            className={cn(
+              'font-bold tracking-tight text-white',
+              mobile ? 'text-[1.75rem] leading-none' : 'text-2xl xl:text-3xl',
+            )}
+          >
+            {tier.price}
+          </span>
+          <span className="text-[11px] text-zinc-500 sm:text-xs">{tier.suffix}</span>
+        </p>
+        <p
+          className={cn(
+            'mt-2.5 text-[13px] leading-relaxed text-zinc-400 sm:text-xs sm:text-zinc-500',
+            mobile ? 'min-h-[2.75rem]' : 'min-h-[2.5rem]',
+          )}
+        >
+          {tier.description}
+        </p>
+
+        <ul
+          className={cn(
+            'mt-5 flex-1',
+            mobile ? 'space-y-2.5' : 'mt-4 space-y-2',
+          )}
+        >
+          {tier.features.map((feature) => (
+            <li
+              key={feature}
+              className={cn(
+                'flex items-start gap-2.5',
+                mobile ? 'text-[13px] leading-snug text-zinc-300' : 'text-xs text-zinc-300',
+              )}
+            >
+              <span
+                className={cn(
+                  'mt-0.5 flex shrink-0 items-center justify-center rounded-full font-bold',
+                  mobile ? 'size-[1.125rem] text-[10px]' : 'size-4 text-[9px]',
+                  isFeatured ? 'bg-fuchsia-500/20 text-fuchsia-300' : 'bg-zinc-800 text-zinc-400',
+                )}
+                aria-hidden
+              >
+                ✓
+              </span>
+              <span className="min-w-0 flex-1">{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className={cn('mt-auto shrink-0', mobile ? 'pt-5' : 'mt-6')}>
+        {tier.contactOnly ? (
+          <button
+            type="button"
+            onClick={handleCta}
+            className={cn(
+              'landing-btn-secondary landing-pricing-card__cta w-full',
+              mobile ? 'min-h-[2.5rem] text-[13px]' : 'text-xs',
+            )}
+          >
+            {tier.cta}
+          </button>
+        ) : (
+          <GoogleSignInButton
+            label={tier.cta}
+            variant={isFeatured ? 'gradient' : 'outline'}
+            size="md"
+            className="landing-pricing-card__cta !w-full"
+          />
+        )}
+      </div>
     </article>
   )
 }

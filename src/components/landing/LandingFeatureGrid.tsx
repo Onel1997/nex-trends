@@ -18,14 +18,14 @@ export function LandingFeatureGrid() {
         />
       </LandingReveal>
 
-      <div className="mt-8 grid w-full min-w-0 grid-cols-1 gap-3 sm:mt-14 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+      <div className="mt-7 grid w-full min-w-0 grid-cols-1 gap-3.5 sm:mt-14 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
         {LANDING_FEATURES.map((feature, index) => {
           const { Icon, title, description, benefit, premium, status } = feature
           return (
             <LandingReveal key={feature.id} delay={60 + index * 50}>
               <article
                 className={cn(
-                  'landing-glass-card group relative flex h-full flex-col overflow-hidden rounded-2xl p-5 sm:p-6',
+                  'landing-glass-card group relative flex h-full flex-col overflow-hidden rounded-xl p-4 sm:rounded-2xl sm:p-6',
                   premium && 'landing-glass-card--cyan',
                 )}
               >

@@ -1,54 +1,24 @@
-import { useCallback, useEffect, useState } from 'react'
 import { DashboardSkeleton } from '@/components/ui/Skeleton'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
 import { OnboardingTip } from '@/components/onboarding/OnboardingTip'
+import { DashboardWorkspace } from '@/components/dashboard/workspace'
 import {
-  DashboardActivityTimeline,
-  DashboardCoreProducts,
   DashboardCreditsStrip,
   DashboardHero,
   DashboardLazySection,
-  DashboardLibrarySection,
   DashboardQuickActions,
-  DashboardUsageOverview,
 } from '@/components/dashboard/os'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
-import { useDashboardUsageOverview } from '@/hooks/useDashboardUsageOverview'
-import { useSavedHooks } from '@/hooks/useSavedHooks'
-import { getMergedDashboardActivity } from '@/lib/dashboard-activity'
 import type { DashboardToolId } from '@/lib'
-import type { ActivityItem } from '@/types/dashboard'
 
 type DashboardPageProps = {
   onNavigate: (tool: DashboardToolId) => void
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const { isLoading, error, user, weeklyUsage, usage, refresh } = useDashboardData()
-  const { stats, videos, loadingVideos } = useDashboardStats(weeklyUsage)
-  const { savedHooks } = useSavedHooks()
-  const usageOverview = useDashboardUsageOverview(savedHooks, usage)
-
-  const [activityFeed, setActivityFeed] = useState<ActivityItem[]>(() =>
-    getMergedDashboardActivity(),
-  )
-
-  const refreshActivity = useCallback(() => {
-    setActivityFeed(getMergedDashboardActivity())
-  }, [])
-
-  useEffect(() => {
-    if (!isLoading) refreshActivity()
-  }, [isLoading, usage.used, savedHooks.length, refreshActivity])
-
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') refreshActivity()
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [refreshActivity])
+  const { isLoading, error, user, weeklyUsage, refresh } = useDashboardData()
+  const { stats } = useDashboardStats(weeklyUsage)
 
   if (isLoading) {
     return <DashboardSkeleton />
@@ -76,23 +46,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
 
         <DashboardQuickActions onNavigate={onNavigate} />
 
-        <DashboardUsageOverview data={usageOverview} />
-
-        <DashboardCoreProducts onNavigate={onNavigate} />
-
-        <DashboardLazySection minHeight="14rem" className="dashboard-os-workspace-wrap">
-          <div className="dashboard-os-workspace">
-            <DashboardLibrarySection
-              videos={videos}
-              videosLoading={loadingVideos}
-              onNavigate={onNavigate}
-            />
-            <DashboardActivityTimeline
-              activities={activityFeed}
-              onNavigate={onNavigate}
-            />
-          </div>
-        </DashboardLazySection>
+        <DashboardWorkspace onNavigate={onNavigate} />
 
         <DashboardLazySection minHeight="10rem">
           <DashboardCreditsStrip />
