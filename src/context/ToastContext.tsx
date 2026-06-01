@@ -136,6 +136,11 @@ export function useToast() {
   return ctx
 }
 
+/** Safe toast access — returns null outside ToastProvider (avoids breaking CTAs). */
+export function useOptionalToast(): ToastContextValue | null {
+  return useContext(ToastContext)
+}
+
 function ToastViewport({
   toasts,
   onDismiss,

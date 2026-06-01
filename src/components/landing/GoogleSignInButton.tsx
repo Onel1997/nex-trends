@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib'
 import { signInWithGoogle } from '@/lib/auth'
+import { useOptionalToast } from '@/context/ToastContext'
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -38,7 +39,11 @@ type GoogleSignInButtonProps = {
   size?: 'md' | 'lg'
   /** Compact hero CTA — sizing comes from `.landing-hero-cta` */
   layout?: 'default' | 'hero'
+  /** Show toast notifications on error (requires ToastProvider). */
+  useToast?: boolean
 }
+
+const LOADING_RESET_MS = 4000
 
 export function GoogleSignInButton({
   label = 'Kostenlos mit Google starten',
@@ -46,32 +51,105 @@ export function GoogleSignInButton({
   className,
   size = 'lg',
   layout = 'default',
+  useToast: useToastNotifications = false,
 }: GoogleSignInButtonProps) {
   const isHero = layout === 'hero'
+  const toastApi = useOptionalToast()
+  const toast = useToastNotifications ? toastApi : null
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const inFlightRef = useRef(false)
+  const resetTimerRef = useRef<number | null>(null)
 
-  async function handleClick() {
+  const clearResetTimer = useCallback(() => {
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current)
+      resetTimerRef.current = null
+    }
+  }, [])
+
+  useEffect(() => clearResetTimer, [clearResetTimer])
+
+  const scheduleLoadingReset = useCallback(() => {
+    clearResetTimer()
+    resetTimerRef.current = window.setTimeout(() => {
+      inFlightRef.current = false
+      setIsLoading(false)
+    }, LOADING_RESET_MS)
+  }, [clearResetTimer])
+
+  const handleClick = useCallback(async () => {
+    if (inFlightRef.current) return
+
+    inFlightRef.current = true
     setIsLoading(true)
     setErrorMessage(null)
+    scheduleLoadingReset()
 
-    const { error, message } = await signInWithGoogle()
+    const loadingId = toast?.showLoadingToast(
+      'Google-Anmeldung',
+      'Weiterleitung zu Google …',
+    )
 
-    if (error) {
-      setErrorMessage(message)
+    try {
+      const { error, message } = await signInWithGoogle()
+
+      if (loadingId && toast) {
+        toast.dismissToast(loadingId)
+      }
+
+      if (error) {
+        clearResetTimer()
+        inFlightRef.current = false
+        setIsLoading(false)
+        setErrorMessage(message)
+        if (toast && message) {
+          toast.showToast({
+            type: 'error',
+            title: 'Anmeldung fehlgeschlagen',
+            message,
+            durationMs: 8000,
+          })
+        }
+        return
+      }
+
+      // Successful OAuth — browser navigates away; keep loading UI until redirect.
+    } catch (err) {
+      clearResetTimer()
+      inFlightRef.current = false
       setIsLoading(false)
+
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Anmeldung fehlgeschlagen. Bitte erneut versuchen.'
+
+      setErrorMessage(message)
+      if (toast) {
+        toast.showToast({
+          type: 'error',
+          title: 'Anmeldung fehlgeschlagen',
+          message,
+          durationMs: 8000,
+        })
+      }
     }
-  }
+  }, [clearResetTimer, scheduleLoadingReset, toast])
 
   return (
-    <>
+    <div className="google-sign-in-btn-wrap w-full sm:w-auto">
       <button
         type="button"
         onClick={() => void handleClick()}
-        disabled={isLoading}
+        aria-busy={isLoading}
         className={cn(
-          'nex-btn inline-flex items-center justify-center whitespace-nowrap font-semibold tracking-[-0.01em] disabled:opacity-60',
+          'google-sign-in-btn nex-btn inline-flex cursor-pointer items-center justify-center whitespace-nowrap font-semibold tracking-[-0.01em]',
+          'touch-manipulation select-none [-webkit-tap-highlight-color:transparent]',
+          'transition-transform duration-200 active:scale-[0.98]',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-400/50',
+          isLoading && 'cursor-wait opacity-90',
           isHero
             ? 'w-full gap-2 leading-none sm:w-auto'
             : 'w-full justify-center gap-2.5 rounded-[10px] sm:w-auto',
@@ -82,17 +160,18 @@ export function GoogleSignInButton({
             variant === 'white' &&
             'border border-zinc-700/60 bg-white text-zinc-900 hover:border-zinc-600 hover:bg-zinc-50',
           !isHero && variant === 'outline' && 'nex-btn--secondary',
+          isHero && variant === 'gradient' && 'landing-btn-primary',
           className,
         )}
       >
         <GoogleIcon className={isHero ? 'landing-hero-cta__icon' : undefined} />
         {isLoading ? 'Weiterleitung…' : label}
       </button>
-      {errorMessage && (
+      {errorMessage ? (
         <p className="mt-2 text-xs text-red-400" role="alert">
           {errorMessage}
         </p>
-      )}
-    </>
+      ) : null}
+    </div>
   )
 }

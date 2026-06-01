@@ -31,7 +31,12 @@ export function LandingReveal({
   return (
     <div
       ref={ref}
-      className={cn('landing-reveal', visible && 'landing-reveal--visible', className)}
+      className={cn(
+        'landing-reveal',
+        visible && 'landing-reveal--visible',
+        !visible && 'landing-reveal--hidden',
+        className,
+      )}
       style={
         {
           '--landing-reveal-delay': `${delay}ms`,

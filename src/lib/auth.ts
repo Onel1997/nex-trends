@@ -299,17 +299,41 @@ export async function signInWithGoogle(): Promise<AuthActionResult> {
 
   const redirectTo = getGoogleOAuthRedirectUrl()
 
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo,
-      skipBrowserRedirect: false,
+      // Manual redirect keeps the user gesture chain intact (Safari/iOS) and avoids
+      // a stuck loading state when the client auto-redirect silently fails.
+      skipBrowserRedirect: true,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'select_account',
+      },
     },
   })
 
+  if (error) {
+    return {
+      error,
+      message: formatAuthError(error),
+    }
+  }
+
+  if (data?.url) {
+    window.location.assign(data.url)
+    return { error: null, message: null }
+  }
+
+  const fallbackMessage =
+    'Google-Anmeldung konnte nicht gestartet werden. Bitte erneut versuchen.'
   return {
-    error,
-    message: error ? formatAuthError(error) : null,
+    error: {
+      message: fallbackMessage,
+      name: 'AuthRedirectError',
+      status: 500,
+    } as AuthError,
+    message: fallbackMessage,
   }
 }
 

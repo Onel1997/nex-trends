@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { createUnconfiguredSupabaseClient } from '@/lib/supabase/unconfigured'
-import { readEnv } from '@/lib/env'
+import { getSupabaseEnvStatus, logSupabaseEnvStatus, readEnv } from '@/lib/env'
 
 /** Resolved hosted project URL — empty string when env is missing. */
 export const SUPABASE_URL =
@@ -12,6 +12,9 @@ let client: SupabaseClient | null | undefined
 function getClient(): SupabaseClient {
   if (client === undefined) {
     client = createSupabaseBrowserClient()
+    if (!client) {
+      logSupabaseEnvStatus('supabase')
+    }
   }
 
   if (!client) {
@@ -44,8 +47,5 @@ export function isLocalSupabaseUrl(url = SUPABASE_URL): boolean {
 }
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(
-    SUPABASE_URL &&
-      readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'VITE_SUPABASE_ANON_KEY'),
-  )
+  return getSupabaseEnvStatus().configured
 }

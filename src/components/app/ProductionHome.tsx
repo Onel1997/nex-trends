@@ -9,7 +9,7 @@ export default function ProductionHome() {
     <div className="landing-page">
       <LandingAmbientBackground />
 
-      <div className="landing-page-content">
+      <div className="landing-page-content landing-page-interactive">
         <main className="landing-page-main">
           <NexTrendsHero demoHref="#dashboard" showTrustBadge={false} />
           <LandingDashboardSection />

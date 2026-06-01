@@ -27,6 +27,7 @@ import {
   logGenerationUsage,
   type UsageGenerationMeta,
 } from '@/lib/usage'
+import { syncUserProfile } from '@/lib/auth/profile'
 import { supabase } from '@/lib/supabase'
 import { normalizePlanId, type BillingPeriod, type PlanId } from '@/lib/plans'
 import type { UserProfile } from '@/types/subscription'
@@ -255,6 +256,7 @@ export function SubscriptionProvider({
         setIsAuthLoading(false)
 
         if (initialSession?.user?.id) {
+          void syncUserProfile(initialSession.user)
           void loadProfileForUser(initialSession.user.id)
         } else {
           setProfile(null)
@@ -290,6 +292,9 @@ export function SubscriptionProvider({
       if (event === 'TOKEN_REFRESHED') return
 
       if (nextSession?.user?.id) {
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          void syncUserProfile(nextSession.user)
+        }
         void loadProfileForUser(nextSession.user.id)
       } else {
         setProfile(null)

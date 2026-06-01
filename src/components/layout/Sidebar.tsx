@@ -1,7 +1,11 @@
+import { useState } from 'react'
+import { UserAvatar } from '@/components/auth/UserAvatar'
 import { LogOutIcon, ToolIcon } from '@/components/ui/icons'
 import { SidebarCreditsCard } from '@/components/subscription/SidebarCreditsCard'
+import { useToast } from '@/context/ToastContext'
 import { APP_NAME, type DashboardToolId } from '@/lib'
 import { cn } from '@/lib'
+import { getUserAvatarUrl, getUserDisplayName } from '@/lib/auth/profile'
 import { navigateToHome, navigateToTool } from '@/lib/navigation'
 import { getRouteConfig } from '@/lib/routes'
 import { SIDEBAR_LIBRARY_ROUTES, SIDEBAR_SECTIONS } from '@/lib/sidebar-navigation'
@@ -107,10 +111,33 @@ function SidebarNavItem({ routeId, isActive, isLibrary, onSelect }: NavItemProps
 }
 
 export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
-  const { isAdmin } = useSubscription()
+  const { isAdmin, session } = useSubscription()
+  const { showToast } = useToast()
+  const [isSigningOut, setIsSigningOut] = useState(false)
 
-  const handleLogout = () => {
-    void supabase.auth.signOut()
+  const user = session?.user ?? null
+  const displayName = user ? getUserDisplayName(user) : null
+  const avatarUrl = user ? getUserAvatarUrl(user) : null
+  const email = user?.email ?? null
+
+  const handleLogout = async () => {
+    if (isSigningOut) return
+    setIsSigningOut(true)
+
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      showToast({
+        type: 'error',
+        title: 'Abmelden fehlgeschlagen',
+        message: error.message,
+        durationMs: 6000,
+      })
+      setIsSigningOut(false)
+      return
+    }
+
+    window.location.replace('/')
   }
 
   return (
@@ -177,14 +204,17 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
                 <li>
                   <button
                     type="button"
-                    onClick={handleLogout}
+                    onClick={() => void handleLogout()}
+                    disabled={isSigningOut}
                     className={cn(
                       'group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-normal text-zinc-500 transition-smooth',
-                      'hover:bg-red-500/[0.06] hover:text-red-300/90 active:scale-[0.98]',
+                      'hover:bg-red-500/[0.06] hover:text-red-300/90 active:scale-[0.98] disabled:opacity-50',
                     )}
                   >
                     <LogOutIcon className="size-[17px] shrink-0 text-zinc-600 group-hover:text-red-400/80" />
-                    <span className="truncate tracking-tight">Logout</span>
+                    <span className="truncate tracking-tight">
+                      {isSigningOut ? 'Abmelden …' : 'Logout'}
+                    </span>
                   </button>
                 </li>
               )}
@@ -200,6 +230,18 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
 
       {/* Footer */}
       <div className="shrink-0 space-y-3 border-t border-white/[0.04] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {displayName && (
+          <div className="flex items-center gap-3 rounded-xl border border-white/[0.04] bg-zinc-900/40 px-3 py-2.5">
+            <UserAvatar name={displayName} avatarUrl={avatarUrl} size="sm" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-medium text-white">{displayName}</p>
+              {email ? (
+                <p className="truncate text-[11px] text-zinc-500">{email}</p>
+              ) : null}
+            </div>
+          </div>
+        )}
+
         <SidebarCreditsCard onUpgrade={() => navigateToTool('pricing')} />
 
         {isAdmin && (

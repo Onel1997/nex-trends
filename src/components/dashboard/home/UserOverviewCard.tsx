@@ -1,3 +1,4 @@
+import { UserAvatar } from '@/components/auth/UserAvatar'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardBody } from '@/components/ui/Card'
 import { CrownIcon } from '@/components/ui/icons'
@@ -19,8 +20,13 @@ export function UserOverviewCard() {
       <CardBody className="py-6 sm:py-7">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl gradient-accent text-lg font-bold text-white shadow-lg shadow-violet-900/30 ring-1 ring-white/10">
-              {user.avatarInitials}
+            <div className="relative shrink-0">
+              <UserAvatar
+                name={user.name}
+                avatarUrl={user.avatarUrl}
+                size="lg"
+                className="rounded-2xl"
+              />
               {(isAdmin || hasProAccess) && (
                 <span
                   className={cn(

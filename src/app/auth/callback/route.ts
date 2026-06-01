@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { readEnv } from '@/lib/env'
+import { logSupabaseEnvStatus, readEnv } from '@/lib/env'
+import { extractUserProfileFields } from '@/lib/auth/profile'
 
 const AUTH_LOGIN_PATH = '/login'
 const AUTH_SUCCESS_PATH = '/dashboard'
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
     )
 
     if (!supabaseUrl || !supabaseAnonKey) {
+      logSupabaseEnvStatus('auth/callback')
       return loginRedirect(origin, 'Supabase ist nicht konfiguriert.')
     }
 
@@ -61,6 +63,28 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       return loginRedirect(origin, error.message)
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (user) {
+      const profile = extractUserProfileFields(user)
+      const { error: profileError } = await supabase.from('profiles').upsert(
+        {
+          id: profile.id,
+          email: profile.email,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          created_at: profile.created_at,
+        },
+        { onConflict: 'id' },
+      )
+
+      if (profileError) {
+        console.error('[auth/callback] Profile upsert failed:', profileError.message)
+      }
     }
 
     return response

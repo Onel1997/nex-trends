@@ -3,6 +3,7 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { getRecentActivities } from '@/lib/activity'
 import { MAX_FREE_CREDITS } from '@/lib/constants'
 import { PLAN_LABELS } from '@/lib/plans'
+import { getUserAvatarUrl, getUserDisplayName } from '@/lib/auth/profile'
 import { resolveUserPlan } from '@/lib/subscription'
 import { startStripePortalFlow } from '@/lib/stripe'
 import { formatUsageResetDate } from '@/lib/usage'
@@ -68,8 +69,8 @@ export function useDashboardData() {
     if (!session?.user) return null
 
     const email = session.user.email ?? 'Unbekannt'
-    const meta = session.user.user_metadata as { full_name?: string; name?: string }
-    const name = meta.full_name ?? meta.name ?? email.split('@')[0] ?? 'User'
+    const name = getUserDisplayName(session.user)
+    const avatarUrl = getUserAvatarUrl(session.user)
     const initials = name
       .split(' ')
       .map((part) => part[0])
@@ -77,7 +78,7 @@ export function useDashboardData() {
       .slice(0, 2)
       .toUpperCase()
 
-    return { name, email, avatarInitials: initials || 'NT' }
+    return { name, email, avatarInitials: initials || 'NT', avatarUrl }
   }, [session?.user])
 
   const weeklyUsage: WeeklyUsagePoint[] = useMemo(() => {

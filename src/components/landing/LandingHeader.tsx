@@ -55,7 +55,7 @@ export function LandingHeader() {
   }, [])
 
   return (
-    <header className="landing-header sticky top-0 z-50 px-3 pt-2 sm:px-4 sm:pt-4">
+    <header className="landing-header pointer-events-auto sticky top-0 z-50 px-3 pt-2 sm:px-4 sm:pt-4">
       <div
         className={cn(
           'landing-nav-shell mx-auto flex max-w-6xl items-center justify-between gap-2 rounded-xl border px-2.5 transition-all duration-500 sm:gap-3 sm:rounded-2xl sm:px-4',
@@ -97,7 +97,10 @@ export function LandingHeader() {
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <button
             type="button"
-            onClick={() => handleNav('login')}
+            onClick={() => {
+              setMobileOpen(false)
+              window.location.href = '/login'
+            }}
             className="landing-btn-secondary hidden !min-h-9 !rounded-xl !px-3.5 !py-2 !text-[13px] lg:inline-flex"
           >
             Anmelden
@@ -105,6 +108,7 @@ export function LandingHeader() {
           <GoogleSignInButton
             label="Starten"
             size="md"
+            useToast
             className="landing-btn-primary hidden lg:inline-flex !w-auto !min-h-9 !rounded-xl !px-4 !py-2 !text-[13px]"
           />
           <button
@@ -142,14 +146,17 @@ export function LandingHeader() {
             <li>
               <button
                 type="button"
-                onClick={() => handleNav('login')}
+                onClick={() => {
+                  setMobileOpen(false)
+                  window.location.href = '/login'
+                }}
                 className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-300 transition-all duration-300 hover:bg-white/[0.05] hover:text-white"
               >
                 Anmelden
               </button>
             </li>
             <li className="pt-2">
-              <GoogleSignInButton size="md" className="!w-full" />
+              <GoogleSignInButton size="md" useToast className="!w-full" />
             </li>
           </ul>
         </nav>

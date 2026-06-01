@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AuthGuard } from '@/components/auth/AuthGuard'
 import { getBrowserPathname, isBrowser } from '@/lib/runtime'
 import { DashboardLayout } from '@/components'
 import { DashboardMain } from '@/components/dashboard/DashboardMain'
@@ -62,7 +63,7 @@ export function HomePage() {
   }
 
   return (
-    <>
+    <AuthGuard>
       <DashboardLayout activeTool={activeTool} onSelectTool={handleSelectTool}>
         <DashboardMain activeTool={activeTool} onSelectTool={handleSelectTool} />
       </DashboardLayout>
@@ -70,6 +71,6 @@ export function HomePage() {
         <OnboardingOverlay onNavigate={handleSelectTool} />
       )}
       <UpgradeModal />
-    </>
+    </AuthGuard>
   )
 }

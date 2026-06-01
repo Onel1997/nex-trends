@@ -1,12 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server'
+import { type NextRequest } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
 
-/** Passthrough only — no Supabase session refresh (avoids Edge/runtime crashes). */
-export function middleware(_request: NextRequest) {
-  return NextResponse.next()
+export async function middleware(request: NextRequest) {
+  return updateSession(request)
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|.*\\.[\\w]+$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|.*\\.[\\w]+$).*)'],
 }

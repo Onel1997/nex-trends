@@ -2,6 +2,24 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { readEnv } from '@/lib/env'
 
+const AUTH_LOGIN_PATH = '/login'
+const AUTH_CALLBACK_PATH = '/auth/callback'
+const DASHBOARD_PREFIX = '/dashboard'
+
+function isProtectedPath(pathname: string): boolean {
+  return (
+    pathname === DASHBOARD_PREFIX ||
+    pathname.startsWith(`${DASHBOARD_PREFIX}/`) ||
+    pathname === '/billing/success' ||
+    pathname === '/billing/cancel'
+  )
+}
+
+function isPublicAuthPath(pathname: string): boolean {
+  const normalized = pathname.replace(/\/$/, '') || '/'
+  return normalized === AUTH_LOGIN_PATH || normalized === AUTH_CALLBACK_PATH
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -14,6 +32,8 @@ export async function updateSession(request: NextRequest) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return supabaseResponse
   }
+
+  const pathname = request.nextUrl.pathname
 
   try {
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -35,9 +55,42 @@ export async function updateSession(request: NextRequest) {
       },
     })
 
-    await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (isProtectedPath(pathname) && !user) {
+      const loginUrl = request.nextUrl.clone()
+      loginUrl.pathname = AUTH_LOGIN_PATH
+      loginUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`)
+      loginUrl.searchParams.delete('code')
+      loginUrl.searchParams.delete('state')
+      return NextResponse.redirect(loginUrl)
+    }
+
+    if (user && pathname.replace(/\/$/, '') === AUTH_LOGIN_PATH) {
+      const next = request.nextUrl.searchParams.get('next')
+      const destination =
+        next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
+      const dashboardUrl = request.nextUrl.clone()
+      dashboardUrl.pathname = destination.split('?')[0] ?? '/dashboard'
+      dashboardUrl.search = ''
+      return NextResponse.redirect(dashboardUrl)
+    }
+
+    if (user && pathname === '/' && request.nextUrl.searchParams.has('code')) {
+      const callbackUrl = request.nextUrl.clone()
+      callbackUrl.pathname = AUTH_CALLBACK_PATH
+      return NextResponse.redirect(callbackUrl)
+    }
   } catch (error) {
     console.error('[middleware] Supabase session refresh failed:', error)
+
+    if (isProtectedPath(pathname) && !isPublicAuthPath(pathname)) {
+      const loginUrl = request.nextUrl.clone()
+      loginUrl.pathname = AUTH_LOGIN_PATH
+      return NextResponse.redirect(loginUrl)
+    }
   }
 
   return supabaseResponse

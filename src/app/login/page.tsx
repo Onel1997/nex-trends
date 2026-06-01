@@ -1,6 +1,12 @@
-import ProductionHome from '@/components/app/ProductionHome'
+'use client'
 
-/** Login route — same reliable shell until full auth UI is re-enabled. */
+import { AppProviders } from '@/components/app/AppProviders'
+import AuthPage from '@/views/AuthPage'
+
 export default function LoginPage() {
-  return <ProductionHome />
+  return (
+    <AppProviders>
+      <AuthPage />
+    </AppProviders>
+  )
 }

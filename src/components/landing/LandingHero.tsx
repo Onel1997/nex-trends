@@ -12,6 +12,7 @@ export function LandingHero() {
         showTrustBadge={false}
         primaryCta={
           <GoogleSignInButton
+            useToast
             label="Kostenlos starten"
             variant="gradient"
             layout="hero"

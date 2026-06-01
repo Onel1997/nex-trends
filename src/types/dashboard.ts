@@ -35,4 +35,5 @@ export type DashboardUser = {
   name: string
   email: string
   avatarInitials: string
+  avatarUrl?: string | null
 }

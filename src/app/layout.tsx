@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { RootProviders } from '@/components/app/RootProviders'
 import './globals.css'
 
 export const viewport: Viewport = {
@@ -50,7 +51,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <RootProviders>{children}</RootProviders>
+      </body>
     </html>
   )
 }

@@ -5456,29 +5456,67 @@ html.nex-reduced-motion *::after {
   /* Let content define height — avoid viewport-height scroll traps on iOS */
   min-height: 0;
   overflow: visible;
-  isolation: isolate;
 }
 
-/* Decorative layer — fixed on desktop; absolute on mobile to avoid iOS stacking bugs */
+/*
+ * Ambient decor — in-flow absolute layer (never intercepts taps).
+ * position:fixed on iOS Safari paints a fullscreen compositor layer that blocks
+ * touches even with pointer-events:none on children. Use fixed only on fine-pointer desktop.
+ */
 .landing-ambient {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   width: 100%;
   height: 100%;
-  max-height: 100vh;
-  max-height: 100dvh;
-  pointer-events: none;
+  min-height: 100%;
+  pointer-events: none !important;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   overflow: hidden;
 }
 
-.landing-page-content {
+@media (hover: hover) and (pointer: fine) {
+  .landing-ambient {
+    position: fixed;
+    max-height: 100vh;
+    max-height: 100dvh;
+  }
+}
+
+/* Parent pointer-events:none does NOT apply to descendants — block all decor hit targets */
+.landing-decor-layer,
+.landing-ambient,
+.landing-ambient *,
+.landing-hero-decor,
+.landing-hero-decor *,
+.landing-hero__bg,
+.landing-hero-particles,
+.landing-hero-particles *,
+.landing-hero-particle,
+.landing-hero-orb,
+.landing-page-ambient,
+.landing-ambient-orb,
+.landing-ambient-grid,
+.landing-section-glow,
+.hero-glow-orb,
+.landing-studio__gradient,
+.landing-sticky-band__shimmer {
+  pointer-events: none !important;
+  touch-action: none;
+}
+
+/* Interactive shell — always above decor (DOM order + z-index + compositor layer) */
+.landing-page-content,
+.landing-page-interactive {
   position: relative;
   z-index: 1;
   width: 100%;
   min-width: 0;
   overflow: visible;
-  isolation: isolate;
+  pointer-events: auto;
+  -webkit-transform: translateZ(0);
   transform: translateZ(0);
 }
 
@@ -5494,6 +5532,23 @@ html.nex-reduced-motion *::after {
   display: block;
   width: 100%;
   overflow: visible;
+  pointer-events: auto;
+}
+
+.landing-header {
+  position: relative;
+  z-index: 50;
+  pointer-events: auto;
+}
+
+.landing-page-interactive :is(a, button, input, select, textarea, [role='button'], label) {
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.landing-section-premium {
+  pointer-events: auto;
 }
 
 .landing-hero-unified {
@@ -5624,6 +5679,11 @@ html.nex-reduced-motion *::after {
   transition-delay: var(--landing-reveal-delay, 0ms);
 }
 
+/* Invisible reveal wrappers must not block taps (opacity:0 still receives hits) */
+.landing-reveal--hidden {
+  pointer-events: none !important;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .landing-reveal {
     will-change: opacity, transform;
@@ -5633,6 +5693,7 @@ html.nex-reduced-motion *::after {
 .landing-reveal--visible {
   opacity: 1;
   transform: translate3d(0, 0, 0);
+  pointer-events: auto;
 }
 
 .landing-count-up {
@@ -6171,6 +6232,8 @@ html.nex-reduced-motion *::after {
 /* ── Hero CTA row (equal-width mobile, premium spacing) ── */
 
 .landing-hero-ctas {
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -6478,7 +6541,8 @@ html.nex-reduced-motion *::after {
 /* ── Hero floating particles ── */
 
 .landing-hero-particles {
-  z-index: 1;
+  z-index: 0;
+  pointer-events: none;
   mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, black 15%, transparent 72%);
 }
 
@@ -6873,14 +6937,22 @@ html.nex-reduced-motion *::after {
 
 /* Lighter motion on small screens — fewer particles, gentler float */
 @media (max-width: 639px) {
-  /* iOS Safari: fixed ambient can paint above transparent sections */
+  /* Touch devices: never use fixed ambient (iOS Safari tap blocker) */
   .landing-ambient {
-    position: absolute;
+    position: absolute !important;
     inset: 0;
+    z-index: 0;
     width: 100%;
     height: 100%;
     min-height: 100%;
     max-height: none;
+    pointer-events: none !important;
+    touch-action: none;
+  }
+
+  .landing-page-interactive {
+    z-index: 1;
+    pointer-events: auto !important;
   }
 
   .landing-ambient-orb {
@@ -6900,6 +6972,11 @@ html.nex-reduced-motion *::after {
   .landing-reveal:not(.landing-reveal--visible) {
     opacity: 1;
     transform: none;
+    pointer-events: auto;
+  }
+
+  .landing-reveal--hidden {
+    pointer-events: auto !important;
   }
 
   .landing-count-up:not(.landing-count-up--active) {
@@ -6964,18 +7041,52 @@ html.nex-reduced-motion *::after {
 
 }
 
-/* iOS WebKit: same fixed-layer stacking fix for phones/tablets */
+/* iOS / touch WebKit: force in-flow ambient + interactive compositor layer */
 @supports (-webkit-touch-callout: none) {
-  @media (max-width: 1023px) {
-    .landing-ambient {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      min-height: 100%;
-      max-height: none;
-    }
+  .landing-ambient {
+    position: absolute !important;
+    pointer-events: none !important;
+    touch-action: none !important;
   }
+
+  .landing-page-interactive,
+  .landing-hero-interactive {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto !important;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Coarse pointer (phones, tablets) — never fixed fullscreen ambient */
+@media (hover: none), (pointer: coarse) {
+  .landing-ambient {
+    position: absolute !important;
+    max-height: none;
+    pointer-events: none !important;
+    touch-action: none;
+  }
+}
+
+/*
+ * Debug hit-test overlays — add class `landing-page--debug-hits` on .landing-page in DevTools
+ * Red = ambient, orange = hero decor. These must NOT receive taps when fixed.
+ */
+.landing-page--debug-hits .landing-ambient {
+  outline: 3px solid rgb(239 68 68);
+  outline-offset: -3px;
+  background: rgb(239 68 68 / 0.08) !important;
+}
+
+.landing-page--debug-hits .landing-hero-decor {
+  outline: 3px solid rgb(249 115 22);
+  background: rgb(249 115 22 / 0.06) !important;
+}
+
+.landing-page--debug-hits .landing-page-interactive {
+  outline: 2px dashed rgb(52 211 153);
+  outline-offset: 4px;
 }
 
 /* ── Dashboard workspace (post-login) ── */

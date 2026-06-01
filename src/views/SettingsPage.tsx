@@ -183,7 +183,11 @@ export function SettingsPage() {
           <Button
             variant="ghost"
             fullWidth
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => {
+              void supabase.auth.signOut().then(() => {
+                window.location.replace('/')
+              })
+            }}
             className="btn-press justify-start text-zinc-300 hover:text-white"
           >
             <LogOutIcon className="size-4" aria-hidden />

@@ -82,11 +82,16 @@ export function NexTrendsHero({
         className,
       )}
     >
-      <div className="landing-hero-decor pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <div
+        className="landing-hero-decor landing-decor-layer pointer-events-none absolute inset-0 overflow-hidden"
+        aria-hidden
+        inert
+        data-decor="hero"
+      >
         <LandingHeroParticles />
-        <div className="landing-hero__bg absolute inset-0" />
+        <div className="landing-hero__bg landing-decor-layer absolute inset-0" />
         <div
-          className="absolute inset-0 opacity-[0.35]"
+          className="landing-decor-layer pointer-events-none absolute inset-0 opacity-[0.35]"
           style={{
             backgroundImage: `linear-gradient(rgb(255 255 255 / 0.02) 1px, transparent 1px),
             linear-gradient(90deg, rgb(255 255 255 / 0.02) 1px, transparent 1px)`,
@@ -136,7 +141,8 @@ export function NexTrendsHero({
       {/* Hero content */}
       <div
         className={cn(
-          'relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center',
+          'landing-hero-interactive relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center',
+          'pointer-events-auto',
           'px-4 text-center sm:px-6 lg:px-8',
           showNav
             ? 'pt-12 pb-14 sm:pt-16 sm:pb-16 md:pt-20 md:pb-20'
