@@ -58,20 +58,28 @@ export function buildHookSystemPrompt(tone: string, platform: string): string {
   const toneDesc = HOOK_TONE_LABELS[toneKey] ?? HOOK_TONE_LABELS.aggressive;
   const platformHint = PLATFORM_HINTS[platformKey] ?? PLATFORM_HINTS.Universal;
 
-  return `Du bist ein Elite Viral Hook Copywriter für Kurzform-Content (TikTok, Reels, Shorts, Ads) im DACH-Market.
+  return `Du bist ein Elite Viral Hook Copywriter für Creator im DACH-Market (TikTok, Instagram Reels, YouTube Shorts).
 
-Schreibe Scroll-Stopper-Hooks im Ton: ${toneDesc}.
-Optimiert für Plattform: ${platformKey} — ${platformHint}.
+Zielgruppe: Solo-Creator, UGC-Brands und Performance-Marketer — keine Corporate-Sprache.
 
-Anforderungen:
-- Genau 10 einzigartige Hooks — jeder klar unterscheidbar
-- Scroll-Stopper für die ersten 1–3 Sekunden
-- TikTok/Reels-native Formulierung (POV, direkte Ansprache, offene Loops)
-- Hohe Retention durch Neugier — kein generischer Marketing-Sprech
-- Max 120 Zeichen pro Hook, keine Hashtags, Deutsch
-- Hooks müssen zum Thema passen und conversion-stark sein
+Ton: ${toneDesc}
+Plattform: ${platformKey} — ${platformHint}
 
-Antworte NUR mit JSON: {"hooks":["hook1","hook2",...,"hook10"]}`;
+Schreibe genau 10 Hooks, die:
+- in Sekunde 1 emotional triggern (Neugier, Schock, Identifikation, FOMO, Kontrast)
+- wie ein echter Creator klingen — nicht wie Werbung oder LinkedIn
+- Retention maximieren: offene Loops, POV, „Wait for it“, direkte Du-Ansprache, Pattern Interrupts
+- modern & 2025/2026-native sind (keine veralteten Clickbait-Klischees wie „Du glaubst nicht…“)
+- plattformspezifisch denkbar sind (Overlay-Text, Voice-over, erste Frame-Idee implizit)
+- zum Thema/Nische passen und sofort filmbar sind
+
+Stil-Regeln:
+- Max 120 Zeichen pro Hook
+- Deutsch, keine Hashtags, keine Emojis
+- Jeder Hook muss sich klar von den anderen unterscheiden (anderer Angle)
+- Keine generischen Floskeln („In diesem Video zeige ich…“, „Hier sind 5 Tipps…“)
+
+Antworte NUR mit gültigem JSON: {"hooks":["hook1","hook2",...,"hook10"]}`;
 }
 
 export function buildHookUserMessage(input: HookGenerationInput): string {

@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { logSupabaseEnvStatus, readEnv } from '@/lib/env'
-import { extractUserProfileFields } from '@/lib/auth/profile'
+import { syncUserProfile } from '@/lib/auth/profile'
 
 const AUTH_LOGIN_PATH = '/login'
 const AUTH_SUCCESS_PATH = '/dashboard'
@@ -70,21 +70,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (user) {
-      const profile = extractUserProfileFields(user)
-      const { error: profileError } = await supabase.from('profiles').upsert(
-        {
-          id: profile.id,
-          email: profile.email,
-          full_name: profile.full_name,
-          avatar_url: profile.avatar_url,
-          created_at: profile.created_at,
-        },
-        { onConflict: 'id' },
-      )
-
-      if (profileError) {
-        console.error('[auth/callback] Profile upsert failed:', profileError.message)
-      }
+      await syncUserProfile(user)
     }
 
     return response

@@ -3,6 +3,7 @@ import {
   retryVideoJob,
   strategyProgressDetail,
 } from '@/lib/video-api'
+import { isVideoDebugEnabled } from '@/lib/runtime'
 import {
   logVideoPipelineError,
   PREMIUM_PIPELINE_MESSAGES,
@@ -46,11 +47,7 @@ const MAX_RETRIES = 2
 const PROGRESS_TICK_MS = 900
 
 function log(scope: string, detail?: unknown) {
-  if (
-    import.meta.env.DEV ||
-    import.meta.env.VITE_ADMIN_DEBUG === 'true' ||
-    import.meta.env.VITE_VIDEO_DEBUG === 'true'
-  ) {
+  if (isVideoDebugEnabled()) {
     console.debug(`[VideoPipeline] ${scope}`, detail ?? '')
   }
 }

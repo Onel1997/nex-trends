@@ -13,6 +13,7 @@ import {
 } from '@/lib/demo-media'
 import { probePosterQuality, probeVideoPlaybackQuality } from '@/lib/demo-video-probe'
 import { getPlaybackStartOffset } from '@/lib/demo-video-quality'
+import { isDevEnvironment } from '@/lib/runtime'
 import { markDemoVideoFailed } from '@/lib/trend-media-assignment'
 import { isLocalDemoVideo, isValidVideoUrl, probeVideoUrl } from '@/lib/video-url'
 
@@ -178,7 +179,7 @@ export function VideoPreview({
         }
       }
     } catch (err) {
-      if (import.meta.env.DEV) {
+      if (isDevEnvironment()) {
         console.warn('[VideoPreview] Playback blocked or failed:', videoUrl, err)
       }
       setIsPlaying(false)
@@ -255,7 +256,7 @@ export function VideoPreview({
     const timer = window.setTimeout(() => {
       if (!videoReady) {
         setLoadTimedOut(true)
-        if (import.meta.env.DEV) {
+        if (isDevEnvironment()) {
           console.warn('[VideoPreview] Load timeout — poster fallback', videoUrl)
         }
       }
@@ -331,7 +332,7 @@ export function VideoPreview({
         return
       }
       setVideoFailed(true)
-      if (import.meta.env.DEV) {
+      if (isDevEnvironment()) {
         console.warn('[VideoPreview] Metadata probe failed:', videoUrl)
       }
     })

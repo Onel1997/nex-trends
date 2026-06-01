@@ -1,15 +1,12 @@
 import { invokeEdgeFunction } from '@/lib/edgeFunctions'
+import { isVideoDebugEnabled } from '@/lib/runtime'
 import { formatPipelineError, type PipelineErrorPayload } from '@/lib/video-pipeline-errors'
 import type { GeneratedVideoHistoryItem, GeneratedVideoJob } from '@/types/generated-video'
 import type { StudioCreateOptions } from '@/lib/ai-studio'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 function log(scope: string, detail?: unknown) {
-  if (
-    import.meta.env.DEV ||
-    import.meta.env.VITE_ADMIN_DEBUG === 'true' ||
-    import.meta.env.VITE_VIDEO_DEBUG === 'true'
-  ) {
+  if (isVideoDebugEnabled()) {
     console.debug(`[VideoAPI] ${scope}`, detail ?? '')
   }
 }

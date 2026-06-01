@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { UserAvatar } from '@/components/auth/UserAvatar'
 import { LogOutIcon, ToolIcon } from '@/components/ui/icons'
+import { PlanBadge } from '@/components/billing/PlanBadge'
 import { SidebarCreditsCard } from '@/components/subscription/SidebarCreditsCard'
 import { useToast } from '@/context/ToastContext'
 import { APP_NAME, type DashboardToolId } from '@/lib'
@@ -111,7 +112,7 @@ function SidebarNavItem({ routeId, isActive, isLibrary, onSelect }: NavItemProps
 }
 
 export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
-  const { isAdmin, session } = useSubscription()
+  const { isAdmin, session, userPlan, hasProAccess } = useSubscription()
   const { showToast } = useToast()
   const [isSigningOut, setIsSigningOut] = useState(false)
 
@@ -234,9 +235,18 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
           <div className="flex items-center gap-3 rounded-xl border border-white/[0.04] bg-zinc-900/40 px-3 py-2.5">
             <UserAvatar name={displayName} avatarUrl={avatarUrl} size="sm" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-medium text-white">{displayName}</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <p className="truncate text-[13px] font-medium text-white">{displayName}</p>
+                <PlanBadge
+                  plan={isAdmin ? 'founder' : userPlan}
+                  className="shrink-0 px-1.5 py-px text-[8px]"
+                />
+              </div>
               {email ? (
                 <p className="truncate text-[11px] text-zinc-500">{email}</p>
+              ) : null}
+              {hasProAccess && !isAdmin ? (
+                <p className="mt-0.5 text-[10px] font-medium text-violet-400/80">Pro aktiv</p>
               ) : null}
             </div>
           </div>

@@ -1,3 +1,5 @@
+import { isDebugLoggingEnabled, readViteEnvFlag } from '@/lib/runtime'
+
 /** Human-readable deploy hint shown when admin-api is not deployed. */
 export const ADMIN_API_FUNCTION_NAME = 'admin-api'
 
@@ -72,11 +74,12 @@ export function formatAdminWriteError(err: unknown): string {
   return err instanceof Error ? err.message : 'Aktion fehlgeschlagen.'
 }
 
-export const ADMIN_DEBUG =
-  import.meta.env.DEV || import.meta.env.VITE_ADMIN_DEBUG === 'true'
+export function isAdminDebugEnabled(): boolean {
+  return isDebugLoggingEnabled() || readViteEnvFlag('VITE_ADMIN_DEBUG') === 'true'
+}
 
 export function logAdminDebug(scope: string, detail?: unknown): void {
-  if (!ADMIN_DEBUG) return
+  if (!isAdminDebugEnabled()) return
   console.debug(`[Admin] ${scope}`, detail ?? '')
 }
 

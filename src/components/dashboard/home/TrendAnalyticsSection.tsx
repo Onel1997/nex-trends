@@ -1,7 +1,10 @@
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
-import { EyeIcon } from '@/components/ui/icons'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { EyeIcon, TrendingUpIcon } from '@/components/ui/icons'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import { cn } from '@/lib'
+import type { DashboardToolId } from '@/lib'
 
 const STAGGER_DELAYS = [
   'animation-delay-75',
@@ -10,8 +13,12 @@ const STAGGER_DELAYS = [
   'animation-delay-300',
 ] as const
 
-export function TrendAnalyticsSection() {
-  const { trendInsights } = useDashboardData()
+type TrendAnalyticsSectionProps = {
+  onNavigate?: (tool: DashboardToolId) => void
+}
+
+export function TrendAnalyticsSection({ onNavigate }: TrendAnalyticsSectionProps) {
+  const { trendInsights, trendInsightsLoading } = useDashboardData()
 
   return (
     <Card className="animate-fade-in animation-delay-300">
@@ -22,20 +29,46 @@ export function TrendAnalyticsSection() {
           </span>
           <div>
             <h3 className="text-sm font-semibold tracking-tight text-white">Trend Analytics</h3>
-            <p className="text-xs text-zinc-500">Virale Insights für TikTok & Instagram</p>
+            <p className="text-xs text-zinc-500">Aus deiner gespeicherten Trend-Bibliothek</p>
           </div>
         </div>
       </CardHeader>
       <CardBody>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {trendInsights.map((trend, index) => (
-            <TrendInsightCard
-              key={trend.id}
-              trend={trend}
-              delayClass={STAGGER_DELAYS[index] ?? 'animation-delay-75'}
-            />
-          ))}
-        </div>
+        {trendInsightsLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 w-full rounded-xl" />
+            ))}
+          </div>
+        ) : trendInsights.length === 0 ? (
+          <EmptyState
+            size="compact"
+            title="Noch keine Trend-Insights"
+            description="Speichere Trends in Trend Intelligence — deine Analytics-Karten erscheinen hier automatisch."
+            icon={<TrendingUpIcon className="size-5 text-zinc-500" aria-hidden />}
+            action={
+              onNavigate ? (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('trend-intelligence')}
+                  className="text-xs font-semibold text-violet-400 hover:text-violet-300"
+                >
+                  Trends entdecken →
+                </button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {trendInsights.map((trend, index) => (
+              <TrendInsightCard
+                key={trend.id}
+                trend={trend}
+                delayClass={STAGGER_DELAYS[index] ?? 'animation-delay-75'}
+              />
+            ))}
+          </div>
+        )}
       </CardBody>
     </Card>
   )

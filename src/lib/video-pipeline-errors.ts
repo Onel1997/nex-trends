@@ -1,3 +1,4 @@
+import { readEnv } from '@/lib/env'
 import { classifyVideoFailure, getPremiumFailure, logVideoPipelineError } from '@/lib/video-pipeline-messages'
 
 export type PipelineStep =
@@ -46,7 +47,7 @@ export function formatPipelineError(
 export function formatEdgeFunctionNetworkError(functionName: string): string {
   logVideoPipelineError('edge-function-network', 'Network or unreachable edge function', {
     functionName,
-    url: import.meta.env.VITE_SUPABASE_URL,
+    url: readEnv('NEXT_PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL'),
   })
   return 'EDGE_FUNCTION_UNREACHABLE'
 }

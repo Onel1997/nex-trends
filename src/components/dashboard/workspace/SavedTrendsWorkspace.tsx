@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/Badge'
 import { BookmarkIcon } from '@/components/ui/icons'
 import { WorkspaceSection } from '@/components/dashboard/workspace/WorkspaceSection'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { fadeUp, useWorkspaceMotion } from '@/components/dashboard/workspace/motion'
 import { useSavedTrends } from '@/hooks/useSavedTrends'
 import type { DashboardToolId } from '@/lib'
@@ -16,7 +17,7 @@ type SavedTrendsWorkspaceProps = {
 }
 
 export function SavedTrendsWorkspace({ onNavigate }: SavedTrendsWorkspaceProps) {
-  const { savedTrends, unsave } = useSavedTrends()
+  const { savedTrends, unsave, isLoading } = useSavedTrends()
   const { reduced, transition } = useWorkspaceMotion()
 
   return (
@@ -33,7 +34,13 @@ export function SavedTrendsWorkspace({ onNavigate }: SavedTrendsWorkspaceProps) 
         ) : null
       }
     >
-      {savedTrends.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-hidden>
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : savedTrends.length === 0 ? (
         <EmptyState
           variant="premium"
           size="compact"

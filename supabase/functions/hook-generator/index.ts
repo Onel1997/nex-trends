@@ -12,6 +12,8 @@ import {
   checkRateLimit,
   rateLimitHeaders,
 } from "../_shared/ai/rate-limit.ts";
+import { recordAiGeneration } from "../_shared/analytics.ts";
+import { consumeCredits, resolveFeatureCost } from "../_shared/credits.ts";
 import { ensureProfile } from "../_shared/usage.ts";
 import { corsHeadersFor, jsonHeadersFor } from "../_shared/cors.ts";
 import { formatEdgeError, logEdgeError } from "../_shared/errors.ts";
@@ -67,7 +69,17 @@ serve(async (req) => {
     const action = (body.action ?? "generate") as Action;
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-    const profile = await ensureProfile(supabaseAdmin, user.id, user.email);
+
+    let profile;
+    try {
+      profile = await ensureProfile(supabaseAdmin, user.id, user.email);
+    } catch (profileErr) {
+      logEdgeError("hook-generator", profileErr, { phase: "profile" });
+      return jsonResponse(req, {
+        error: `Profil konnte nicht geladen werden: ${formatEdgeError(profileErr)}`,
+        step: "profile",
+      }, 500);
+    }
 
     if (profile.is_banned) {
       return jsonResponse(req, { error: "Account gesperrt" }, 403);
@@ -80,10 +92,9 @@ serve(async (req) => {
         ok: true,
         openai: Boolean(openaiKey),
         model,
-        ...(openaiKey ? {} : {
-          error:
-            "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
-        }),
+        warning: openaiKey
+          ? null
+          : "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
       });
     }
 
@@ -136,6 +147,49 @@ serve(async (req) => {
     const validationError = validateHookInput(input);
     if (validationError) {
       return jsonResponse(req, { error: validationError }, 400);
+    }
+
+    const skipCreditCharge = body.skipCreditCharge === true;
+    const idempotencyKey = typeof body.idempotencyKey === "string"
+      ? body.idempotencyKey.trim()
+      : undefined;
+    const hookCost = resolveFeatureCost("hook_generation", Number(body.cost) || undefined);
+
+    if (!skipCreditCharge) {
+      try {
+        const creditResult = await consumeCredits(supabaseAdmin, user.id, {
+          feature: "hook_generation",
+          cost: hookCost,
+          email: user.email,
+          idempotencyKey,
+          metadata: {
+            topic: input.topic.slice(0, 80),
+            platform: input.platform,
+            tone: input.tone,
+          },
+        });
+
+        if (!creditResult.allowed) {
+          return jsonResponse(
+            req,
+            {
+              error: creditResult.error ??
+                "Nicht genug Credits für diese Generierung.",
+              code: "insufficient_credits",
+              remaining: creditResult.remaining,
+              limit: creditResult.limit,
+            },
+            402,
+          );
+        }
+      } catch (creditErr) {
+        logEdgeError("hook-generator", creditErr, { phase: "credits" });
+        return jsonResponse(req, {
+          error: `Credits konnten nicht abgebucht werden: ${formatEdgeError(creditErr)}`,
+          code: "credits_failed",
+          step: "credits",
+        }, 500);
+      }
     }
 
     const openaiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
@@ -205,16 +259,37 @@ serve(async (req) => {
 
     if (insertError) {
       logEdgeError("hook-generator", insertError, { phase: "save" });
+      // Hooks were generated — return them so the UI still works; history sync is optional.
       return jsonResponse(req, {
-        error: `Speichern fehlgeschlagen: ${formatEdgeError(insertError)}`,
-        step: "storage",
+        ok: true,
         hooks,
-      }, 500);
+        generation: null,
+        storageWarning: formatEdgeError(insertError),
+        creditsUsed: skipCreditCharge ? 0 : hookCost,
+      });
+    }
+
+    try {
+      await recordAiGeneration(supabaseAdmin, {
+        user_id: user.id,
+        email: user.email ?? "",
+        tool_used: "Hook Generator",
+        generation_type: "text",
+        niche: input.topic.trim(),
+        platform: input.platform,
+        prompt: input.topic.trim(),
+        credits_used: skipCreditCharge ? 0 : hookCost,
+        status: "completed",
+      });
+    } catch (analyticsErr) {
+      console.warn("[hook-generator] analytics log failed", analyticsErr);
     }
 
     return jsonResponse(req, {
+      ok: true,
       hooks,
       generation: saved,
+      creditsUsed: skipCreditCharge ? 0 : hookCost,
     });
   } catch (err) {
     logEdgeError("hook-generator", err);

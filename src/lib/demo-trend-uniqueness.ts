@@ -1,3 +1,4 @@
+import { isDevEnvironment } from '@/lib/runtime'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export type TrendUniquenessKey = 'id' | 'video' | 'thumbnail' | 'creator' | 'hook'
@@ -115,7 +116,7 @@ export function assertUniqueTrendSet(
   trends: TrendIntelligence[],
   context: string,
 ): void {
-  if (!import.meta.env.DEV) return
+  if (!isDevEnvironment()) return
 
   const duplicates = findDuplicates(trends, context)
   if (duplicates.length === 0) return

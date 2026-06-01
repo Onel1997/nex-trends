@@ -18,7 +18,7 @@ export function HookResultsEmptyState({ action, className }: HookEmptyStateProps
   return (
     <EmptyState
       title="Deine Hooks warten"
-      description="Gib ein Thema ein, wähle Ton und Plattform — die AI liefert 10 Scroll-Stopper, optimiert für die ersten 3 Sekunden."
+      description="Gib deine Nische ein, wähle Ton und Plattform — OpenAI liefert 10 emotionale Scroll-Stopper für TikTok & Instagram Reels."
       icon={<SparklesIcon className="size-6 text-violet-400/90" aria-hidden />}
       size="compact"
       variant="premium"

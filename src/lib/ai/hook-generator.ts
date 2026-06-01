@@ -1,5 +1,4 @@
 import { invokeEdgeFunction } from '@/lib/edgeFunctions'
-import { consumeCredits } from '@/lib/credits/consume'
 import {
   coerceErrorMessage,
   normalizeGeneratedHooksRow,
@@ -22,10 +21,23 @@ type HookHistoryResponse = {
 }
 
 function mapEdgeError(err: unknown, statusHint?: number): AiGenerationError {
-  const message = coerceErrorMessage(err)
+  let message = coerceErrorMessage(err)
 
-  if (message.includes('402') || message.toLowerCase().includes('credit')) {
-    return { code: 'insufficient_credits', message: 'Nicht genug Credits für diese Generierung.' }
+  if (message.startsWith('insufficient_credits:')) {
+    message = message.replace(/^insufficient_credits:\s*/i, '').trim()
+  }
+
+  if (
+    statusHint === 402 ||
+    message.includes('insufficient_credits') ||
+    message.includes('402') ||
+    (message.toLowerCase().includes('credit') &&
+      message.toLowerCase().includes('nicht genug'))
+  ) {
+    return {
+      code: 'insufficient_credits',
+      message: message || 'Nicht genug Credits für diese Generierung.',
+    }
   }
   if (statusHint === 429 || message.toLowerCase().includes('warte')) {
     return { code: 'rate_limit', message }
@@ -57,39 +69,24 @@ function mapEdgeError(err: unknown, statusHint?: number): AiGenerationError {
     return { code: 'unknown', message }
   }
 
-  return { code: 'unknown', message: coerceErrorMessage(message) }
+  if (message === 'EDGE_FUNCTION_ERROR' || message === 'EDGE_FUNCTION_EMPTY') {
+    return {
+      code: 'unknown',
+      message: 'Hook Generator nicht erreichbar. Bitte erneut versuchen.',
+    }
+  }
+
+  return { code: 'unknown', message }
 }
 
 /**
  * Production hook generation flow:
- * 1. consume-credits (server-authoritative)
- * 2. hook-generator edge function (OpenAI + persist)
+ * hook-generator edge function charges credits server-side, calls OpenAI, persists.
  */
 export async function generateHooksWithCredits(
   request: HookGenerationRequest,
   options?: { skipCreditCharge?: boolean; idempotencyKey?: string },
 ): Promise<HookGenerationResult> {
-  if (!options?.skipCreditCharge) {
-    const creditResult = await consumeCredits('hook_generation', {
-      cost: CREDIT_COSTS.hook_generation,
-      tool: 'Hook Generator',
-      label: `Hooks: ${request.topic.slice(0, 40)}`,
-      niche: request.topic,
-      platform: request.platform,
-      prompt: request.topic,
-      generation_type: 'text',
-      idempotency_key: options?.idempotencyKey,
-    })
-
-    if (!creditResult.allowed) {
-      const err: AiGenerationError = {
-        code: 'insufficient_credits',
-        message: coerceErrorMessage(creditResult.error ?? 'Nicht genug Credits.'),
-      }
-      throw err
-    }
-  }
-
   try {
     const raw = await invokeEdgeFunction<HookGeneratorResponse>('hook-generator', {
       action: 'generate',
@@ -99,21 +96,19 @@ export async function generateHooksWithCredits(
       context: request.context,
       trendTitle: request.trendTitle,
       referenceHook: request.referenceHook,
+      skipCreditCharge: options?.skipCreditCharge === true,
+      idempotencyKey: options?.idempotencyKey,
+      cost: CREDIT_COSTS.hook_generation,
     })
 
     const parsed = parseHookGeneratorPayload(raw)
+    const hooks = normalizeHooksList(parsed.hooks)
 
-    if (!parsed.generation) {
-      throw {
-        code: 'provider',
-        message: 'Hooks generiert, aber Speicherung fehlgeschlagen.',
-      } satisfies AiGenerationError
-    }
+    const generation = parsed.generation
+      ? normalizeGeneratedHooksRow(parsed.generation)
+      : buildEphemeralGenerationRow(request, hooks)
 
-    return {
-      hooks: normalizeHooksList(parsed.hooks),
-      generation: normalizeGeneratedHooksRow(parsed.generation),
-    }
+    return { hooks, generation }
   } catch (err) {
     if (typeof err === 'object' && err !== null && 'code' in err) {
       throw err
@@ -135,6 +130,20 @@ export async function fetchHookGenerationHistory(
   }
 
   return (result.generations ?? []).map(normalizeGeneratedHooksRow)
+}
+
+function buildEphemeralGenerationRow(
+  request: HookGenerationRequest,
+  hooks: string[],
+): GeneratedHooksRow {
+  return {
+    id: `ephemeral-${Date.now()}`,
+    topic: request.topic,
+    tone: request.tone,
+    platform: request.platform,
+    generated_hooks_json: hooks,
+    created_at: new Date().toISOString(),
+  }
 }
 
 export function isAiGenerationError(err: unknown): err is AiGenerationError {

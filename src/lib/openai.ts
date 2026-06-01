@@ -1,3 +1,4 @@
+import { readEnv } from '@/lib/env'
 import { mapRawToTrendIntelligence } from '@/lib/trend-intelligence'
 import type { ScoutedTrendRaw, TrendIntelligence } from '@/types/trend-intelligence'
 
@@ -44,7 +45,7 @@ type ChatCompletionResponse = {
 }
 
 async function callOpenAI(systemPrompt: string, userMessage: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+  const apiKey = readEnv('VITE_OPENAI_API_KEY')
 
   if (!apiKey?.trim()) {
     throw new Error(
@@ -105,7 +106,7 @@ async function callOpenAIJson(
   systemPrompt: string,
   userMessage: string,
 ): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY
+  const apiKey = readEnv('VITE_OPENAI_API_KEY')
 
   if (!apiKey?.trim()) {
     throw new Error(

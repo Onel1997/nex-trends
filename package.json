@@ -20,7 +20,8 @@
     "deploy:hooks": "supabase functions deploy hook-generator consume-credits",
     "deploy:video": "supabase functions deploy generate-video",
     "verify:functions": "node scripts/verify-edge-functions.mjs",
-    "test:hook-generator": "node scripts/test-hook-generator.mjs"
+    "test:hook-generator": "node scripts/test-hook-generator.mjs",
+    "test:edge-invoke-parse": "node scripts/test-edge-invoke-parse.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

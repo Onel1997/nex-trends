@@ -144,7 +144,6 @@ export function HookGeneratorTool() {
           tone: prefill.tone,
           platform: prefill.platform,
         },
-        { skipCreditCharge: true },
       ).then((result) => {
         if (result) {
           showToast({
@@ -223,7 +222,7 @@ export function HookGeneratorTool() {
       setTopic(row.topic)
       setTone(row.tone as HookTone)
       setPlatform(row.platform as HookPlatform)
-      void handleGenerate(true, {
+      void handleGenerate(false, {
         topic: row.topic,
         tone: row.tone as HookTone,
         platform: row.platform as HookPlatform,
@@ -289,7 +288,7 @@ export function HookGeneratorTool() {
           fullWidth
           loading={isRegenerating}
           disabled={isGenerating || !canGenerate}
-          onClick={() => void handleGenerate(true)}
+          onClick={() => void handleGenerate(false)}
           className="min-h-12 sm:w-auto sm:min-w-[10rem]"
         >
           <ArrowPathIcon className="size-4" aria-hidden />
@@ -349,7 +348,7 @@ export function HookGeneratorTool() {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           rows={3}
-          placeholder="z. B. Fitness, Productivity, Side Hustle — oder dein Video-Thema"
+          placeholder="z. B. Fitness, Skincare, AI Side Hustle, Morning Routine — dein Video-Thema"
           disabled={isGenerating}
         />
 
@@ -442,7 +441,7 @@ export function HookGeneratorTool() {
             ) : error ? (
               <HookErrorState
                 message={error}
-                onRetry={() => void handleGenerate(hooks.length > 0)}
+                onRetry={() => void handleGenerate(false)}
               />
             ) : (
               <>

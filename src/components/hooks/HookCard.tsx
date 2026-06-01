@@ -121,14 +121,14 @@ export const HookCard = memo(function HookCard({
           </div>
         </div>
 
-        <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto sm:flex-col sm:items-stretch sm:gap-1.5">
+        <div className="flex w-full shrink-0 items-stretch gap-2 sm:w-auto sm:flex-col sm:gap-1.5">
           {onToggleSave && variant === 'result' && (
             <button
               type="button"
               disabled={saving}
               onClick={onToggleSave}
               className={cn(
-                'hook-action-btn flex-1 sm:flex-none',
+                'hook-action-btn flex flex-1 items-center justify-center gap-1.5 sm:flex-none sm:min-w-[2.75rem]',
                 saved
                   ? 'text-amber-400 hover:bg-amber-500/12 hover:text-amber-300'
                   : 'text-zinc-500 hover:bg-zinc-800/90 hover:text-amber-300',
@@ -145,6 +145,9 @@ export const HookCard = memo(function HookCard({
               ) : (
                 <BookmarkIcon className="size-[18px]" />
               )}
+              <span className="text-[11px] font-semibold sm:sr-only">
+                {saved ? 'Gespeichert' : 'Speichern'}
+              </span>
             </button>
           )}
 
@@ -154,7 +157,7 @@ export const HookCard = memo(function HookCard({
               disabled={copyDisabled && !copied}
               onClick={onCopy}
               className={cn(
-                'hook-action-btn flex-1 sm:flex-none',
+                'hook-action-btn flex flex-1 items-center justify-center gap-1.5 sm:flex-none sm:min-w-[2.75rem]',
                 copied
                   ? 'hook-action-btn--copied'
                   : 'text-zinc-500 hover:bg-violet-500/15 hover:text-violet-200',
@@ -167,7 +170,9 @@ export const HookCard = memo(function HookCard({
               ) : (
                 <CopyIcon className="size-[18px]" />
               )}
-              <span className="sr-only">{copied ? 'Kopiert' : 'Kopieren'}</span>
+              <span className="text-[11px] font-semibold sm:sr-only">
+                {copied ? 'Kopiert' : 'Kopieren'}
+              </span>
             </button>
           )}
         </div>

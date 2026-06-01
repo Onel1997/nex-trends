@@ -1,5 +1,7 @@
 /** Premium UI copy for the Creator OS strategy pipeline. */
 
+import { isDevEnvironment } from '@/lib/runtime'
+
 export const PREMIUM_PIPELINE_MESSAGES = {
   crafting: [
     'Analysiere Viral-Struktur...',
@@ -135,7 +137,7 @@ export function logVideoPipelineError(scope: string, error: unknown, extra?: Rec
     scope,
     message,
     ...extra,
-    ...(error instanceof Error && import.meta.env.DEV ? { stack: error.stack } : {}),
+    ...(error instanceof Error && isDevEnvironment() ? { stack: error.stack } : {}),
   }
   console.error('[VideoPipeline]', payload)
 }

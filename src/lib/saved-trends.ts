@@ -1,3 +1,4 @@
+import { logActivity } from '@/lib/activity'
 import type { SavedTrendRecord, TrendIntelligence } from '@/types/trend-intelligence'
 
 const STORAGE_KEY = 'nextrends_saved_trends'
@@ -44,10 +45,14 @@ function writeAll(records: SavedTrendRecord[]): void {
   }
 }
 
+export function getSavedTrendRecords(): SavedTrendRecord[] {
+  return readAll().sort(
+    (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime(),
+  )
+}
+
 export function getSavedTrends(): TrendIntelligence[] {
-  return readAll()
-    .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime())
-    .map((r) => ({ ...r.trend, savedAt: r.savedAt }))
+  return getSavedTrendRecords().map((r) => ({ ...r.trend, savedAt: r.savedAt }))
 }
 
 export function isTrendSaved(trendId: string): boolean {
@@ -64,6 +69,7 @@ export function saveTrend(trend: TrendIntelligence): boolean {
   }
 
   writeAll([record, ...records])
+  logActivity('Saved Trends', `Trend gespeichert: ${trend.title}`, 'saved')
   return true
 }
 
@@ -80,10 +86,3 @@ export function toggleSavedTrend(trend: TrendIntelligence): boolean {
   return true
 }
 
-/** Future: sync with Supabase when user is authenticated */
-export async function syncSavedTrendsToSupabase(
-  _userId: string,
-  _records: SavedTrendRecord[],
-): Promise<void> {
-  // Prepared for: supabase.from(SAVED_TRENDS_TABLE).upsert(...)
-}

@@ -135,7 +135,7 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
                   <span className="flex size-7 items-center justify-center rounded-md border border-violet-500/20 bg-violet-500/10">
                     <Icon className="size-3.5 text-violet-400" aria-hidden />
                   </span>
-                  {showGrowthBadge && (
+                  {showGrowthBadge && stats.weeklyGrowthPct > 0 && (
                     <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-px text-[9px] font-semibold tabular-nums text-emerald-400">
                       +{stats.weeklyGrowthPct}%
                     </span>
@@ -145,7 +145,9 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
                   {card.label}
                 </p>
                 <p className="dashboard-os-stat__value mt-0.5 text-lg font-semibold tabular-nums tracking-tight text-zinc-50">
-                  {card.key === 'growth' ? (
+                  {card.key === 'growth' && value === 0 ? (
+                    <span className="text-zinc-600">—</span>
+                  ) : card.key === 'growth' ? (
                     <>
                       +
                       <AnimatedCounter value={value} suffix={suffix} loading={loading} />

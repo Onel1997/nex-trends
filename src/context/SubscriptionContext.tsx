@@ -226,6 +226,11 @@ export function SubscriptionProvider({
         setProfile(next)
         setUsage(getUsageFromProfile(next, session?.user?.email))
         await syncUsageFromServer()
+      } catch (err) {
+        console.error('[auth] Profile load failed:', err)
+        const fallback = getDefaultProfile()
+        setProfile(fallback)
+        setUsage(getUsageFromProfile(fallback, session?.user?.email))
       } finally {
         setIsProfileLoading(false)
       }
@@ -434,8 +439,7 @@ export function SubscriptionProvider({
     }
   }, [isAdmin, isUpgradeModalOpen])
 
-  const isReady =
-    !isAuthLoading && (!session?.user?.id || profile !== null)
+  const isReady = !isAuthLoading && (!session?.user?.id || profile !== null)
 
   const remainingCredits = usage.remaining ?? 0
   const isUsageLimitReached = !usage.unlimited && remainingCredits <= 0

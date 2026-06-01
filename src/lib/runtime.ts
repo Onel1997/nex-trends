@@ -49,3 +49,8 @@ export function isDebugLoggingEnabled(): boolean {
     readViteEnvFlag('VITE_VIDEO_DEBUG') === 'true'
   )
 }
+
+/** Video pipeline verbose logging. */
+export function isVideoDebugEnabled(): boolean {
+  return isDebugLoggingEnabled()
+}

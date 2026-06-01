@@ -20,7 +20,8 @@ export type FeatureFlag =
 
 const ROUTE_FEATURES: Partial<Record<DashboardRouteId, FeatureId | UsageActionId>> = {
   'ai-studio': 'ai_video_studio',
-  hook: 'hook_generator',
+  /** Free tier uses basic_hooks with credit limits; paid tiers use hook_generator bundle */
+  hook: 'basic_hooks',
   'ad-copy': 'ad_copy_generator',
   seo: 'seo_generator',
   analyzer: 'landing_page_analyzer',

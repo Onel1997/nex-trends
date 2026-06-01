@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchMyAiVideos } from '@/lib/my-videos-api'
-import { getSavedTrends } from '@/lib/saved-trends'
 import type { SavedAiVideo } from '@/types/ai-video-library'
 import type { WeeklyUsagePoint } from '@/types/dashboard'
+import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export type DashboardStats = {
   videosGenerated: number
@@ -35,29 +35,31 @@ function computeDisplayWeeklyGrowth(
   const hasLibrary = savedCount > 0 || videoCount > 0
 
   if (!hasRealUsage && !hasLibrary) {
-    return { pct: 14, isDemo: true }
+    return { pct: 0, isDemo: false }
   }
 
   if (raw < 0 || raw < -40) {
     const momentum = 10 + Math.min(18, savedCount * 3 + videoCount * 4)
-    return { pct: momentum, isDemo: true }
+    return { pct: momentum, isDemo: savedCount + videoCount === 0 }
   }
 
   if (raw === 0 && hasLibrary) {
-    return { pct: 12 + (savedCount % 9), isDemo: true }
+    return { pct: 12 + (savedCount % 9), isDemo: false }
   }
 
   return { pct: Math.min(48, Math.max(5, raw)), isDemo: false }
 }
 
-function computeAvgTrendScore(): number {
-  const saved = getSavedTrends()
+function computeAvgTrendScore(saved: TrendIntelligence[]): number {
   if (saved.length === 0) return 0
   const sum = saved.reduce((acc, t) => acc + (t.viralScore ?? 0), 0)
   return Math.round(sum / saved.length)
 }
 
-export function useDashboardStats(weeklyUsage: WeeklyUsagePoint[]) {
+export function useDashboardStats(
+  weeklyUsage: WeeklyUsagePoint[],
+  savedTrends: TrendIntelligence[] = [],
+) {
   const [videos, setVideos] = useState<SavedAiVideo[]>([])
   const [loadingVideos, setLoadingVideos] = useState(true)
 
@@ -78,19 +80,18 @@ export function useDashboardStats(weeklyUsage: WeeklyUsagePoint[]) {
   }, [loadVideos])
 
   const stats = useMemo<DashboardStats>(() => {
-    const saved = getSavedTrends()
     const completed = videos.filter((v) => v.status === 'completed').length
-    const growth = computeDisplayWeeklyGrowth(weeklyUsage, saved.length, completed)
+    const growth = computeDisplayWeeklyGrowth(weeklyUsage, savedTrends.length, completed)
 
     return {
       videosGenerated: completed,
-      savedTrends: saved.length,
-      avgTrendScore: computeAvgTrendScore(),
+      savedTrends: savedTrends.length,
+      avgTrendScore: computeAvgTrendScore(savedTrends),
       weeklyGrowthPct: growth.pct,
       weeklyGrowthIsDemo: growth.isDemo,
       loadingVideos,
     }
-  }, [videos, weeklyUsage, loadingVideos])
+  }, [videos, weeklyUsage, savedTrends, loadingVideos])
 
   return { stats, videos, loadingVideos, refreshVideos: loadVideos }
 }

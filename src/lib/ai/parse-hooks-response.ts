@@ -213,7 +213,16 @@ export function parseHookGeneratorPayload(payload: unknown): ParsedHookGenerator
   )
 
   if (hooks.length === 0) {
-    throw new Error('Keine Hooks in der Server-Antwort gefunden.')
+    const storageWarning =
+      typeof body.storageWarning === 'string' ? body.storageWarning.trim() : ''
+    if (body.error != null && body.error !== '') {
+      throw new Error(coerceErrorMessage(body.error))
+    }
+    throw new Error(
+      storageWarning
+        ? `Keine Hooks zurückgegeben. Speicher-Hinweis: ${storageWarning}`
+        : 'Keine Hooks in der Server-Antwort gefunden.',
+    )
   }
 
   return { hooks, generation }

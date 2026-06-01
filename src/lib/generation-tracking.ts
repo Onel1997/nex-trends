@@ -1,5 +1,6 @@
 import { invokeEdgeFunction } from '@/lib/edgeFunctions'
 import { logGenerationUsage } from '@/lib/usage'
+import { isDebugLoggingEnabled, readViteEnvFlag } from '@/lib/runtime'
 
 export type GenerationType = 'text' | 'video' | 'audio' | 'search' | 'image'
 export type GenerationStatus = 'queued' | 'generating' | 'completed' | 'failed'
@@ -17,11 +18,12 @@ export type TrackGenerationInput = {
   error_message?: string
 }
 
-const DEBUG =
-  import.meta.env.DEV || import.meta.env.VITE_ADMIN_DEBUG === 'true'
+function isGenerationTrackingDebug(): boolean {
+  return isDebugLoggingEnabled() || readViteEnvFlag('VITE_ADMIN_DEBUG') === 'true'
+}
 
 function log(scope: string, detail?: unknown) {
-  if (DEBUG) console.debug(`[GenerationTracking] ${scope}`, detail ?? '')
+  if (isGenerationTrackingDebug()) console.debug(`[GenerationTracking] ${scope}`, detail ?? '')
 }
 
 function logWarn(scope: string, detail?: unknown) {

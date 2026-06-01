@@ -64,7 +64,7 @@ export function useHookGenerationFlow() {
         setGeneration(normalizeGeneratedHooksRow(result.generation))
         setStatus('success')
 
-        if (!options?.skipCreditCharge && !unlimited) {
+        if (!options?.skipCreditCharge) {
           await refreshUsage()
         }
 

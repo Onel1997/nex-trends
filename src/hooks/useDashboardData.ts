@@ -1,52 +1,41 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSubscription } from '@/hooks/useSubscription'
+import { useSavedTrends } from '@/hooks/useSavedTrends'
 import { getRecentActivities } from '@/lib/activity'
+import {
+  fetchRecentActivityFromSupabase,
+  syncLocalActivitiesToSupabase,
+} from '@/lib/dashboard-activity-api'
+import { getMergedDashboardActivity } from '@/lib/dashboard-activity'
+import { buildTrendInsightsFromSaved } from '@/lib/dashboard-insights'
+import {
+  fetchDashboardProfileFields,
+  resolveDashboardUserDisplay,
+} from '@/lib/dashboard-profile'
 import { MAX_FREE_CREDITS } from '@/lib/constants'
 import { PLAN_LABELS } from '@/lib/plans'
-import { getUserAvatarUrl, getUserDisplayName } from '@/lib/auth/profile'
 import { resolveUserPlan } from '@/lib/subscription'
 import { startStripePortalFlow } from '@/lib/stripe'
 import { formatUsageResetDate } from '@/lib/usage'
+import { readEnv } from '@/lib/env'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import type { ActivityItem, DashboardUser, TrendInsight, WeeklyUsagePoint } from '@/types/dashboard'
 
-const TREND_INSIGHTS: TrendInsight[] = [
-  {
-    id: '1',
-    title: 'POV: Morning Routine Hacks',
-    platform: 'TikTok',
-    views: '2.4M',
-    change: '+18%',
-    gradientFrom: 'from-violet-600',
-    gradientTo: 'to-fuchsia-600',
-  },
-  {
-    id: '2',
-    title: 'Quiet Luxury Aesthetic',
-    platform: 'Instagram',
-    views: '1.1M',
-    change: '+12%',
-    gradientFrom: 'from-indigo-500',
-    gradientTo: 'to-purple-600',
-  },
-  {
-    id: '3',
-    title: 'AI Side Hustle Trends',
-    platform: 'TikTok',
-    views: '3.8M',
-    change: '+24%',
-    gradientFrom: 'from-cyan-500',
-    gradientTo: 'to-blue-600',
-  },
-  {
-    id: '4',
-    title: '7-Sekunden Transformations',
-    platform: 'Instagram',
-    views: '890K',
-    change: '+9%',
-    gradientFrom: 'from-rose-500',
-    gradientTo: 'to-orange-600',
-  },
-]
+function mergeActivityFeeds(remote: ActivityItem[], local: ActivityItem[]): ActivityItem[] {
+  const merged = [...remote, ...local].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  )
+  const seen = new Set<string>()
+  const deduped: ActivityItem[] = []
+  for (const item of merged) {
+    const key = `${item.kind ?? ''}|${item.tool}|${item.label}|${item.timestamp.slice(0, 16)}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    deduped.push(item)
+    if (deduped.length >= 12) break
+  }
+  return deduped
+}
 
 export function useDashboardData() {
   const {
@@ -62,24 +51,35 @@ export function useDashboardData() {
     openStripeCheckout,
   } = useSubscription()
 
+  const { savedTrends, isLoading: savedTrendsLoading } = useSavedTrends()
+
   const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [activitiesLoading, setActivitiesLoading] = useState(true)
+  const [profileFields, setProfileFields] = useState<Awaited<
+    ReturnType<typeof fetchDashboardProfileFields>
+  > | null>(null)
+  const [profileFieldsLoading, setProfileFieldsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const activitySyncedRef = useRef(false)
 
   const user: DashboardUser | null = useMemo(() => {
     if (!session?.user) return null
 
-    const email = session.user.email ?? 'Unbekannt'
-    const name = getUserDisplayName(session.user)
-    const avatarUrl = getUserAvatarUrl(session.user)
-    const initials = name
+    const display = resolveDashboardUserDisplay(session.user, profileFields)
+    const initials = display.name
       .split(' ')
       .map((part) => part[0])
       .join('')
       .slice(0, 2)
       .toUpperCase()
 
-    return { name, email, avatarInitials: initials || 'NT', avatarUrl }
-  }, [session?.user])
+    return {
+      name: display.name,
+      email: display.email,
+      avatarInitials: initials || 'NT',
+      avatarUrl: display.avatarUrl,
+    }
+  }, [session?.user, profileFields])
 
   const weeklyUsage: WeeklyUsagePoint[] = useMemo(() => {
     const used = usage.used
@@ -109,26 +109,77 @@ export function useDashboardData() {
       ? 'Unbegrenzt'
       : `${usage.remaining ?? 0} / ${usage.limit ?? MAX_FREE_CREDITS}`
 
-  const loadActivities = useCallback(() => {
-    setActivities(getRecentActivities())
-  }, [])
+  const trendInsights: TrendInsight[] = useMemo(
+    () => buildTrendInsightsFromSaved(savedTrends),
+    [savedTrends],
+  )
+
+  const loadProfileFields = useCallback(async () => {
+    const userId = session?.user?.id
+    if (!userId || !isSupabaseConfigured()) {
+      setProfileFields(null)
+      setProfileFieldsLoading(false)
+      return
+    }
+
+    setProfileFieldsLoading(true)
+    try {
+      const fields = await fetchDashboardProfileFields(userId)
+      setProfileFields(fields)
+    } finally {
+      setProfileFieldsLoading(false)
+    }
+  }, [session?.user?.id])
+
+  const loadActivities = useCallback(async () => {
+    setActivitiesLoading(true)
+    try {
+      const userId = session?.user?.id
+      const localMerged = getMergedDashboardActivity()
+
+      if (!userId || !isSupabaseConfigured()) {
+        setActivities(localMerged)
+        return
+      }
+
+      if (!activitySyncedRef.current) {
+        const localOnly = getRecentActivities()
+        if (localOnly.length > 0) {
+          await syncLocalActivitiesToSupabase(userId, localOnly)
+        }
+        activitySyncedRef.current = true
+      }
+
+      const remote = await fetchRecentActivityFromSupabase(userId)
+      setActivities(mergeActivityFeeds(remote, localMerged))
+    } catch {
+      setActivities(getMergedDashboardActivity())
+    } finally {
+      setActivitiesLoading(false)
+    }
+  }, [session?.user?.id])
 
   useEffect(() => {
-    loadActivities()
+    void loadProfileFields()
+  }, [loadProfileFields])
+
+  useEffect(() => {
+    void loadActivities()
   }, [loadActivities, usage.used])
 
   const refresh = useCallback(async () => {
     setError(null)
     try {
       await refreshProfile()
-      loadActivities()
+      await loadProfileFields()
+      await loadActivities()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Dashboard konnte nicht geladen werden')
     }
-  }, [refreshProfile, loadActivities])
+  }, [refreshProfile, loadProfileFields, loadActivities])
 
   const manageSubscription = useCallback(() => {
-    const portalUrl = import.meta.env.VITE_STRIPE_PORTAL_URL
+    const portalUrl = readEnv('VITE_STRIPE_PORTAL_URL')
     if (portalUrl?.trim()) {
       window.open(portalUrl, '_blank')
       return
@@ -140,10 +191,18 @@ export function useDashboardData() {
     openUpgradeModal()
   }, [hasProAccess, openUpgradeModal])
 
+  const isLoading =
+    !isReady ||
+    isProfileLoading ||
+    profileFieldsLoading ||
+    savedTrendsLoading ||
+    activitiesLoading
+
   return {
     user,
     profile,
-    isLoading: !isReady || isProfileLoading,
+    userPlan,
+    isLoading,
     error,
     hasProAccess,
     isAdmin,
@@ -154,7 +213,10 @@ export function useDashboardData() {
     resetDateLabel: formatUsageResetDate(usage.usageResetDate),
     weeklyUsage,
     activities,
-    trendInsights: TREND_INSIGHTS,
+    activitiesLoading,
+    trendInsights,
+    trendInsightsLoading: savedTrendsLoading,
+    savedTrends,
     refresh,
     openUpgradeModal,
     openStripeCheckout,

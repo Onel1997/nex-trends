@@ -17,8 +17,8 @@ type DashboardPageProps = {
 }
 
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const { isLoading, error, user, weeklyUsage, refresh } = useDashboardData()
-  const { stats } = useDashboardStats(weeklyUsage)
+  const { isLoading, error, user, weeklyUsage, savedTrends, refresh } = useDashboardData()
+  const { stats } = useDashboardStats(weeklyUsage, savedTrends)
 
   if (isLoading) {
     return <DashboardSkeleton />

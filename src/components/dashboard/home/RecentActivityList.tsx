@@ -1,9 +1,10 @@
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SparklesIcon } from '@/components/ui/icons'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useDashboardData } from '@/hooks/useDashboardData'
 
 export function RecentActivityList() {
-  const { activities } = useDashboardData()
+  const { activities, activitiesLoading } = useDashboardData()
 
   return (
     <div>
@@ -11,7 +12,15 @@ export function RecentActivityList() {
         Letzte Aktivitäten
       </p>
 
-      {activities.length === 0 ? (
+      {activitiesLoading ? (
+        <ul className="space-y-2" aria-hidden>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <li key={i}>
+              <Skeleton className="h-14 w-full rounded-xl" />
+            </li>
+          ))}
+        </ul>
+      ) : activities.length === 0 ? (
         <EmptyState
           size="compact"
           title="Noch keine Aktivität"

@@ -32,8 +32,12 @@ function loadEnv() {
 }
 
 const env = { ...loadEnv(), ...process.env }
-const baseUrl = (env.VITE_SUPABASE_URL ?? '').replace(/\/$/, '')
-const anonKey = env.VITE_SUPABASE_ANON_KEY ?? ''
+const baseUrl = (
+  env.VITE_SUPABASE_URL ??
+  env.NEXT_PUBLIC_SUPABASE_URL ??
+  ''
+).replace(/\/$/, '')
+const anonKey = env.VITE_SUPABASE_ANON_KEY ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 const token = env.HOOK_TEST_TOKEN ?? env.SUPABASE_ACCESS_TOKEN ?? ''
 
 if (!baseUrl || baseUrl.includes('127.0.0.1') || baseUrl.includes('localhost')) {

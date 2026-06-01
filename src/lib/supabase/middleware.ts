@@ -6,12 +6,16 @@ const AUTH_LOGIN_PATH = '/login'
 const AUTH_CALLBACK_PATH = '/auth/callback'
 const DASHBOARD_PREFIX = '/dashboard'
 
+const PROTECTED_APP_PATHS = ['/ai-studio', '/my-videos'] as const
+
 function isProtectedPath(pathname: string): boolean {
+  const normalized = pathname.replace(/\/$/, '') || '/'
   return (
-    pathname === DASHBOARD_PREFIX ||
-    pathname.startsWith(`${DASHBOARD_PREFIX}/`) ||
-    pathname === '/billing/success' ||
-    pathname === '/billing/cancel'
+    normalized === DASHBOARD_PREFIX ||
+    normalized.startsWith(`${DASHBOARD_PREFIX}/`) ||
+    PROTECTED_APP_PATHS.some((p) => normalized === p || normalized.startsWith(`${p}/`)) ||
+    normalized === '/billing/success' ||
+    normalized === '/billing/cancel'
   )
 }
 

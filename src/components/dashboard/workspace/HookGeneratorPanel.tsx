@@ -1,135 +1,223 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { HookErrorState, HookGeneratingSkeleton } from '@/components/hooks/HookResultsList'
+import { HookEmptyStateAction, HookResultsEmptyState } from '@/components/hooks/HookEmptyStates'
+import { HookCard } from '@/components/hooks/HookCard'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
-import { GeneratorSkeleton } from '@/components/dashboard/workspace/WorkspaceSkeletons'
+import { UsageLimitWarning } from '@/components/subscription/UsageLimitWarning'
 import { WorkspaceSection } from '@/components/dashboard/workspace/WorkspaceSection'
 import { fadeUp, useWorkspaceMotion } from '@/components/dashboard/workspace/motion'
-import { generateWorkspaceHooks } from '@/lib/dashboard-workspace-mock'
+import { useHookClipboard } from '@/hooks/useHookClipboard'
+import { useHookGenerationFlow } from '@/hooks/useHookGenerationFlow'
+import { useSavedHooks } from '@/hooks/useSavedHooks'
+import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { useToast } from '@/context/ToastContext'
-import type { GeneratedHook, HookTone, WorkspacePlatform } from '@/types/dashboard-workspace'
+import { navigateToTool } from '@/lib/navigation'
+import {
+  HOOK_GENERATION_COST,
+  HOOK_PLATFORM_OPTIONS,
+  HOOK_TONE_OPTIONS,
+  type HookPlatform,
+  type HookTone,
+} from '@/types/ai-generation'
+import { formatHookDisplayText } from '@/lib/ai/parse-hooks-response'
+import { cn } from '@/lib'
 
-const PLATFORMS: WorkspacePlatform[] = ['TikTok', 'Instagram', 'YouTube']
-const TONES: { value: HookTone; label: string }[] = [
-  { value: 'aggressive', label: 'Aggressiv' },
-  { value: 'luxury', label: 'Premium' },
-  { value: 'storytelling', label: 'Story' },
-  { value: 'casual', label: 'Casual' },
-  { value: 'educational', label: 'Educational' },
-]
+const PREVIEW_COUNT = 3
 
 export function HookGeneratorPanel() {
-  const [niche, setNiche] = useState('Skincare & Beauty')
-  const [platform, setPlatform] = useState<WorkspacePlatform>('TikTok')
-  const [tone, setTone] = useState<HookTone>('aggressive')
-  const [hooks, setHooks] = useState<GeneratedHook[]>([])
-  const [loading, setLoading] = useState(false)
   const { showToast } = useToast()
+  const { isUsageLimitReached, unlimited, userPlan } = useUsageLimit()
+  const { hooks, status, error, isGenerating, generate } = useHookGenerationFlow()
+  const { copiedHook, copyHook } = useHookClipboard()
+  const { isSaved, toggleSave } = useSavedHooks()
   const { reduced, transition } = useWorkspaceMotion()
 
-  async function handleGenerate() {
-    setLoading(true)
-    setHooks([])
-    try {
-      const result = await generateWorkspaceHooks(niche, platform, tone)
-      setHooks(result)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [topic, setTopic] = useState('')
+  const [tone, setTone] = useState<HookTone>('storytelling')
+  const [platform, setPlatform] = useState<HookPlatform>('TikTok')
+  const [savingHook, setSavingHook] = useState<string | null>(null)
 
-  async function copyHook(text: string) {
-    try {
-      await navigator.clipboard.writeText(text.replace(/^„|”$/g, '').replace(/ · .*$/, ''))
-      showToast({ type: 'success', title: 'Hook kopiert' })
-    } catch {
-      showToast({ type: 'error', title: 'Kopieren fehlgeschlagen' })
+  const canGenerate = topic.trim().length >= 2
+  const displayHooks = hooks.map((h) => formatHookDisplayText(h)).filter(Boolean)
+  const previewHooks = displayHooks.slice(0, PREVIEW_COUNT)
+  const hasMore = displayHooks.length > PREVIEW_COUNT
+
+  const handleGenerate = useCallback(async () => {
+    if (!canGenerate || isGenerating) return
+
+    const result = await generate({
+      topic: topic.trim(),
+      tone,
+      platform,
+    })
+
+    if (result) {
+      showToast({
+        type: 'success',
+        title: `${result.hooks.length} Hooks generiert`,
+        message: unlimited ? undefined : `${HOOK_GENERATION_COST} Credits verbraucht`,
+      })
     }
-  }
+  }, [canGenerate, isGenerating, generate, topic, tone, platform, showToast, unlimited])
+
+  const handleToggleSave = useCallback(
+    async (hookText: string) => {
+      setSavingHook(hookText)
+      try {
+        const action = await toggleSave({
+          hookText,
+          topic: topic.trim(),
+          tone,
+          platform,
+        })
+        showToast({
+          type: 'success',
+          title: action === 'saved' ? 'Hook gespeichert' : 'Entfernt',
+        })
+      } catch {
+        showToast({ type: 'error', title: 'Speichern fehlgeschlagen' })
+      } finally {
+        setSavingHook(null)
+      }
+    },
+    [toggleSave, topic, tone, platform, showToast],
+  )
 
   return (
     <WorkspaceSection
       id="workspace-hooks"
       title="Hook Generator"
-      description="Scroll-stoppende Opener mit geschätztem CTR-Score."
+      description="10 virale TikTok & Instagram Scroll-Stopper — powered by OpenAI."
       delay={0.05}
+      action={
+        <Button variant="ghost" size="sm" onClick={() => navigateToTool('hook')}>
+          Vollansicht →
+        </Button>
+      }
     >
       <div className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-3">
+        {isUsageLimitReached && userPlan === 'free' && !unlimited ? (
+          <UsageLimitWarning />
+        ) : null}
+
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
           <div>
             <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-zinc-600">
-              Nische
+              Nische / Thema
             </label>
             <Input
-              value={niche}
-              onChange={(e) => setNiche(e.target.value)}
-              placeholder="z. B. Fitness, SaaS, Beauty"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="z. B. Fitness, Skincare, AI Side Hustle"
+              disabled={isGenerating}
             />
           </div>
           <SelectField
             label="Plattform"
             value={platform}
-            onChange={(e) => setPlatform(e.target.value as WorkspacePlatform)}
-            options={PLATFORMS.map((p) => ({ value: p, label: p }))}
+            onChange={(e) => setPlatform(e.target.value as HookPlatform)}
+            disabled={isGenerating}
+            options={HOOK_PLATFORM_OPTIONS.filter((o) =>
+              ['TikTok', 'Instagram Reels', 'Universal'].includes(o.value),
+            ).map((o) => ({ value: o.value, label: o.label }))}
           />
           <SelectField
             label="Ton"
             value={tone}
             onChange={(e) => setTone(e.target.value as HookTone)}
-            options={TONES}
+            disabled={isGenerating}
+            options={HOOK_TONE_OPTIONS.slice(0, 4).map((o) => ({
+              value: o.value,
+              label: o.label,
+            }))}
           />
         </div>
 
-        <Button onClick={() => void handleGenerate()} loading={loading} className="w-full sm:w-auto">
-          5 Hooks generieren
+        <Button
+          variant="pro"
+          onClick={() => void handleGenerate()}
+          loading={isGenerating}
+          disabled={!canGenerate || isGenerating}
+          className="w-full sm:w-auto"
+        >
+          10 Hooks generieren · {HOOK_GENERATION_COST} Credits
         </Button>
 
-        {loading ? <GeneratorSkeleton rows={5} /> : null}
+        {isGenerating ? <HookGeneratingSkeleton count={3} /> : null}
+
+        {error && !isGenerating ? (
+          <HookErrorState message={error} onRetry={() => void handleGenerate()} />
+        ) : null}
 
         <AnimatePresence mode="popLayout">
-          {hooks.length > 0 ? (
+          {!isGenerating && !error && displayHooks.length === 0 ? (
+            <motion.div key="empty" variants={fadeUp} transition={transition}>
+              <HookResultsEmptyState
+                action={
+                  canGenerate ? (
+                    <HookEmptyStateAction
+                      label="Hooks generieren"
+                      onClick={() => void handleGenerate()}
+                    />
+                  ) : undefined
+                }
+              />
+            </motion.div>
+          ) : null}
+
+          {!isGenerating && previewHooks.length > 0 ? (
             <motion.ul
+              key="results"
               className="space-y-2.5"
               initial={reduced ? false : 'hidden'}
               animate="visible"
-              variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+              variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
             >
-              {hooks.map((hook) => (
-                <motion.li
-                  key={hook.id}
-                  variants={fadeUp}
-                  transition={transition}
-                  layout
-                  className="dashboard-ws-hook-card flex flex-col gap-3 rounded-xl border border-zinc-800/60 bg-zinc-950/50 p-3.5 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm leading-relaxed text-zinc-200">{hook.text}</p>
-                    <p className="mt-1.5 text-[11px] font-semibold text-violet-400">
-                      CTR-Score · {hook.ctrScore}/100
-                    </p>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => void copyHook(hook.text)}
-                  >
-                    Kopieren
-                  </Button>
+              {previewHooks.map((hook, index) => (
+                <motion.li key={`${index}-${hook.slice(0, 24)}`} variants={fadeUp} transition={transition}>
+                  <HookCard
+                    hook={hook}
+                    index={index}
+                    tone={tone}
+                    platform={platform}
+                    saved={isSaved(hook)}
+                    saving={savingHook === hook}
+                    copied={copiedHook === hook}
+                    onCopy={() => copyHook(hook)}
+                    onToggleSave={() => void handleToggleSave(hook)}
+                    showIndex
+                    variant="result"
+                    className="dashboard-ws-hook-card !p-3.5"
+                  />
                 </motion.li>
               ))}
             </motion.ul>
           ) : null}
         </AnimatePresence>
 
-        {!loading && hooks.length === 0 ? (
-          <p className="text-center text-xs text-zinc-600">
-            Nische wählen und Hooks generieren — Ergebnisse erscheinen hier.
+        {hasMore && !isGenerating ? (
+          <p className={cn('text-center text-xs text-zinc-500')}>
+            +{displayHooks.length - PREVIEW_COUNT} weitere Hooks in der{' '}
+            <button
+              type="button"
+              onClick={() => navigateToTool('hook')}
+              className="font-semibold text-violet-400 hover:text-violet-300"
+            >
+              Vollansicht
+            </button>
           </p>
         ) : null}
+
+        {status === 'checking' && (
+          <p className="text-center text-xs text-violet-400/90" role="status">
+            Credits werden geprüft …
+          </p>
+        )}
       </div>
     </WorkspaceSection>
   )
