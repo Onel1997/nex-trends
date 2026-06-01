@@ -73,6 +73,8 @@ export const SubscriptionContext = createContext<SubscriptionContextValue | null
 
 type SubscriptionProviderProps = {
   children: ReactNode
+  /** Skip Supabase auth bootstrap (production-safe landing mode). */
+  skipAuthBootstrap?: boolean
 }
 
 const PROFILE_SELECT =
@@ -107,12 +109,15 @@ function applyUsageToProfile(
   }
 }
 
-export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
+export function SubscriptionProvider({
+  children,
+  skipAuthBootstrap = false,
+}: SubscriptionProviderProps) {
   const { showToast } = useToast()
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [usage, setUsage] = useState<UsageLimitResult>(getUsageFromProfile(null))
-  const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const [isAuthLoading, setIsAuthLoading] = useState(!skipAuthBootstrap)
   const [isProfileLoading, setIsProfileLoading] = useState(false)
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false)
 
@@ -228,6 +233,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   )
 
   useEffect(() => {
+    if (skipAuthBootstrap) {
+      setIsAuthLoading(false)
+      return
+    }
+
     let mounted = true
 
     async function bootstrapAuth() {
@@ -297,7 +307,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       mounted = false
       subscription?.unsubscribe()
     }
-  }, [loadProfileForUser])
+  }, [loadProfileForUser, skipAuthBootstrap])
 
   const handleStripeCheckout = useCallback(
     async (options?: { planId?: PlanId; billingPeriod?: BillingPeriod }) => {

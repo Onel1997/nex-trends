@@ -3,20 +3,15 @@ import { useMobileKeyboardViewport } from '@/hooks/useMobileKeyboardViewport'
 import { SubscriptionProvider } from '@/context/SubscriptionContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { ErrorBoundary } from '@/components/app/ErrorBoundary'
-import { Spinner } from '@/components/ui/Spinner'
-import { useSubscription } from '@/hooks/useSubscription'
-import { CheckoutHandler } from '@/components/app/CheckoutHandler'
-import { MaintenanceBanner } from '@/components/app/MaintenanceBanner'
 import { isAdminPath } from '@/lib/admin-navigation'
 import { isLoginPath } from '@/lib/auth'
 import { isBrowser } from '@/lib/runtime'
 import LandingPage from '@/views/LandingPage'
-import { HomePage } from '@/views/HomePage'
 import { AdminPage } from '@/views/AdminPage'
 import AuthPage from '@/views/AuthPage'
 
+/** Auth guards disabled — always render public landing unless on admin/login paths. */
 function AppContent() {
-  const { session, isAuthLoading } = useSubscription()
   const [onAdminRoute, setOnAdminRoute] = useState(() =>
     isBrowser() ? isAdminPath() : false,
   )
@@ -33,29 +28,15 @@ function AppContent() {
     return () => window.removeEventListener('popstate', syncRoute)
   }, [])
 
-  if (isAuthLoading) {
-    return (
-      <div className="flex min-h-svh items-center justify-center ambient-glow bg-zinc-950">
-        <Spinner size="lg" label="NexTrends wird geladen …" />
-      </div>
-    )
-  }
-
   if (onAdminRoute) {
     return <AdminPage />
   }
 
-  if (onLoginRoute && !session) {
+  if (onLoginRoute) {
     return <AuthPage />
   }
 
-  return (
-    <>
-      {session && <CheckoutHandler />}
-      {session && <MaintenanceBanner />}
-      {session ? <HomePage /> : <LandingPage />}
-    </>
-  )
+  return <LandingPage />
 }
 
 export default function App() {
@@ -64,7 +45,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ToastProvider>
-        <SubscriptionProvider>
+        <SubscriptionProvider skipAuthBootstrap>
           <AppContent />
         </SubscriptionProvider>
       </ToastProvider>

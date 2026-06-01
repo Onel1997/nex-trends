@@ -1,8 +1,5 @@
-import { isAdminPath } from './admin-navigation'
-import { isAuthCallbackPath } from './auth'
-import { getBrowserPathname, isBrowser } from './runtime'
+import { isBrowser } from './runtime'
 import {
-  DASHBOARD_BASE,
   getPathForTool,
   isValidToolId,
   pathToToolId,
@@ -115,19 +112,7 @@ export function syncLegacyToolQueryToPath(): void {
   navigateToTool(mapped, { replace: true })
 }
 
-/** Ensure authenticated users on `/` land on dashboard */
+/** Redirect `/` to dashboard — temporarily disabled for production-safe landing. */
 export function ensureDashboardPath(): void {
-  if (!isBrowser()) return
-  if (isAdminPath() || isAuthCallbackPath()) return
-  const path = getBrowserPathname().replace(/\/$/, '') || '/'
-  if (path === '/') {
-    navigateToTool('dashboard', { replace: true })
-  } else if (
-    (path.startsWith(DASHBOARD_BASE) ||
-      path === '/my-videos' ||
-      path === '/ai-studio') &&
-    !pathToToolId(path)
-  ) {
-    navigateToTool('dashboard', { replace: true })
-  }
+  // no-op
 }
