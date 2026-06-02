@@ -44,15 +44,14 @@ export function DashboardLayout({
 
   return (
     <div className="flex min-h-svh bg-zinc-950 text-zinc-100">
-      <button
-        type="button"
-        aria-label="Menü schließen"
-        onClick={() => setMobileOpen(false)}
-        className={cn(
-          'mobile-drawer-backdrop fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden',
-          mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
-        )}
-      />
+      {mobileOpen ? (
+        <button
+          type="button"
+          aria-label="Menü schließen"
+          onClick={() => setMobileOpen(false)}
+          className="mobile-drawer-backdrop fixed inset-0 z-40 bg-black/40 opacity-100 transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden"
+        />
+      ) : null}
 
       <div
         className={cn(

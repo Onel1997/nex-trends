@@ -105,7 +105,7 @@ function TrendInsightCard({
           trend.gradientTo,
         )}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent transition-opacity group-hover:from-black/60" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 to-transparent transition-opacity group-hover:from-black/60" aria-hidden />
         <span className="relative rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
           {trend.platform}
         </span>

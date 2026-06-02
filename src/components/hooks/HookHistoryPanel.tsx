@@ -158,7 +158,7 @@ export function HookHistoryPanel({
 
   if (isLoading) {
     return (
-      <div className={cn('space-y-3 overflow-x-hidden', className)}>
+      <div className={cn('hook-history-panel space-y-3', className)}>
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-[4.5rem] w-full rounded-xl" />
         ))}
@@ -178,7 +178,7 @@ export function HookHistoryPanel({
   let counter = history.length
 
   return (
-    <div className={cn('overflow-x-hidden', className)}>
+    <div className={cn('hook-history-panel', className)}>
       <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-600">
         {history.length} Generierung{history.length === 1 ? '' : 'en'}
       </p>
@@ -312,7 +312,7 @@ export function HookSavedPanel({
 
   if (isLoading) {
     return (
-      <div className={cn('space-y-3.5 overflow-x-hidden', className)}>
+      <div className={cn('hook-saved-feed hook-saved-feed--skeleton space-y-3.5', className)}>
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
@@ -340,9 +340,13 @@ export function HookSavedPanel({
   }
 
   return (
-    <ul className={cn('space-y-3.5 overflow-x-hidden sm:space-y-4', className)}>
+    <ul className={cn('hook-saved-feed w-full min-w-0', className)}>
       {hooks.map((hook, index) => (
-        <li key={hook.id} className="hook-stagger-item min-w-0" style={{ animationDelay: `${index * 40}ms` }}>
+        <li
+          key={hook.id}
+          className="hook-saved-feed__item hook-stagger-item min-w-0"
+          style={{ animationDelay: `${index * 40}ms` }}
+        >
           <SavedHookItem
             hook={hook}
             index={index}

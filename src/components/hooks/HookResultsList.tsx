@@ -96,7 +96,7 @@ export const HookResultsList = memo(function HookResultsList({
   return (
     <ol
       className={cn(
-        'grid w-full min-w-0 max-w-full gap-3.5 overflow-x-hidden sm:gap-4',
+        'hook-results-feed w-full min-w-0 max-w-full',
         dimmed && 'pointer-events-none opacity-30 transition-opacity duration-500',
         className,
       )}
@@ -104,7 +104,7 @@ export const HookResultsList = memo(function HookResultsList({
       {displayHooks.map((hook, index) => (
         <li
           key={`${index}-${hook.slice(0, 32)}`}
-          className="hook-stagger-item min-w-0 max-w-full"
+          className="hook-results-feed__item hook-stagger-item min-w-0 max-w-full"
           style={{ animationDelay: `${index * 50}ms` }}
         >
           <HookResultItem
@@ -208,7 +208,7 @@ export function HookGeneratingSkeleton({ count = 10 }: { count?: number }) {
   const visible = Math.min(count, 6)
 
   return (
-    <div className="space-y-3.5 overflow-x-hidden sm:space-y-4">
+    <div className="hook-results-feed hook-results-feed--skeleton">
       {Array.from({ length: visible }).map((_, i) => (
         <div
           key={i}

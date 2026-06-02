@@ -1,4 +1,4 @@
-import { isBrowser } from './runtime'
+import { getBrowserHref, getBrowserPathname, getBrowserSearch, isBrowser } from './runtime'
 import {
   getPathForTool,
   isValidToolId,
@@ -24,7 +24,7 @@ const LEGACY_QUERY_MAP: Record<string, DashboardRouteId> = {
 function buildUrl(tool: DashboardRouteId): string {
   if (!isBrowser()) return getPathForTool(tool)
   const url = new URL(window.location.origin + getPathForTool(tool))
-  const current = new URL(window.location.href)
+  const current = new URL(getBrowserHref())
   const checkout = current.searchParams.get('checkout')
   if (checkout) url.searchParams.set('checkout', checkout)
   return `${url.pathname}${url.search}`
@@ -33,10 +33,10 @@ function buildUrl(tool: DashboardRouteId): string {
 export function readToolFromUrl(): DashboardRouteId {
   if (!isBrowser()) return 'dashboard'
 
-  const fromPath = pathToToolId(window.location.pathname)
+  const fromPath = pathToToolId(getBrowserPathname())
   if (fromPath) return fromPath
 
-  const tool = new URLSearchParams(window.location.search).get('tool')
+  const tool = new URLSearchParams(getBrowserSearch()).get('tool')
   if (tool && isValidToolId(tool)) return tool
   if (tool && LEGACY_QUERY_MAP[tool]) return LEGACY_QUERY_MAP[tool]
 
@@ -46,6 +46,7 @@ export function readToolFromUrl(): DashboardRouteId {
 export const DASHBOARD_NAVIGATE_EVENT = 'dashboard:navigate'
 
 function notifyDashboardNavigate(tool: DashboardRouteId) {
+  if (!isBrowser()) return
   window.dispatchEvent(
     new CustomEvent(DASHBOARD_NAVIGATE_EVENT, { detail: { tool } }),
   )
@@ -55,6 +56,8 @@ export function navigateToTool(
   tool: DashboardRouteId,
   options?: { replace?: boolean },
 ): void {
+  if (!isBrowser()) return
+
   const href = buildUrl(tool)
   if (options?.replace) {
     window.history.replaceState({ tool }, '', href)
@@ -70,29 +73,38 @@ export function writeToolToUrl(tool: DashboardRouteId) {
 }
 
 export function clearCheckoutParams() {
-  const url = new URL(window.location.href)
+  if (!isBrowser()) return
+
+  const url = new URL(getBrowserHref())
   url.searchParams.delete('checkout')
   window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
 }
 
 export function readCheckoutParam(): 'success' | 'cancel' | null {
-  const value = new URLSearchParams(window.location.search).get('checkout')
+  if (!isBrowser()) return null
+
+  const value = new URLSearchParams(getBrowserSearch()).get('checkout')
   if (value === 'success' || value === 'cancel') return value
   return null
 }
 
 export function navigateToHome() {
+  if (!isBrowser()) return
+
   navigateToTool('dashboard')
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 export function navigateToLanding() {
+  if (!isBrowser()) return
   window.location.href = '/'
 }
 
 /** Redirect legacy ?tool= URLs to path-based routes */
 export function syncLegacyToolQueryToPath(): void {
-  const params = new URLSearchParams(window.location.search)
+  if (!isBrowser()) return
+
+  const params = new URLSearchParams(getBrowserSearch())
   const tool = params.get('tool')
   if (!tool) return
 
@@ -102,7 +114,7 @@ export function syncLegacyToolQueryToPath(): void {
   if (!mapped) return
 
   const path = getPathForTool(mapped)
-  if (window.location.pathname === path) {
+  if (getBrowserPathname() === path) {
     params.delete('tool')
     const search = params.toString() ? `?${params}` : ''
     window.history.replaceState({ tool: mapped }, '', `${path}${search}`)

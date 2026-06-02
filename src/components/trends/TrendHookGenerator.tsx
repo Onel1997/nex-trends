@@ -105,7 +105,7 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
   )
 
   return (
-    <section className={cn('space-y-4 overflow-x-hidden', className)}>
+    <section className={cn('hook-results-section space-y-4 overflow-x-clip', className)}>
       <div className="flex items-center gap-2">
         <BoltIcon className="size-4 text-violet-400" aria-hidden />
         <h3 className="text-xs font-semibold uppercase tracking-widest text-violet-400/90">

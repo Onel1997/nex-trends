@@ -69,7 +69,7 @@ export const HookCard = memo(function HookCard({
   return (
     <article
       className={cn(
-        'hook-card group p-4 sm:p-5',
+        'hook-card group h-auto max-h-none p-4 sm:p-5',
         saved && 'hook-card--saved',
         justSaved && 'animate-save-glow border-amber-400/40',
         removing && 'hook-card--removing',
@@ -86,7 +86,7 @@ export const HookCard = memo(function HookCard({
         <div className="absolute -bottom-8 -left-8 size-24 rounded-full bg-fuchsia-500/8 blur-2xl" />
       </div>
 
-      <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+      <div className="hook-card__inner relative flex flex-col gap-3.5 sm:flex-row sm:items-start sm:gap-4">
         {showIndex && typeof index === 'number' && (
           <span
             className={cn(
@@ -100,8 +100,8 @@ export const HookCard = memo(function HookCard({
           </span>
         )}
 
-        <div className="min-w-0 flex-1">
-          <p className="break-words text-[15px] font-medium leading-[1.55] tracking-tight text-zinc-50 sm:text-base sm:leading-relaxed">
+        <div className="hook-card__content min-w-0 flex-1">
+          <p className="hook-card__text break-words text-[15px] font-medium leading-[1.6] tracking-tight text-zinc-50 sm:text-base sm:leading-relaxed">
             {hook}
           </p>
 
@@ -121,7 +121,7 @@ export const HookCard = memo(function HookCard({
           </div>
         </div>
 
-        <div className="flex w-full shrink-0 items-stretch gap-2 sm:w-auto sm:flex-col sm:gap-1.5">
+        <div className="hook-card__actions flex w-full shrink-0 items-stretch gap-2 sm:w-auto sm:flex-col sm:gap-1.5">
           {onToggleSave && variant === 'result' && (
             <button
               type="button"

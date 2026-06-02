@@ -26,7 +26,7 @@ function AiIllustration({ variant }: { variant: TrendsEmptyStateProps['variant']
       )}
       aria-hidden
     >
-      <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.15),transparent_50%)]" />
+      <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.15),transparent_50%)]" aria-hidden />
       <SparklesIcon className="relative size-8 text-violet-300/90" />
       <div className="absolute -right-1 -top-1 size-3 animate-pulse-soft rounded-full bg-violet-400/60" />
       <div className="absolute -bottom-0.5 -left-0.5 size-2 rounded-full bg-fuchsia-400/40" />

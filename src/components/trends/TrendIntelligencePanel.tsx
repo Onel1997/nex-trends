@@ -17,6 +17,7 @@ import { useTrendHistory } from '@/hooks/useTrendHistory'
 import { useTrendSessionRestore } from '@/hooks/useTrendSessionRestore'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { MAX_FREE_CREDITS } from '@/lib/constants'
+import { getBrowserSearch } from '@/lib/runtime'
 import { createSearchNonce, getDemoUserSeed } from '@/lib/demo-trend-seed'
 import { markDemoSeen, shouldShowDemoOnLoad } from '@/lib/trend-intelligence'
 import { runAiGenerationPipeline } from '@/lib/ai-generation-pipeline'
@@ -43,7 +44,7 @@ export function TrendIntelligencePanel() {
   const [categoryFilter, setCategoryFilter] = useState<TrendCategoryFilter>('all')
   const [openTrendId, setOpenTrendId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null
-    return new URLSearchParams(window.location.search).get('trend')
+    return new URLSearchParams(getBrowserSearch()).get('trend')
   })
   const [hasSearched, setHasSearched] = useState(
     () => Boolean(initial?.searchQuery?.trim()) && !initial?.isDemo,

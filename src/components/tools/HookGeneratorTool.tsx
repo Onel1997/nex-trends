@@ -306,7 +306,7 @@ export function HookGeneratorTool() {
       className="nex-tool-surface"
     >
       {sessionTrends.length > 0 && (
-        <section className="mb-5 overflow-x-hidden">
+        <section className="hook-trend-context mb-5 overflow-x-clip">
           <p className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-600">
             <TrendingUpIcon className="size-3.5 text-violet-400/80" aria-hidden />
             Trend-Kontext
@@ -336,7 +336,7 @@ export function HookGeneratorTool() {
         </section>
       )}
 
-      <div className="glass-card overflow-x-hidden p-4 sm:p-7">
+      <div className="hook-generator-form glass-card overflow-x-clip p-4 sm:p-7">
         <label
           htmlFor="hook-generator-topic"
           className="mb-2.5 block text-xs font-semibold uppercase tracking-widest text-zinc-600"
@@ -391,10 +391,10 @@ export function HookGeneratorTool() {
       </div>
 
       <section
-        className="mt-6 overflow-x-hidden pb-28 sm:pb-2"
+        className="hook-results-section mt-6 overflow-x-clip pb-32 sm:pb-4"
         aria-busy={isGenerating}
       >
-        <div className="sticky top-0 z-10 -mx-1 mb-4 flex flex-wrap items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/92 px-1 pb-3 backdrop-blur-lg">
+        <div className="hook-results-tabs sticky top-0 z-10 -mx-1 mb-5 flex flex-wrap items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/92 px-1 pb-3.5 backdrop-blur-lg">
           {tabs.map(({ id, label, icon: Icon, count }) => (
             <button
               key={id}
@@ -435,7 +435,7 @@ export function HookGeneratorTool() {
         </div>
 
         {activeTab === 'results' && (
-          <div key="results" className="animate-fade-in">
+          <div key="results" className="hook-results-panel animate-fade-in">
             {isUsageLimitReached && userPlan === 'free' && !unlimited ? (
               <UsageLimitWarning />
             ) : error ? (
@@ -472,7 +472,7 @@ export function HookGeneratorTool() {
                 {isGenerating && !isRegenerating ? (
                   <HookGeneratingSkeleton count={10} />
                 ) : hooks.length > 0 ? (
-                  <div className="relative">
+                  <div className="hook-results-panel__list relative">
                     <HookResultsList
                       hooks={hooks}
                       tone={displayTone}
@@ -507,7 +507,7 @@ export function HookGeneratorTool() {
         )}
 
         {activeTab === 'history' && (
-          <div key="history" className="animate-fade-in">
+          <div key="history" className="hook-history-panel animate-fade-in">
           <HookHistoryPanel
             history={history}
             isLoading={historyLoading}
@@ -525,7 +525,7 @@ export function HookGeneratorTool() {
         )}
 
         {activeTab === 'saved' && (
-          <div key="saved" className="animate-fade-in">
+          <div key="saved" className="hook-saved-panel animate-fade-in">
           <HookSavedPanel
             hooks={savedHooks}
             isLoading={savedLoading}

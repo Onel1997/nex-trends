@@ -22,7 +22,7 @@ export const HookInsightsBar = memo(function HookInsightsBar({
   return (
     <div
       className={cn(
-        'mb-4 flex flex-col gap-2 overflow-x-hidden rounded-xl border border-zinc-800/60',
+        'hook-insights-bar mb-5 flex flex-col gap-2.5 overflow-x-clip rounded-xl border border-zinc-800/60',
         'bg-gradient-to-r from-zinc-950/80 via-violet-950/20 to-zinc-950/80 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-4 sm:px-4',
         className,
       )}

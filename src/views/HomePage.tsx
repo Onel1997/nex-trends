@@ -26,15 +26,14 @@ function readBillingResultPath(): 'success' | 'cancel' | null {
 
 export function HomePage() {
   const billingResult = readBillingResultPath()
-  const [activeTool, setActiveTool] = useState<DashboardToolId>(() => {
-    syncLegacyToolQueryToPath()
-    return readToolFromUrl()
-  })
+  const [activeTool, setActiveTool] = useState<DashboardToolId>(() => readToolFromUrl())
 
   const handleSelectTool = useCallback((tool: DashboardToolId) => {
     setActiveTool(tool)
     navigateToTool(tool)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (isBrowser()) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }, [])
 
   useEffect(() => {
@@ -44,6 +43,8 @@ export function HomePage() {
   }, [])
 
   useEffect(() => {
+    if (!isBrowser()) return
+
     const syncFromUrl = () => setActiveTool(readToolFromUrl())
 
     window.addEventListener('popstate', syncFromUrl)

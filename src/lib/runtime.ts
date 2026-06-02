@@ -9,6 +9,18 @@ export function getBrowserPathname(): string {
   return window.location.pathname
 }
 
+/** Current search string — returns "" during SSR. */
+export function getBrowserSearch(): string {
+  if (!isBrowser()) return ''
+  return window.location.search
+}
+
+/** Full page URL — returns "" during SSR. */
+export function getBrowserHref(): string {
+  if (!isBrowser()) return ''
+  return window.location.href
+}
+
 /** True in local development (Next.js or Vite). */
 export function isDevEnvironment(): boolean {
   try {

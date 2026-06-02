@@ -31,15 +31,14 @@ export function AdminLayout({
         aria-hidden
       />
 
-      <button
-        type="button"
-        aria-label="Menü schließen"
-        onClick={() => setMobileOpen(false)}
-        className={cn(
-          'fixed inset-0 z-40 bg-black/70 backdrop-blur-md transition-opacity lg:hidden',
-          mobileOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
-        )}
-      />
+      {mobileOpen ? (
+        <button
+          type="button"
+          aria-label="Menü schließen"
+          onClick={() => setMobileOpen(false)}
+          className="mobile-drawer-backdrop fixed inset-0 z-40 bg-black/70 backdrop-blur-md opacity-100 transition-opacity lg:hidden"
+        />
+      ) : null}
 
       <div
         className={cn(

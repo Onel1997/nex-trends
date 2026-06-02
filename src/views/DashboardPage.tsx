@@ -31,7 +31,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
         <div className="nex-ambient__orb nex-ambient__orb--2" />
       </div>
 
-      <div className="dashboard-os__content relative flex flex-col">
+      <div className="dashboard-os__content dashboard-os-interactive relative flex flex-col">
         {error && <ErrorBanner error={error} onRetry={() => void refresh()} />}
 
         <OnboardingTip

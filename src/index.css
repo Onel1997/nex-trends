@@ -521,6 +521,9 @@ body {
 .hook-card {
   position: relative;
   isolation: isolate;
+  height: auto;
+  max-height: none;
+  overflow: hidden;
   border-radius: 1rem;
   border: 1px solid rgb(63 63 70 / 0.55);
   background: linear-gradient(
@@ -562,6 +565,8 @@ body {
   pointer-events: none;
   position: absolute;
   inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
   opacity: 0;
   transition: opacity 0.35s var(--ease-out-smooth);
 }
@@ -573,6 +578,7 @@ body {
 }
 
 .hook-stagger-item {
+  overflow: visible;
   animation: hook-stagger-in 0.55s var(--ease-out-expo) both;
 }
 
@@ -648,6 +654,136 @@ body {
   background: rgb(16 185 129 / 0.14);
   color: rgb(110 231 183 / 0.95);
   box-shadow: 0 0 0 1px rgb(16 185 129 / 0.28);
+}
+
+/* Hook results — natural height, no nested scroll areas */
+.hook-results-section,
+.hook-results-panel,
+.hook-results-panel__list,
+.hook-results-feed,
+.hook-results-feed__item,
+.hook-saved-feed,
+.hook-saved-feed__item,
+.hook-saved-panel,
+.hook-history-panel {
+  overflow: visible;
+  max-height: none;
+  height: auto;
+  min-width: 0;
+}
+
+.hook-results-feed,
+.hook-saved-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .hook-results-feed,
+  .hook-saved-feed {
+    gap: 1.125rem;
+  }
+}
+
+.hook-card__inner,
+.hook-card__content,
+.hook-card__actions {
+  overflow: visible;
+  max-height: none;
+  height: auto;
+}
+
+.hook-card__text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.hook-results-tabs {
+  overflow: visible;
+}
+
+.hook-insights-bar {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.hook-gen-progress {
+  overflow-x: clip;
+}
+
+.hook-skeleton-card {
+  overflow-x: clip;
+}
+
+@media (max-width: 639px) {
+  .hook-results-feed,
+  .hook-saved-feed {
+    gap: 1.125rem;
+  }
+
+  .hook-card {
+    padding: 1.125rem 1rem;
+    border-radius: 1.0625rem;
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 10px 36px -18px rgb(0 0 0 / 0.55),
+      0 0 0 1px rgb(139 92 246 / 0.06);
+  }
+
+  .hook-card__text {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .hook-card__actions {
+    padding-top: 0.125rem;
+  }
+
+  .hook-results-tabs {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.875rem;
+  }
+
+  .hook-insights-bar {
+    margin-bottom: 1.25rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .hook-trend-context {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hook-generator-form,
+  .hook-results-panel,
+  .hook-results-panel__list,
+  .hook-results-feed,
+  .hook-results-feed__item,
+  .hook-saved-feed,
+  .hook-saved-feed__item,
+  .hook-saved-panel,
+  .hook-history-panel,
+  .nex-tool-surface .hook-results-section {
+    overflow: visible !important;
+    overflow-y: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  .hook-card__inner,
+  .hook-card__content,
+  .hook-card__actions {
+    overflow: visible !important;
+    max-height: none !important;
+  }
 }
 
 /* ── Ad Copy Generator feed cards ── */
@@ -996,6 +1132,7 @@ body {
   max-width: 100%;
   min-width: 0;
   overflow-x: clip;
+  overflow-y: visible;
 }
 
 .nex-page-pad {
@@ -1597,6 +1734,11 @@ body {
   content-visibility: visible;
 }
 
+.video-card > [aria-hidden].absolute {
+  pointer-events: none;
+  touch-action: none;
+}
+
 .video-card__poster {
   transition: opacity 0.16s var(--ease-out-expo);
   will-change: opacity;
@@ -1763,14 +1905,29 @@ body {
   isolation: isolate;
 }
 
+/*
+ * Noise texture — in-flow on touch devices (fixed fullscreen layers block iOS Safari taps
+ * even with pointer-events:none). Fixed only on fine-pointer desktop.
+ */
 .nex-ambient::before {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+  touch-action: none;
   z-index: 0;
   opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nex-ambient::before {
+    position: fixed;
+    max-height: 100vh;
+    max-height: 100dvh;
+  }
 }
 
 .nex-ambient__orb {
@@ -1908,6 +2065,7 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  pointer-events: auto;
 }
 
 .dashboard-os-section {
@@ -7121,6 +7279,80 @@ html.nex-reduced-motion *::after {
 
 .dashboard-ws-trend-card:hover::before {
   opacity: 1;
+}
+
+/* ── Mobile touch: decor must not block taps (iOS Safari fixed-layer quirk) ── */
+
+.nex-decor-layer,
+.nex-ambient,
+.nex-ambient::before,
+.nex-ambient__orb,
+.nex-ambient__orb *,
+.nex-ambient > [aria-hidden],
+.ambient-glow > [aria-hidden],
+.video-card__animated-preview,
+.video-card__animated-preview * {
+  pointer-events: none !important;
+  touch-action: none;
+}
+
+.dashboard-main-safe,
+.dashboard-os__content,
+.dashboard-main-interactive,
+.dashboard-os-interactive,
+.dashboard-main-safe .relative.z-10,
+.dashboard-main-safe .relative.mx-auto {
+  pointer-events: auto;
+}
+
+.dashboard-main-safe :is(a, button, input, select, textarea, [role='button'], label) {
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-drawer-backdrop {
+  touch-action: none;
+}
+
+.mobile-drawer-backdrop[hidden] {
+  display: none !important;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .nex-ambient::before {
+    position: absolute !important;
+    pointer-events: none !important;
+    touch-action: none !important;
+  }
+
+  .dashboard-os__content,
+  .dashboard-os-interactive,
+  .dashboard-main-interactive,
+  .dashboard-main-safe {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto !important;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .nex-ambient::before {
+    position: absolute !important;
+    max-height: none;
+    pointer-events: none !important;
+    touch-action: none;
+  }
+
+  .nex-reveal-scroll:not(.nex-reveal-scroll--visible) {
+    pointer-events: none;
+  }
+
+  .nex-reveal-scroll--visible {
+    pointer-events: auto;
+  }
 }
 
 .dashboard-ws-hook-card:hover {

@@ -37,10 +37,10 @@ function VolumePulseIcon({ active }: { active: boolean }) {
 
 function AnimatedPreviewFallback() {
   return (
-    <div className="video-card__animated-preview absolute inset-0 overflow-hidden" aria-hidden>
-      <div className="video-card__ken-burns absolute inset-[-8%] bg-gradient-to-br from-violet-900/50 via-zinc-900 to-fuchsia-900/40" />
-      <div className="absolute inset-0 animate-shimmer bg-zinc-900/30" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(139,92,246,0.25),transparent_55%)]" />
+    <div className="video-card__animated-preview pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <div className="video-card__ken-burns pointer-events-none absolute inset-[-8%] bg-gradient-to-br from-violet-900/50 via-zinc-900 to-fuchsia-900/40" />
+      <div className="pointer-events-none absolute inset-0 animate-shimmer bg-zinc-900/30" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(139,92,246,0.25),transparent_55%)]" />
     </div>
   )
 }
@@ -117,7 +117,7 @@ function VideoCardComponent({
       onPointerUp={handleCardTap}
     >
       <div
-        className="absolute inset-0 bg-gradient-to-br from-violet-950/80 via-zinc-950 to-fuchsia-950/70"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-950/80 via-zinc-950 to-fuchsia-950/70"
         aria-hidden
       />
 

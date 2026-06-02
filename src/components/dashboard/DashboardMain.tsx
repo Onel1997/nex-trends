@@ -115,7 +115,7 @@ function DashboardMainInner({ activeTool, onSelectTool }: DashboardMainProps) {
 
       <div
         className={cn(
-          'relative mx-auto w-full',
+          'dashboard-main-interactive relative mx-auto w-full',
           isDashboard
             ? 'nex-page-pad min-w-0 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:pt-3 sm:pb-8 lg:pt-4 lg:pb-10'
             : 'nex-page-pad min-w-0 py-5 pb-6 sm:py-6 sm:pb-8 lg:py-8',

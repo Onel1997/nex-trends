@@ -480,10 +480,10 @@ export function VideoPreview({
             : alt
       }
     >
-      <div className={cn('absolute inset-0', GRADIENT_PLACEHOLDER)} aria-hidden />
+      <div className={cn('pointer-events-none absolute inset-0', GRADIENT_PLACEHOLDER)} aria-hidden />
 
       {showPlaceholder && (
-        <div className="absolute inset-0 animate-shimmer bg-zinc-900/60" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 animate-shimmer bg-zinc-900/60" aria-hidden />
       )}
 
       {displayPosterSrc ? (
@@ -509,7 +509,7 @@ export function VideoPreview({
 
       {showMediaFallback && (
         <div
-          className="absolute inset-0 flex items-center justify-center bg-zinc-900/80"
+          className="pointer-events-none absolute inset-0 flex items-center justify-center bg-zinc-900/80"
           aria-hidden
         >
           <PlayIcon className="size-8 text-white/40" />

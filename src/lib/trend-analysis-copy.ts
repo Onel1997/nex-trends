@@ -1,8 +1,10 @@
+import { getBrowserHref, isBrowser } from '@/lib/runtime'
 import { TREND_STATE_META } from '@/lib/trend-signals'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export function buildTrendShareUrl(trend: TrendIntelligence): string {
-  const url = new URL(window.location.href)
+  if (!isBrowser()) return ''
+  const url = new URL(getBrowserHref())
   url.searchParams.set('trend', trend.id)
   return url.toString()
 }
