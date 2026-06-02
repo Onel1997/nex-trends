@@ -44,7 +44,7 @@ function DashboardCoreProductsInner({ onNavigate }: DashboardCoreProductsProps) 
             aria-hidden
           />
 
-          <div className="relative grid grid-cols-[1fr_auto] items-center gap-2 p-2.5 sm:gap-2.5 sm:p-3">
+          <div className="relative grid grid-cols-[1fr_auto] items-center gap-3 p-3 sm:gap-2.5 sm:p-3">
             <div className="flex min-w-0 flex-col justify-center">
               <div className="flex flex-wrap items-center gap-1">
                 <Badge variant="pro" className="text-[8px] uppercase tracking-wider">
@@ -90,7 +90,7 @@ function DashboardCoreProductsInner({ onNavigate }: DashboardCoreProductsProps) 
           </div>
         </article>
 
-        <div className="dashboard-os-module-grid grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-2.5">
+        <div className="dashboard-os-module-grid grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-2.5">
           {SECONDARY.map((product) => {
             const route = getRouteConfig(product.id)
             const Icon = product.icon

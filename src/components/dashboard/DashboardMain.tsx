@@ -89,7 +89,7 @@ function DashboardMainInner({ activeTool, onSelectTool }: DashboardMainProps) {
   return (
     <div
       className={cn(
-        'relative min-h-0',
+        'relative min-w-0',
         immersive ? 'ti-ambient' : 'ambient-glow',
       )}
     >
@@ -117,15 +117,18 @@ function DashboardMainInner({ activeTool, onSelectTool }: DashboardMainProps) {
         className={cn(
           'dashboard-main-interactive relative mx-auto w-full',
           isDashboard
-            ? 'nex-page-pad min-w-0 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:pt-3 sm:pb-8 lg:pt-4 lg:pb-10'
-            : 'nex-page-pad min-w-0 py-5 pb-6 sm:py-6 sm:pb-8 lg:py-8',
+            ? 'dashboard-mobile-page-container nex-page-pad min-w-0 pt-1 max-md:pb-0 sm:pt-3 sm:pb-8 lg:pt-4 lg:pb-10'
+            : 'dashboard-mobile-page-container nex-page-pad min-w-0 py-4 max-md:pb-0 sm:py-6 sm:pb-8 lg:py-8',
           immersive
             ? 'max-w-6xl xl:max-w-7xl 2xl:max-w-[1680px]'
             : 'max-w-7xl',
         )}
       >
         <ToolPageHeader activeTool={activeTool} onBack={() => onSelectTool('dashboard')} />
-        <div key={activeTool} className="page-transition-enter nex-page-enter">
+        <div
+          key={activeTool}
+          className="page-transition-enter nex-mobile-page-enter nex-page-enter"
+        >
           <Suspense fallback={<PageLoadingFallback tool={activeTool} />}>
             {renderPage(activeTool, onSelectTool)}
           </Suspense>

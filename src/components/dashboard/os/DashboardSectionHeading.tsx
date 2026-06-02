@@ -19,8 +19,8 @@ export function DashboardSectionHeading({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-end justify-between gap-2',
-        compact ? 'mb-1.5' : 'mb-2 sm:mb-2.5',
+        'dashboard-os-section-heading flex flex-wrap items-end justify-between gap-2.5',
+        compact ? 'mb-2 border-none pb-0' : 'mb-2.5 sm:mb-3',
         className,
       )}
     >
@@ -28,7 +28,9 @@ export function DashboardSectionHeading({
         <h2
           className={cn(
             'font-semibold tracking-tight text-zinc-100',
-            compact ? 'text-xs uppercase tracking-wider text-zinc-400' : 'text-sm sm:text-[0.9375rem]',
+            compact
+              ? 'text-xs uppercase tracking-wider text-zinc-400'
+              : 'text-[0.9375rem] sm:text-base',
           )}
         >
           {title}

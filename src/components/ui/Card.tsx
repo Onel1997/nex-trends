@@ -26,6 +26,7 @@ export function Card({
     <div
       className={cn(
         variants[variant],
+        'nex-card-interactive',
         hover &&
           'transition-smooth hover:border-zinc-700/70 hover:bg-zinc-900/55 hover:shadow-lg hover:shadow-violet-950/10',
         className,
@@ -44,7 +45,12 @@ export function CardHeader({
   className?: string
 }) {
   return (
-    <div className={cn('border-b border-zinc-800/50 px-5 py-4 sm:px-6 sm:py-5', className)}>
+    <div
+      className={cn(
+        'nex-card-header border-b border-zinc-800/50 px-4 py-3.5 sm:px-6 sm:py-5',
+        className,
+      )}
+    >
       {children}
     </div>
   )
@@ -57,5 +63,5 @@ export function CardBody({
   children: ReactNode
   className?: string
 }) {
-  return <div className={cn('p-5 sm:p-6', className)}>{children}</div>
+  return <div className={cn('nex-card-body p-4 sm:p-6', className)}>{children}</div>
 }

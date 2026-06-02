@@ -36,7 +36,7 @@ export function WorkspaceSection({
       variants={fadeUp}
       transition={{ ...transition, delay }}
     >
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-2 sm:mb-4">
+      <div className="mb-3.5 flex flex-wrap items-end justify-between gap-2.5 sm:mb-4">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold tracking-tight text-zinc-100 sm:text-[0.9375rem]">
             {title}
@@ -49,7 +49,7 @@ export function WorkspaceSection({
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      <div className="dashboard-ws-panel rounded-2xl border border-zinc-800/60 bg-zinc-900/35 p-3.5 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset] backdrop-blur-xl sm:p-5">
+      <div className="dashboard-ws-panel nex-card-interactive rounded-2xl border border-zinc-800/60 bg-zinc-900/35 p-4 shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_0_0_1px_rgba(139,92,246,0.05)] backdrop-blur-xl sm:p-5">
         {children}
       </div>
     </motion.section>

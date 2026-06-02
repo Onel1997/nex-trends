@@ -23,7 +23,7 @@ export function DashboardSubsectionHeader({
   className,
 }: DashboardSubsectionHeaderProps) {
   return (
-    <div className={cn('mb-1 flex items-center justify-between gap-2', className)}>
+    <div className={cn('mb-2 flex items-center justify-between gap-2.5 sm:mb-2.5', className)}>
       <div className="flex min-w-0 items-center gap-1.5">
         {Icon ? (
           <span className="flex size-6 shrink-0 items-center justify-center rounded-md border border-violet-500/15 bg-violet-500/8">
@@ -33,7 +33,7 @@ export function DashboardSubsectionHeader({
             />
           </span>
         ) : null}
-        <h3 className="truncate text-[12px] font-semibold tracking-tight text-zinc-100">
+        <h3 className="truncate text-[0.8125rem] font-semibold tracking-tight text-zinc-100 sm:text-[13px]">
           {title}
         </h3>
         {count !== undefined ? (
@@ -47,7 +47,7 @@ export function DashboardSubsectionHeader({
         <button
           type="button"
           onClick={onViewAll}
-          className="shrink-0 text-[10px] font-medium text-zinc-500 transition-smooth hover:text-violet-300"
+          className="nex-touch-target -mr-1 shrink-0 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 transition-smooth hover:text-violet-300 active:scale-[0.98]"
         >
           {viewAllLabel} →
         </button>

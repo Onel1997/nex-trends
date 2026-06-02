@@ -1136,8 +1136,15 @@ body {
 }
 
 .nex-page-pad {
-  padding-left: max(0.875rem, env(safe-area-inset-left, 0px));
-  padding-right: max(0.875rem, env(safe-area-inset-right, 0px));
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 400px) and (max-width: 639px) {
+  .nex-page-pad {
+    padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
+  }
 }
 
 @media (min-width: 640px) {
@@ -1418,7 +1425,15 @@ body {
   }
 
   .dashboard-section .mb-4 {
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-section-divider {
+    margin-bottom: 1.5rem;
+  }
+
+  .glass-card {
+    border-radius: 1rem;
   }
 }
 
@@ -2276,7 +2291,7 @@ body {
 /* Compact mobile hero */
 @media (max-width: 639px) {
   .dashboard-os-hero {
-    padding: 0.75rem 0.875rem;
+    padding: 1rem;
   }
 
   .dashboard-os-hero .nex-orb {
@@ -3477,15 +3492,271 @@ body {
 
 /* Compact mobile dashboard header + safe areas */
 .dashboard-mobile-header {
-  min-height: 2.75rem;
-  padding-block: 0.375rem;
-  padding-top: max(0.375rem, env(safe-area-inset-top, 0px));
-  padding-left: max(0.875rem, env(safe-area-inset-left, 0px));
-  padding-right: max(0.875rem, env(safe-area-inset-right, 0px));
+  min-height: 3rem;
+  padding-block: 0.5rem;
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
 .dashboard-main-safe {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  scroll-padding-top: calc(3rem + env(safe-area-inset-top, 0px));
+  scroll-padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  overflow: visible;
+  overflow-y: visible;
+  max-height: none;
+  height: auto;
+  touch-action: pan-y;
+}
+
+/* ── Dashboard: single document scroll (fixes iOS Safari freeze) ── */
+
+.dashboard-shell {
+  min-height: 100dvh;
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
+
+html.dashboard-route-active,
+html.dashboard-route-active body {
+  height: auto;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+@media (max-width: 767px) {
+  html.dashboard-route-active {
+    scroll-padding-bottom: var(--nex-mobile-nav-offset, calc(140px + env(safe-area-inset-bottom, 0px)));
+  }
+}
+
+body.dashboard-body-locked {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+.dashboard-shell__column {
+  min-height: 0;
+  min-width: 0;
+}
+
+.dashboard-main-interactive,
+.dashboard-os-interactive,
+.dashboard-os__content {
+  min-height: 0;
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .dashboard-shell {
+    display: block;
+  }
+
+  .dashboard-shell__column {
+    display: block;
+    min-height: 0;
+  }
+
+  .dashboard-main-safe {
+    display: block;
+    flex: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: auto;
+    overscroll-behavior: auto;
+    touch-action: pan-y;
+  }
+
+  .dashboard-os {
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .dashboard-os-workspace {
+    overflow: visible;
+  }
+
+  .trend-feed {
+    contain: none;
+  }
+
+  .trend-feed-item {
+    content-visibility: visible;
+    contain-intrinsic-size: none;
+  }
+
+  .trend-intelligence-page {
+    overflow-x: hidden;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: auto;
+  }
+
+  .sticky-header-smooth,
+  .dashboard-mobile-header {
+    contain: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-shell {
+    display: flex;
+  }
+
+  .dashboard-shell__column {
+    display: flex;
+    min-height: 0;
+  }
+}
+
+/* ── Mobile bottom navigation (iOS SaaS tab bar) ── */
+
+:root {
+  --nex-mobile-nav-height: 4.25rem;
+  /* Total clearance for fixed tab bar + home indicator + breathing room */
+  --nex-mobile-nav-offset: calc(140px + env(safe-area-inset-bottom, 0px));
+}
+
+.dashboard-shell--mobile-nav {
+  --nex-mobile-nav-offset: calc(140px + env(safe-area-inset-bottom, 0px));
+}
+
+.mobile-bottom-nav {
+  pointer-events: none;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  touch-action: none;
+}
+
+.mobile-bottom-nav__surface {
+  border-radius: 1.25rem 1.25rem 0 0;
+  border-top: 1px solid rgb(139 92 246 / 0.18);
+  background: linear-gradient(
+    180deg,
+    rgb(24 24 27 / 0.72) 0%,
+    rgb(9 9 11 / 0.94) 100%
+  );
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow:
+    0 -1px 0 0 rgb(255 255 255 / 0.05) inset,
+    0 -16px 48px -12px rgb(0 0 0 / 0.65),
+    0 0 60px -20px rgb(139 92 246 / 0.22);
+}
+
+.mobile-bottom-nav__surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse 90% 80% at 50% 0%,
+    rgb(139 92 246 / 0.12),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.mobile-bottom-nav__inner {
+  pointer-events: auto;
+  touch-action: manipulation;
+  min-height: var(--nex-mobile-nav-height);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-bottom-nav__item--active {
+  color: rgb(196 181 253);
+}
+
+.mobile-bottom-nav__glow {
+  background: radial-gradient(
+    ellipse 90% 100% at 50% 100%,
+    rgb(139 92 246 / 0.42),
+    transparent 72%
+  );
+}
+
+.mobile-bottom-nav__icon--active {
+  animation: mobile-nav-icon-pop 0.45s var(--ease-out-expo) both;
+}
+
+@keyframes mobile-nav-icon-pop {
+  0% {
+    transform: scale(0.88);
+  }
+  55% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes nex-mobile-page-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (max-width: 767px) {
+  .nex-mobile-page-enter {
+    animation: nex-mobile-page-in 0.4s var(--ease-out-expo) both;
+  }
+
+  /* Single source of bottom safe area — main scroll root */
+  .dashboard-shell--mobile-nav .dashboard-main-safe,
+  .dashboard-shell--mobile-nav .dashboard-main-with-mobile-nav {
+    padding-bottom: var(--nex-mobile-nav-offset) !important;
+    scroll-padding-bottom: var(--nex-mobile-nav-offset);
+  }
+
+  .dashboard-shell--mobile-nav .dashboard-shell__column {
+    padding-bottom: 0;
+  }
+
+  /* Avoid double padding on nested page wrappers */
+  .dashboard-shell--mobile-nav .dashboard-main-interactive,
+  .dashboard-shell--mobile-nav .dashboard-os--safe-pad,
+  .dashboard-shell--mobile-nav .dashboard-os,
+  .dashboard-shell--mobile-nav .trend-intelligence-page,
+  .dashboard-shell--mobile-nav .pricing-os,
+  .dashboard-shell--mobile-nav .nex-tool-surface {
+    padding-bottom: 0 !important;
+    margin-bottom: 0;
+    overflow-x: hidden;
+    overflow-y: visible;
+    max-height: none;
+    height: auto;
+  }
+
+  .dashboard-shell--mobile-nav .hook-mobile-sticky-actions {
+    bottom: var(--nex-mobile-nav-offset);
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .dashboard-shell--mobile-nav .nex-tool-surface:has(.hook-mobile-sticky-actions) .hook-results-section,
+  .dashboard-shell--mobile-nav .ad-copy-results-section,
+  .dashboard-shell--mobile-nav .seo-title-results-section {
+    padding-bottom: calc(var(--nex-mobile-nav-offset) + 4rem) !important;
+  }
+
+  .dashboard-shell--mobile-nav .pricing-sticky-cta {
+    bottom: var(--nex-mobile-nav-offset);
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none !important;
+  }
 }
 
 .studio-page {
@@ -3731,6 +4002,12 @@ body {
   will-change: opacity, transform;
 }
 
+@media (max-width: 1023px) {
+  .dashboard-main-safe .nex-page-enter {
+    will-change: auto;
+  }
+}
+
 @keyframes nex-reveal-up {
   from {
     opacity: 0;
@@ -3775,9 +4052,9 @@ body {
 }
 
 .nex-os-polish.dashboard-os {
-  --dash-gap-section: 0.75rem;
+  --dash-gap-section: 0.875rem;
   --dash-gap-inner: 0.5rem;
-  --nex-section-pad-x: 0.125rem;
+  --nex-section-pad-x: 0;
 }
 
 @media (min-width: 640px) {
@@ -3930,7 +4207,14 @@ body {
 }
 
 .dashboard-os--safe-pad {
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .dashboard-shell--mobile-nav .dashboard-main-safe {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px)) !important;
+    scroll-padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @keyframes dashboard-empty-spark {
@@ -5041,13 +5325,29 @@ body {
   }
 
   .scroll-smooth-mobile,
-  .dashboard-main-safe,
-  .trend-intelligence-page,
   .studio-page {
     scroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
     touch-action: pan-x pan-y;
+  }
+
+  /* Horizontal carousels only — never trap vertical page scroll */
+  .dashboard-os-carousel__track,
+  .ti-horizontal-scroll,
+  .ti-dashboard-metrics,
+  .dashboard-ws-trend-scroll,
+  .trend-filter-scroll {
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-main-safe,
+  .trend-intelligence-page,
+  .dashboard-shell,
+  .dashboard-shell__column {
+    overscroll-behavior-y: auto;
   }
 
   /* Glass utilities — higher opacity fill, lower blur (keeps glass feel) */
@@ -5130,9 +5430,9 @@ body {
   .dashboard-mobile-header {
     transform: none;
     will-change: auto;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    contain: layout style;
+    -webkit-backface-visibility: visible;
+    backface-visibility: visible;
+    contain: none;
   }
 
   .sticky-header-smooth {
@@ -5305,15 +5605,24 @@ html.nex-reduced-motion *::after {
 @media (prefers-reduced-motion: reduce) {
   .animate-toast-in,
   .page-transition-enter,
-  .nex-page-enter {
+  .nex-page-enter,
+  .nex-mobile-page-enter {
     animation: none !important;
+  }
+
+  .mobile-bottom-nav__icon--active {
+    animation: none;
+  }
+
+  .mobile-bottom-nav__item:active {
+    transform: none;
   }
 }
 
 @media (max-width: 639px) {
   .dashboard-main-safe {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: auto;
+    overscroll-behavior-y: auto;
   }
 
   .landing-page,
@@ -5368,7 +5677,8 @@ html.nex-reduced-motion *::after {
 
 @media (max-width: 639px) {
   .trend-intelligence-page {
-    overflow-x: clip;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
 
   .ti-dashboard {
@@ -7328,13 +7638,19 @@ html.nex-reduced-motion *::after {
 
   .dashboard-os__content,
   .dashboard-os-interactive,
-  .dashboard-main-interactive,
+  .dashboard-main-interactive {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto !important;
+  }
+
+  /* Avoid compositor layers on the scroll root — causes iOS Safari scroll freezes */
   .dashboard-main-safe {
     position: relative;
     z-index: 1;
     pointer-events: auto !important;
-    -webkit-transform: translate3d(0, 0, 0);
-    transform: translate3d(0, 0, 0);
+    transform: none;
+    -webkit-transform: none;
   }
 }
 
@@ -7346,12 +7662,11 @@ html.nex-reduced-motion *::after {
     touch-action: none;
   }
 
-  .nex-reveal-scroll:not(.nex-reveal-scroll--visible) {
-    pointer-events: none;
-  }
-
+  /* Never block touch/scroll on reveal wrappers (pricing + dashboard) */
+  .nex-reveal-scroll,
+  .nex-reveal-scroll:not(.nex-reveal-scroll--visible),
   .nex-reveal-scroll--visible {
-    pointer-events: auto;
+    pointer-events: auto !important;
   }
 }
 
@@ -7373,11 +7688,196 @@ html.nex-reduced-motion *::after {
 
 @media (max-width: 639px) {
   .dashboard-workspace {
-    gap: 1.25rem;
+    gap: 1.5rem;
+  }
+
+  .dashboard-ws-section + .dashboard-ws-section {
+    margin-top: 0.25rem;
   }
 
   .dashboard-ws-panel {
-    padding: 0.875rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 10px 36px -18px rgb(0 0 0 / 0.55),
+      0 0 0 1px rgb(139 92 246 / 0.06);
   }
+}
+
+/* ── Mobile dashboard premium (iOS SaaS rhythm) ── */
+
+@media (max-width: 639px) {
+  .nex-os-polish.dashboard-os {
+    --dash-gap-section: 1.25rem;
+    --dash-gap-inner: 0.625rem;
+    --dash-pad: 0.875rem;
+    --dash-pad-lg: 1rem;
+    --dash-radius: 1rem;
+    --dash-radius-lg: 1.125rem;
+    --dash-carousel-peek: 0.75rem;
+    --dash-carousel-gap: 0.625rem;
+  }
+
+  .dashboard-os-workspace {
+    border-radius: var(--dash-radius-lg);
+  }
+
+  .dashboard-os-muted {
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: rgb(161 161 170 / 0.95);
+  }
+
+  .dashboard-os-section-heading {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.625rem;
+    border-bottom: 1px solid rgb(39 39 42 / 0.45);
+  }
+
+  .dashboard-os-section-heading h2 {
+    font-size: 0.875rem;
+    letter-spacing: -0.01em;
+  }
+
+  .dashboard-os-section-heading p {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    margin-top: 0.25rem;
+  }
+
+  .dashboard-ws-section > div:first-child {
+    margin-bottom: 0.875rem;
+  }
+
+  .dashboard-ws-section > div:first-child h2 {
+    font-size: 0.9375rem;
+    letter-spacing: -0.015em;
+  }
+
+  .dashboard-main-safe .glass-card,
+  .dashboard-main-safe .rounded-2xl.border {
+    border-radius: 1rem;
+  }
+
+  .dashboard-main-safe .nex-card-header {
+    padding-inline: 1rem;
+    padding-block: 0.875rem;
+  }
+
+  .dashboard-main-safe .nex-card-body {
+    padding: 1rem;
+  }
+
+  .dashboard-main-safe .nex-btn:not([class*='min-h-8']):not(.nex-btn--sm) {
+    min-height: 2.75rem;
+    padding-inline: 1.125rem;
+  }
+
+  .dashboard-main-safe .dashboard-os-btn {
+    min-height: 2.75rem;
+    padding-block: 0.625rem;
+    padding-inline: 1rem;
+  }
+
+  .dashboard-os .dashboard-os-card,
+  .dashboard-os .dashboard-os-surface,
+  .dashboard-os-module-card {
+    border-radius: var(--dash-radius);
+  }
+
+  .nex-card-interactive:active {
+    transform: translate3d(0, 0, 0) scale(0.985);
+    transition-duration: 0.14s;
+  }
+
+  .dashboard-os .dashboard-os-card {
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 10px 32px -16px rgb(0 0 0 / 0.52),
+      0 0 0 1px rgb(139 92 246 / 0.07);
+    transition:
+      transform 0.32s var(--ease-out-expo),
+      border-color 0.32s var(--ease-out-smooth),
+      box-shadow 0.32s var(--ease-out-smooth);
+  }
+
+  .dashboard-os .dashboard-os-card:active {
+    transform: scale(0.992);
+  }
+
+  .trend-feed {
+    gap: 1.375rem;
+  }
+
+  .trends-masonry-item {
+    margin-bottom: 1.375rem;
+  }
+
+  .hook-results-feed,
+  .hook-saved-feed {
+    gap: 1.25rem;
+  }
+
+  .ad-copy-feed {
+    gap: 1.25rem;
+  }
+
+  .hook-mobile-sticky-actions {
+    padding: 0.75rem 1rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    box-shadow:
+      0 -1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 -12px 40px -12px rgb(0 0 0 / 0.65),
+      0 0 48px -20px rgb(139 92 246 / 0.12);
+  }
+
+  .hook-results-tabs.sticky {
+    top: calc(3rem + env(safe-area-inset-top, 0px));
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .hook-tab {
+    min-height: 2.875rem;
+    padding-inline: 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  .hook-action-btn {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+
+  .ti-dashboard {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .ti-horizontal-scroll,
+  .ti-dashboard-metrics {
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+    scroll-padding-inline: 1rem;
+  }
+
+  .page-transition-enter {
+    animation-duration: 0.36s;
+  }
+
+  .dashboard-main-interactive {
+    padding-top: 0.75rem;
+  }
+
+  .dashboard-main-interactive:has(.dashboard-os) {
+    padding-top: 0.5rem;
+  }
+}
+
+.nex-touch-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 

@@ -25,7 +25,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
   }
 
   return (
-    <div className="dashboard-os nex-os-polish nex-ambient dashboard-os--safe-pad relative mx-auto w-full min-w-0 max-w-6xl overflow-x-clip">
+    <div className="dashboard-os nex-os-polish nex-ambient dashboard-os--safe-pad relative mx-auto w-full min-w-0 max-w-6xl">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="nex-ambient__orb nex-ambient__orb--1" />
         <div className="nex-ambient__orb nex-ambient__orb--2" />

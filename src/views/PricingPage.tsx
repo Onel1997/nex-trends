@@ -24,7 +24,7 @@ export function PricingPage() {
   } = usePricingActions()
 
   return (
-    <div className="dashboard-os pricing-os nex-os-polish relative mx-auto w-full min-w-0 max-w-6xl pb-[4.5rem] sm:pb-20 lg:pb-0">
+    <div className="dashboard-os pricing-os nex-os-polish relative mx-auto w-full min-w-0 max-w-6xl max-md:pb-0 sm:pb-20 lg:pb-0">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="pricing-glow pricing-glow--1" />
         <div className="pricing-glow pricing-glow--2" />

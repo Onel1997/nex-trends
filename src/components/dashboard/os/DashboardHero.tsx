@@ -49,7 +49,7 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
   const displayScore = stats.avgTrendScore
 
   return (
-    <section className="dashboard-os-hero dashboard-os-card glass-premium relative overflow-hidden rounded-[var(--dash-radius-lg)] border border-violet-500/15 p-3 sm:p-4">
+    <section className="dashboard-os-hero dashboard-os-card glass-premium nex-card-interactive relative overflow-hidden rounded-[var(--dash-radius-lg)] border border-violet-500/15 p-4 sm:p-4">
       <div className="dashboard-os-hero__shimmer pointer-events-none absolute inset-0" aria-hidden />
       <div className="dashboard-os-hero__glow pointer-events-none absolute inset-0" aria-hidden />
       <div className="dashboard-os-hero__mesh pointer-events-none absolute inset-0" aria-hidden />
@@ -59,7 +59,7 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
         ))}
       </div>
 
-      <div className="relative space-y-3 sm:space-y-3.5">
+      <div className="relative space-y-3.5 sm:space-y-3.5">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -81,7 +81,7 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
           </div>
         </div>
 
-        <div className="dashboard-os-hero__status flex items-center justify-between gap-2 rounded-[var(--dash-radius)] border border-emerald-500/15 bg-zinc-950/70 px-2.5 py-2 backdrop-blur-md">
+        <div className="dashboard-os-hero__status flex items-center justify-between gap-2.5 rounded-[var(--dash-radius)] border border-emerald-500/15 bg-zinc-950/70 px-3 py-2.5 backdrop-blur-md">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="dashboard-os-live-dot relative flex size-2.5 shrink-0">
               <span className="absolute inline-flex size-full rounded-full bg-emerald-400/40 dashboard-os-live-dot__ping" />
@@ -101,7 +101,7 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-2.5">
           {STAT_CARDS.map((card, i) => {
             const Icon = card.icon
             let value = 0
@@ -126,7 +126,7 @@ function DashboardHeroInner({ user, stats }: DashboardHeroProps) {
               <div
                 key={card.key}
                 className={cn(
-                  'dashboard-os-stat dashboard-os-stat--premium p-2 backdrop-blur-sm',
+                  'dashboard-os-stat dashboard-os-stat--premium p-2.5 backdrop-blur-sm',
                   'animate-fade-in',
                 )}
                 style={{ animationDelay: `${i * 40}ms` }}

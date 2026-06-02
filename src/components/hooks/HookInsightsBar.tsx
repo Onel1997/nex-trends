@@ -22,15 +22,15 @@ export const HookInsightsBar = memo(function HookInsightsBar({
   return (
     <div
       className={cn(
-        'hook-insights-bar mb-5 flex flex-col gap-2.5 overflow-x-clip rounded-xl border border-zinc-800/60',
-        'bg-gradient-to-r from-zinc-950/80 via-violet-950/20 to-zinc-950/80 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-4 sm:px-4',
+        'hook-insights-bar nex-card-interactive mb-5 flex flex-col gap-3 overflow-x-clip rounded-2xl border border-zinc-800/60',
+        'bg-gradient-to-r from-zinc-950/80 via-violet-950/20 to-zinc-950/80 px-4 py-3 sm:flex-row sm:items-center sm:gap-4 sm:px-4',
         className,
       )}
     >
       {recentCopies.length > 0 && (
         <div className="flex min-w-0 items-center gap-2">
           <CopyIcon className="size-3.5 shrink-0 text-emerald-400/70" aria-hidden />
-          <p className="truncate text-[11px] text-zinc-500">
+          <p className="truncate text-xs leading-relaxed text-zinc-500">
             <span className="font-semibold text-zinc-400">Zuletzt kopiert:</span>{' '}
             <span className="text-zinc-300">&ldquo;{recentCopies[0].text}&rdquo;</span>
           </p>
@@ -40,7 +40,7 @@ export const HookInsightsBar = memo(function HookInsightsBar({
       {mostSavedTone && (
         <div className="flex items-center gap-2 sm:ml-auto">
           <SparklesIcon className="size-3.5 shrink-0 text-violet-400/70" aria-hidden />
-          <p className="text-[11px] text-zinc-500">
+          <p className="text-xs leading-relaxed text-zinc-500">
             <span className="font-semibold text-zinc-400">Beliebtester Ton:</span>{' '}
             <span className="rounded-md bg-violet-500/10 px-1.5 py-0.5 text-violet-300/90 ring-1 ring-violet-500/15">
               {mostSavedTone.label || getToneLabel(mostSavedTone.tone)}

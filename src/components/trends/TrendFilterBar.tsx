@@ -45,7 +45,7 @@ export function TrendFilterBar({
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
           Plattform
         </p>
-        <div className="flex gap-2 overflow-x-auto flex-nowrap pb-0.5 scroll-smooth-mobile snap-x snap-mandatory scrollbar-hide touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="trend-filter-scroll flex gap-2 overflow-x-auto flex-nowrap pb-0.5 snap-x snap-mandatory scrollbar-hide touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {PLATFORMS.map((item) => (
             <button
               key={item.id}
@@ -71,7 +71,7 @@ export function TrendFilterBar({
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
           Nische / Kategorie
         </p>
-        <div className="flex gap-2 overflow-x-auto flex-nowrap pb-0.5 scroll-smooth-mobile snap-x snap-mandatory scrollbar-hide touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="trend-filter-scroll flex gap-2 overflow-x-auto flex-nowrap pb-0.5 snap-x snap-mandatory scrollbar-hide touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {CATEGORIES.map((item) => (
             <button
               key={item.id}

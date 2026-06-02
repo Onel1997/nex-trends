@@ -18,7 +18,7 @@ export function DashboardWorkspace({ onNavigate }: DashboardWorkspaceProps) {
 
   return (
     <motion.div
-      className="dashboard-workspace mt-4 flex flex-col gap-5 sm:mt-6 sm:gap-6"
+      className="dashboard-workspace mt-5 flex flex-col gap-6 sm:mt-6 sm:gap-6"
       initial={reduced ? false : 'hidden'}
       animate="visible"
       variants={{ visible: { transition: { staggerChildren: 0.04 } } }}

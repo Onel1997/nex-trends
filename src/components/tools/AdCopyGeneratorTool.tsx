@@ -270,7 +270,7 @@ export function AdCopyGeneratorTool() {
 
       <div
         className={cn(
-          'hook-mobile-sticky-actions fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800/80 bg-zinc-950/95 p-3 backdrop-blur-xl transition-smooth sm:hidden',
+          'hook-mobile-sticky-actions fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl transition-smooth sm:hidden',
           'pb-[max(0.875rem,env(safe-area-inset-bottom,0px))]',
         )}
       >
@@ -280,7 +280,7 @@ export function AdCopyGeneratorTool() {
       <AdCopyCopyToast visible={copyToastVisible} />
 
       <section
-        className="ad-copy-results-section mt-6 overflow-x-hidden pb-[max(7.5rem,calc(5.5rem+env(safe-area-inset-bottom,0px)))] sm:pb-2"
+        className="ad-copy-results-section mt-6 max-md:overflow-x-hidden max-md:pb-0 sm:pb-2"
         aria-busy={isGenerating}
       >
         <div className="sticky top-0 z-10 -mx-1 mb-4 flex flex-wrap items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/92 px-1 pb-3 backdrop-blur-lg">

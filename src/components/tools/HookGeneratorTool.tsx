@@ -383,15 +383,14 @@ export function HookGeneratorTool() {
       {/* Sticky generate bar — mobile only */}
       <div
         className={cn(
-          'hook-mobile-sticky-actions fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800/80 bg-zinc-950/95 p-3 backdrop-blur-xl transition-smooth sm:hidden',
-          'pb-[max(0.75rem,env(safe-area-inset-bottom))]',
+          'hook-mobile-sticky-actions fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl transition-smooth sm:hidden',
         )}
       >
         <div className="flex flex-col gap-2">{generateButtons}</div>
       </div>
 
       <section
-        className="hook-results-section mt-6 overflow-x-clip pb-32 sm:pb-4"
+        className="hook-results-section mt-6 max-md:overflow-x-hidden max-md:pb-0 sm:pb-4"
         aria-busy={isGenerating}
       >
         <div className="hook-results-tabs sticky top-0 z-10 -mx-1 mb-5 flex flex-wrap items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/92 px-1 pb-3.5 backdrop-blur-lg">

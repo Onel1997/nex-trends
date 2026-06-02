@@ -53,7 +53,7 @@ export function SettingsPage() {
   }, [])
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
+    <div className="dashboard-mobile-page-container mx-auto max-w-2xl space-y-6 max-md:pb-0 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
       <header>
         <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-600">
           <SettingsIcon className="size-3.5 text-violet-400" aria-hidden />
