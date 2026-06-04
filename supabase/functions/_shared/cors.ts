@@ -49,7 +49,7 @@ export function corsHeadersFor(req: Request): Record<string, string> {
   const origin = req.headers.get("Origin");
   const envOrigins = siteOriginsFromEnv();
 
-  let allowOrigin = "http://localhost:5173";
+  let allowOrigin = envOrigins[0] ?? "https://nextrends-ai.de";
 
   if (origin) {
     if (
@@ -78,10 +78,3 @@ export function corsHeadersFor(req: Request): Record<string, string> {
 export function jsonHeadersFor(req: Request): Record<string, string> {
   return { ...corsHeadersFor(req), "Content-Type": "application/json" };
 }
-
-const defaultCorsRequest = new Request("http://localhost", {
-  headers: { Origin: "http://localhost:5173" },
-});
-
-export const defaultCorsHeaders = corsHeadersFor(defaultCorsRequest);
-export const defaultJsonHeaders = jsonHeadersFor(defaultCorsRequest);

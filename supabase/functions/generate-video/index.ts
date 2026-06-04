@@ -21,13 +21,17 @@ import {
   pipelineError,
   type PipelineStep,
 } from "../_shared/video-pipeline.ts";
-import {
-  corsHeadersFor,
-  defaultJsonHeaders as jsonHeaders,
-} from "../_shared/cors.ts";
+import { corsHeadersFor, jsonHeadersFor } from "../_shared/cors.ts";
 import { generateId } from "../_shared/generate-id.ts";
 
 type Action = "create" | "poll" | "history" | "retry" | "health" | "library" | "delete";
+
+function jsonResponse(req: Request, body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: jsonHeadersFor(req),
+  });
+}
 
 function buildTrendStrategyInput(
   body: Record<string, unknown>,
@@ -139,16 +143,14 @@ async function runStrategyJob(
 }
 
 function jsonError(
+  req: Request,
   step: PipelineStep,
   message: string,
   status = 500,
   details?: Record<string, unknown>,
 ): Response {
   logPipeline(step, "error", { message, ...details })
-  return new Response(
-    JSON.stringify(pipelineError(step, message, details)),
-    { status, headers: jsonHeaders },
-  )
+  return jsonResponse(req, pipelineError(step, message, details), status);
 }
 
 async function uploadBytes(
@@ -231,7 +233,7 @@ Deno.serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
         status: 401,
-        headers: jsonHeaders,
+        headers: jsonHeadersFor(req),
       });
     }
 
@@ -251,7 +253,7 @@ Deno.serve(async (req) => {
     });
 
     if (envCheck.missingRequired.length > 0) {
-      return jsonError(
+      return jsonError(req,
         "env",
         `Supabase-Umgebungsvariablen fehlen: ${envCheck.missingRequired.join(", ")}`,
         500,
@@ -260,7 +262,7 @@ Deno.serve(async (req) => {
     }
 
     if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-      return jsonError("env", "Supabase-Umgebungsvariablen fehlen", 500);
+      return jsonError(req,"env", "Supabase-Umgebungsvariablen fehlen", 500);
     }
 
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
@@ -275,7 +277,7 @@ Deno.serve(async (req) => {
     if (authError || !user?.id) {
       return new Response(JSON.stringify({ error: "User nicht gefunden" }), {
         status: 401,
-        headers: jsonHeaders,
+        headers: jsonHeadersFor(req),
       });
     }
 
@@ -295,7 +297,7 @@ Deno.serve(async (req) => {
             lumaApiKey: envCheck.lumaApiKey,
           },
         }),
-        { headers: jsonHeaders },
+        { headers: jsonHeadersFor(req) },
       );
     }
 
@@ -313,7 +315,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       return new Response(JSON.stringify({ ok: true, items: data ?? [] }), {
-        headers: jsonHeaders,
+        headers: jsonHeadersFor(req),
       });
     }
 
@@ -385,7 +387,7 @@ Deno.serve(async (req) => {
       );
 
       return new Response(JSON.stringify({ ok: true, items }), {
-        headers: jsonHeaders,
+        headers: jsonHeadersFor(req),
       });
     }
 
@@ -398,7 +400,7 @@ Deno.serve(async (req) => {
       if (!generationId && !jobId) {
         return new Response(JSON.stringify({ error: "generation_id oder job_id fehlt" }), {
           status: 400,
-          headers: jsonHeaders,
+          headers: jsonHeadersFor(req),
         });
       }
 
@@ -449,7 +451,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ ok: true }), {
-        headers: jsonHeaders,
+        headers: jsonHeadersFor(req),
       });
     }
 
@@ -458,7 +460,7 @@ Deno.serve(async (req) => {
       if (!jobId) {
         return new Response(JSON.stringify({ error: "job_id fehlt" }), {
           status: 400,
-          headers: jsonHeaders,
+          headers: jsonHeadersFor(req),
         });
       }
 
@@ -472,7 +474,7 @@ Deno.serve(async (req) => {
       if (fetchErr || !row) {
         return new Response(JSON.stringify({ error: "Job nicht gefunden" }), {
           status: 404,
-          headers: jsonHeaders,
+          headers: jsonHeadersFor(req),
         });
       }
 
@@ -504,7 +506,7 @@ Deno.serve(async (req) => {
           return new Response(JSON.stringify({
             ok: true,
             job: formatJobRow(updated ?? row, appOrigin),
-          }), { headers: jsonHeaders });
+          }), { headers: jsonHeadersFor(req) });
         } catch (strategyErr) {
           const message = strategyErr instanceof Error
             ? strategyErr.message
@@ -515,7 +517,7 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString(),
           }).eq("id", jobId);
 
-          return jsonError("prompt", message, 502);
+          return jsonError(req,"prompt", message, 502);
         }
       }
 
@@ -527,14 +529,14 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({
           ok: true,
           job: formatJobRow(row, appOrigin),
-        }), { headers: jsonHeaders });
+        }), { headers: jsonHeadersFor(req) });
       }
 
       if (!row.external_job_id) {
         return new Response(JSON.stringify({
           ok: true,
           job: formatJobRow(row, appOrigin),
-        }), { headers: jsonHeaders });
+        }), { headers: jsonHeadersFor(req) });
       }
 
       const polled = await pollVideoProviderJob({
@@ -597,7 +599,7 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({
           ok: true,
           job: formatJobRow(updated ?? row, appOrigin),
-        }), { headers: jsonHeaders });
+        }), { headers: jsonHeadersFor(req) });
       }
 
       if (polled.status === "failed") {
@@ -624,7 +626,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         ok: true,
         job: formatJobRow(refreshed ?? row, appOrigin),
-      }), { headers: jsonHeaders });
+      }), { headers: jsonHeadersFor(req) });
     }
 
     // create — OpenAI strategy blueprint (no MP4 rendering)
@@ -637,7 +639,7 @@ Deno.serve(async (req) => {
     await ensureProfile(supabaseAdmin, user.id, user.email);
 
     if (!envCheck.openaiApiKey) {
-      return jsonError(
+      return jsonError(req,
         "env",
         "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
         503,
@@ -670,7 +672,7 @@ Deno.serve(async (req) => {
           ...creditResult,
           error: creditResult.error ?? "insufficient_credits",
         }),
-        { status: 402, headers: jsonHeaders },
+        { status: 402, headers: jsonHeadersFor(req) },
       );
     }
 
@@ -708,7 +710,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertErr || !inserted) {
-      return jsonError(
+      return jsonError(req,
         "queue",
         insertErr?.message ?? "Datenbank-Insert fehlgeschlagen",
         500,
@@ -736,7 +738,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         ok: true,
         job: formatJobRow(done ?? inserted, appOrigin),
-      }), { headers: jsonHeaders });
+      }), { headers: jsonHeadersFor(req) });
     } catch (strategyErr) {
       const message = strategyErr instanceof Error
         ? strategyErr.message
@@ -757,12 +759,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         ok: true,
         job: formatJobRow(failedRow ?? inserted, appOrigin),
-      }), { headers: jsonHeaders });
+      }), { headers: jsonHeadersFor(req) });
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Interner Fehler";
     console.error("[generate-video][unknown]", err);
-    return jsonError("compose", message, 500, {
+    return jsonError(req,"compose", message, 500, {
       type: err instanceof Error ? err.name : "unknown",
     });
   }
