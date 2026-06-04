@@ -1,7 +1,5 @@
 /** Voiceover (OpenAI TTS) + background music selection for generated videos. */
 
-import OpenAI from "https://esm.sh/openai@4.59.0?target=deno";
-
 const MUSIC_TRACKS = [
   {
     id: "pulse-drive",
@@ -28,53 +26,68 @@ const MUSIC_TRACKS = [
     url: "https://cdn.pixabay.com/audio/2022/03/24/audio_c8c1a2c7e2.mp3",
     mood: "acoustic feel-good",
   },
-] as const
+] as const;
 
 function hashSeed(input: string): number {
-  let h = 0
+  let h = 0;
   for (let i = 0; i < input.length; i++) {
-    h = (h * 31 + input.charCodeAt(i)) >>> 0
+    h = (h * 31 + input.charCodeAt(i)) >>> 0;
   }
-  return h
+  return h;
 }
 
 export function pickBackgroundMusic(visualMood: string, seed: string): string {
-  const h = hashSeed(`${seed}:${visualMood}`)
-  const idx = h % MUSIC_TRACKS.length
-  return MUSIC_TRACKS[idx].url
+  const h = hashSeed(`${seed}:${visualMood}`);
+  const idx = h % MUSIC_TRACKS.length;
+  return MUSIC_TRACKS[idx].url;
 }
 
 export async function synthesizeVoiceover(
   hookText: string,
   voiceSeed: string,
 ): Promise<Uint8Array | null> {
-  const apiKey = Deno.env.get("OPENAI_API_KEY")?.trim()
-  if (!apiKey || !hookText.trim()) return null
+  const apiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
+  if (!apiKey || !hookText.trim()) return null;
 
-  const voices = ["nova", "shimmer", "echo", "onyx"] as const
-  const voice = voices[hashSeed(voiceSeed) % voices.length]
+  const voices = ["nova", "shimmer", "echo", "onyx"] as const;
+  const voice = voices[hashSeed(voiceSeed) % voices.length];
 
   try {
-    const openai = new OpenAI({ apiKey })
+    const response = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "tts-1-hd",
+        voice,
+        input: hookText.slice(0, 400),
+        response_format: "mp3",
+      }),
+    });
 
-    const res = await openai.audio.speech.create({
-      model: "tts-1-hd",
-      voice,
-      input: hookText.slice(0, 400),
-      response_format: "mp3",
-    })
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[video-audio][audio_generation] OpenAI TTS failed", {
+        voice,
+        status: response.status,
+        detail: errText.slice(0, 500),
+      });
+      return null;
+    }
 
-    const buf = await res.arrayBuffer()
+    const buf = await response.arrayBuffer();
     console.log("[video-audio][audio_generation] OpenAI TTS ok", {
       bytes: buf.byteLength,
       voice,
-    })
-    return new Uint8Array(buf)
+    });
+    return new Uint8Array(buf);
   } catch (err) {
     console.error("[video-audio][audio_generation] OpenAI TTS failed", {
       voice,
       message: err instanceof Error ? err.message : String(err),
-    })
-    return null
+    });
+    return null;
   }
 }

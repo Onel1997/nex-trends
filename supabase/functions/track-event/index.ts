@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
 
 const corsHeaders = {
@@ -11,7 +10,7 @@ const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
 
 const ALLOWED_EVENTS = new Set(["niche_search", "generation"]);
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

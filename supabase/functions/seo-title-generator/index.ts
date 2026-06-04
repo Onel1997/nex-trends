@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
 import { callOpenAI } from "../_shared/ai/openai-client.ts";
 import {
@@ -125,7 +124,7 @@ function batchFromRows(rows: SeoTitleRow[]): SeoTitleBatch | null {
   return groupRowsIntoBatches(rows)[0] ?? null;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeadersFor(req) });
   }
@@ -170,7 +169,7 @@ serve(async (req) => {
 
     if (action === "health") {
       const openaiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
-      const model = Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-4o-mini";
+      const model = Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-4.1-mini";
       return jsonResponse(req, {
         ok: true,
         openai: Boolean(openaiKey),
