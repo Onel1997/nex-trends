@@ -204,7 +204,7 @@ export function useVideoGeneration() {
 
         applyResult(result)
 
-        if (result.status === 'completed' && result.blueprint) {
+        if (result.status === 'completed' && result.blueprint && result.videoUrl) {
           setVideoUrl(result.videoUrl || null)
           setPosterUrl(result.posterUrl || null)
           setHasAudio(result.hasAudio)

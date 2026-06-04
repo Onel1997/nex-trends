@@ -1,5 +1,6 @@
 import {
   createVideoStrategyJob,
+  pollVideoJob,
   retryVideoJob,
   strategyProgressDetail,
 } from '@/lib/video-api'
@@ -45,6 +46,8 @@ export type VideoGenerationResult = {
 
 const MAX_RETRIES = 2
 const PROGRESS_TICK_MS = 900
+const POLL_INTERVAL_MS = 2500
+const POLL_MAX_ATTEMPTS = 48
 
 function log(scope: string, detail?: unknown) {
   if (isVideoDebugEnabled()) {
@@ -90,6 +93,40 @@ export type RunVideoJobOptions = {
   signal?: AbortSignal
   studio?: StudioCreateOptions
   onRetry?: (attempt: number) => void
+}
+
+async function waitForRenderedVideo(
+  jobId: string,
+  signal?: AbortSignal,
+  onStatus?: (status: VideoJobStatus, detail?: string) => void,
+): Promise<GeneratedVideoJob> {
+  for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt += 1) {
+    if (signal?.aborted) {
+      throw new Error('Abgebrochen')
+    }
+
+    const job = await pollVideoJob(jobId)
+    const mapped = mapStatus(job.status)
+
+    if (mapped === 'queued' || mapped === 'generating' || mapped === 'processing') {
+      onStatus?.(mapped === 'queued' ? 'queued' : 'processing', 'Rendering AI video…')
+    }
+
+    if (job.videoUrl) {
+      onStatus?.('completed', PREMIUM_PIPELINE_MESSAGES.success)
+      return job
+    }
+
+    if (job.status === 'failed') {
+      throw new Error(job.errorMessage ?? 'Video rendering failed')
+    }
+
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, POLL_INTERVAL_MS)
+    })
+  }
+
+  throw new Error('Video rendering timed out')
 }
 
 async function runProgressTicker(
@@ -145,7 +182,7 @@ export async function runVideoGenerationJob(
     try {
       onStatus?.('generating', strategyProgressDetail(0), metaForAttempt(attempt))
 
-      const job = lastJobId && attempt > 0
+      let job = lastJobId && attempt > 0
         ? await retryVideoJob(lastJobId)
         : lastJobId && attempt === 0 && options?.retryJobId
           ? await retryVideoJob(lastJobId)
@@ -159,14 +196,22 @@ export async function runVideoGenerationJob(
         return abortedResult(trend)
       }
 
-      if (job.status === 'completed' && job.blueprint) {
+      if (job.status === 'failed') {
+        throw new Error(job.errorMessage ?? 'Creator Blueprint fehlgeschlagen')
+      }
+
+      if (!job.videoUrl) {
+        job = await waitForRenderedVideo(job.id, options?.signal, onStatus)
+      }
+
+      if (job.blueprint && job.videoUrl) {
         onStatus?.('completed', PREMIUM_PIPELINE_MESSAGES.success)
         log('ok', { jobId: job.id, provider: job.provider, mode: job.mode })
         return toResult(job)
       }
 
-      if (job.status === 'failed') {
-        throw new Error(job.errorMessage ?? 'Creator Blueprint fehlgeschlagen')
+      if (job.blueprint && !job.videoUrl) {
+        throw new Error('Video rendering incomplete')
       }
 
       onStatus?.('completed', PREMIUM_PIPELINE_MESSAGES.success)

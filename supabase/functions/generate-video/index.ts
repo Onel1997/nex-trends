@@ -111,7 +111,7 @@ async function runStrategyJob(
   const primaryHook = strategy.hooks[0]?.text ?? input.hookText ?? input.title;
 
   await supabaseAdmin.from("generated_videos").update({
-    status: "completed",
+    status: "processing",
     provider: "openai-strategy",
     hook_text: primaryHook,
     captions: strategy.captions,
@@ -221,6 +221,154 @@ async function persistRemoteVideo(
     logPipeline("compose", "persist remote failed", { jobId, message })
     return { url: remoteUrl, storageError: message };
   }
+}
+
+type GeneratedVideoRow = Record<string, unknown>;
+
+async function finalizeProviderOutput(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  jobId: string,
+  row: GeneratedVideoRow,
+  outputUrl: string,
+): Promise<GeneratedVideoRow> {
+  logPipeline("poll", "provider succeeded", {
+    jobId,
+    provider: row.provider,
+    outputUrl,
+  });
+
+  const persisted = await persistRemoteVideo(
+    supabaseAdmin,
+    userId,
+    jobId,
+    outputUrl,
+  );
+  const videoUrl = persisted.url;
+
+  const voiceBytes = await synthesizeVoiceover(
+    String(row.hook_text ?? ""),
+    jobId,
+  );
+  let voiceoverUrl: string | null = null;
+  if (voiceBytes) {
+    const voiceUpload = await uploadBytes(
+      supabaseAdmin,
+      `${userId}/${jobId}-voice.mp3`,
+      voiceBytes,
+      "audio/mpeg",
+    );
+    voiceoverUrl = voiceUpload.url;
+    if (!voiceoverUrl) {
+      logPipeline("audio_generation", "voice upload skipped", {
+        error: voiceUpload.error,
+      });
+    }
+  }
+
+  const meta = (row.metadata ?? {}) as Record<string, unknown>;
+  const musicUrl = (row.music_url as string | null) ?? pickBackgroundMusic(
+    String(meta.visualMood ?? ""),
+    jobId,
+  );
+
+  await supabaseAdmin.from("generated_videos").update({
+    status: "completed",
+    video_url: videoUrl,
+    voiceover_url: voiceoverUrl,
+    music_url: musicUrl,
+    has_audio: true,
+    updated_at: new Date().toISOString(),
+  }).eq("id", jobId);
+
+  const { data: updated } = await supabaseAdmin.from("generated_videos")
+    .select("*")
+    .eq("id", jobId)
+    .single();
+
+  return updated ?? row;
+}
+
+async function startProviderRenderAfterStrategy(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  row: GeneratedVideoRow,
+): Promise<GeneratedVideoRow> {
+  const jobId = String(row.id);
+  const prompt = String(row.scene_prompt ?? row.prompt ?? "").trim();
+  const aspectRatio = String(row.aspect_ratio ?? "9:16");
+
+  if (!prompt) {
+    await supabaseAdmin.from("generated_videos").update({
+      status: "failed",
+      error_message: "[video_generation] Scene prompt missing",
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+    const { data } = await supabaseAdmin.from("generated_videos")
+      .select("*")
+      .eq("id", jobId)
+      .single();
+    return data ?? row;
+  }
+
+  logPipeline("video_generation", "start provider", { jobId, aspectRatio });
+  const providerJob = await startVideoProviderJob(prompt, aspectRatio);
+
+  if (providerJob.provider === "synthetic") {
+    await supabaseAdmin.from("generated_videos").update({
+      status: "failed",
+      error_message:
+        "[video_generation] REPLICATE_API_TOKEN oder LUMA_API_KEY fehlt",
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+    const { data } = await supabaseAdmin.from("generated_videos")
+      .select("*")
+      .eq("id", jobId)
+      .single();
+    return data ?? row;
+  }
+
+  if (providerJob.status === "failed") {
+    await supabaseAdmin.from("generated_videos").update({
+      status: "failed",
+      error_message: `[video_generation] ${providerJob.error ?? "Provider-Fehler"}`,
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+    const { data } = await supabaseAdmin.from("generated_videos")
+      .select("*")
+      .eq("id", jobId)
+      .single();
+    return data ?? row;
+  }
+
+  if (providerJob.status === "succeeded" && providerJob.outputUrl) {
+    await supabaseAdmin.from("generated_videos").update({
+      external_job_id: providerJob.id,
+      provider: providerJob.provider,
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+    return await finalizeProviderOutput(
+      supabaseAdmin,
+      userId,
+      jobId,
+      row,
+      providerJob.outputUrl,
+    );
+  }
+
+  await supabaseAdmin.from("generated_videos").update({
+    external_job_id: providerJob.id,
+    provider: providerJob.provider,
+    status: providerJob.status === "starting" ? "queued" : "generating",
+    updated_at: new Date().toISOString(),
+  }).eq("id", jobId);
+
+  const { data: refreshed } = await supabaseAdmin.from("generated_videos")
+    .select("*")
+    .eq("id", jobId)
+    .single();
+
+  return refreshed ?? row;
 }
 
 Deno.serve(async (req) => {
@@ -503,9 +651,15 @@ Deno.serve(async (req) => {
             meta,
           );
 
+          const finalRow = await startProviderRenderAfterStrategy(
+            supabaseAdmin,
+            user.id,
+            updated ?? row,
+          );
+
           return new Response(JSON.stringify({
             ok: true,
-            job: formatJobRow(updated ?? row, appOrigin),
+            job: formatJobRow(finalRow, appOrigin),
           }), { headers: jsonHeadersFor(req) });
         } catch (strategyErr) {
           const message = strategyErr instanceof Error
@@ -521,11 +675,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      const meta = (row.metadata ?? {}) as Record<string, unknown>;
-      const isStrategyJob = meta.mode === "strategy" ||
-        row.provider === "openai-strategy";
+      if (row.status === "failed") {
+        return new Response(JSON.stringify({
+          ok: true,
+          job: formatJobRow(row, appOrigin),
+        }), { headers: jsonHeadersFor(req) });
+      }
 
-      if (isStrategyJob || row.status === "completed" || row.status === "failed") {
+      if (row.video_url) {
         return new Response(JSON.stringify({
           ok: true,
           job: formatJobRow(row, appOrigin),
@@ -545,60 +702,17 @@ Deno.serve(async (req) => {
       });
 
       if (polled.status === "succeeded" && polled.outputUrl) {
-        logPipeline("poll", "provider succeeded", {
-          jobId,
-          provider: row.provider,
-          outputUrl: polled.outputUrl,
-        })
-
-        const persisted = await persistRemoteVideo(
+        const updated = await finalizeProviderOutput(
           supabaseAdmin,
           user.id,
           jobId,
+          row,
           polled.outputUrl,
         );
-        const videoUrl = persisted.url
-
-        const voiceBytes = await synthesizeVoiceover(
-          row.hook_text ?? "",
-          jobId,
-        );
-        let voiceoverUrl: string | null = null;
-        if (voiceBytes) {
-          const voiceUpload = await uploadBytes(
-            supabaseAdmin,
-            `${user.id}/${jobId}-voice.mp3`,
-            voiceBytes,
-            "audio/mpeg",
-          );
-          voiceoverUrl = voiceUpload.url
-          if (!voiceoverUrl) {
-            logPipeline("audio_generation", "voice upload skipped", {
-              error: voiceUpload.error,
-            })
-          }
-        }
-
-        const musicUrl = row.music_url ?? pickBackgroundMusic(
-          row.metadata?.visualMood ?? "",
-          jobId,
-        );
-
-        await supabaseAdmin.from("generated_videos").update({
-          status: "completed",
-          video_url: videoUrl,
-          voiceover_url: voiceoverUrl,
-          music_url: musicUrl,
-          has_audio: true,
-          updated_at: new Date().toISOString(),
-        }).eq("id", jobId);
-
-        const { data: updated } = await supabaseAdmin.from("generated_videos")
-          .select("*").eq("id", jobId).single();
 
         return new Response(JSON.stringify({
           ok: true,
-          job: formatJobRow(updated ?? row, appOrigin),
+          job: formatJobRow(updated, appOrigin),
         }), { headers: jsonHeadersFor(req) });
       }
 
@@ -629,7 +743,7 @@ Deno.serve(async (req) => {
       }), { headers: jsonHeadersFor(req) });
     }
 
-    // create — OpenAI strategy blueprint (no MP4 rendering)
+    // create — OpenAI strategy blueprint, then Replicate/Luma render
     const trendId = String(body.trend_id ?? "");
     const title = String(body.title ?? "Trend Video");
     const generationId = typeof body.generation_id === "string"
@@ -735,9 +849,15 @@ Deno.serve(async (req) => {
           : "missing",
       });
 
+      const finalRow = await startProviderRenderAfterStrategy(
+        supabaseAdmin,
+        user.id,
+        done ?? inserted,
+      );
+
       return new Response(JSON.stringify({
         ok: true,
-        job: formatJobRow(done ?? inserted, appOrigin),
+        job: formatJobRow(finalRow, appOrigin),
       }), { headers: jsonHeadersFor(req) });
     } catch (strategyErr) {
       const message = strategyErr instanceof Error
