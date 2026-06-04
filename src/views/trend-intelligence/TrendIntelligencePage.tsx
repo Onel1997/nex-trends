@@ -3,7 +3,7 @@ import { TrendIntelligencePanel } from '@/components/trends'
 
 export function TrendIntelligencePage() {
   return (
-    <div className="trend-intelligence-page dashboard-mobile-page-container min-h-0">
+    <div className="trend-intelligence-page dashboard-mobile-page-container min-w-0 max-w-full overflow-x-hidden">
       <header className="ti-header mb-5 animate-fade-in sm:mb-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

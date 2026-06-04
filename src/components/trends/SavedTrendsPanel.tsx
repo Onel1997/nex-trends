@@ -48,7 +48,7 @@ export function SavedTrendsPanel({
         <span className="font-medium text-violet-300/90">{trends.length}</span> gespeichert ·
         lokal persistent
       </p>
-      <div className="trend-feed scroll-smooth-mobile">
+      <div className="trend-feed">
         {trends.map((trend, index) => (
           <div
             key={trend.id}

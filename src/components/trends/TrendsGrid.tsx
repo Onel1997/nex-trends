@@ -327,7 +327,7 @@ export function TrendsGrid({
       {showGrid && (
         <div
           className={cn(
-            'trend-feed mt-4 scroll-smooth-mobile transition-opacity duration-300',
+            'trend-feed mt-4 transition-opacity duration-300',
             isSearching && 'pointer-events-none opacity-40',
           )}
           aria-busy={isSearching}

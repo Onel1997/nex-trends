@@ -1,10 +1,21 @@
+import { attachTrendSignals } from '@/lib/trend-signals'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
+
+export type TrendDashboardLayout =
+  | 'leaderboard'
+  | 'hook-rows'
+  | 'keyword-chips'
+  | 'platform-stats'
+  | 'signal-rows'
 
 export type TrendDashboardSection = {
   id: string
   title: string
   subtitle: string
+  layout: TrendDashboardLayout
   items: TrendDashboardItem[]
+  /** Section open by default on first paint */
+  defaultExpanded?: boolean
 }
 
 export type TrendDashboardItem = {
@@ -20,6 +31,7 @@ export type TrendDashboardSnapshot = {
   explodingCount: number
   risingCount: number
   topPlatform: string
+  platformStats: TrendDashboardItem[]
   sections: TrendDashboardSection[]
 }
 
@@ -42,6 +54,29 @@ function topBy<T>(items: T[], scoreFn: (item: T) => number, limit: number): T[] 
   return [...items].sort((a, b) => scoreFn(b) - scoreFn(a)).slice(0, limit)
 }
 
+/** Highest opportunity trend in the current feed (presentation only). */
+export function pickBestOpportunityTrend(
+  trends: TrendIntelligence[],
+): TrendIntelligence | null {
+  if (trends.length === 0) return null
+
+  let best: TrendIntelligence | null = null
+  let bestScore = -1
+
+  for (const raw of trends) {
+    const trend = attachTrendSignals(raw)
+    const score = trend.opportunityScore ?? 0
+    if (score > bestScore) {
+      bestScore = score
+      best = trend
+    }
+  }
+
+  return best
+}
+
+const SECTION_ITEM_CAP = 12
+
 export function buildTrendDashboardSnapshot(
   trends: TrendIntelligence[],
 ): TrendDashboardSnapshot {
@@ -51,6 +86,7 @@ export function buildTrendDashboardSnapshot(
       explodingCount: 0,
       risingCount: 0,
       topPlatform: '—',
+      platformStats: [],
       sections: [],
     }
   }
@@ -69,118 +105,88 @@ export function buildTrendDashboardSnapshot(
   const topPlatform =
     Object.entries(platformCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'TikTok'
 
-  const trendingTopics = topBy(trends, (t) => t.opportunityScore ?? 0, 6).map((t) => ({
-    id: t.id,
-    label: t.title,
-    meta: t.niche ?? t.platform,
-    score: t.opportunityScore,
-    platform: t.platform,
-  }))
-
-  const viralHooks = topBy(trends, (t) => t.hookAnalysis.hookScore, 5).map((t) => ({
-    id: `${t.id}-hook`,
-    label: t.hookAnalysis.hookText.slice(0, 72) + (t.hookAnalysis.hookText.length > 72 ? '…' : ''),
-    meta: `Punkte ${t.hookAnalysis.hookScore}`,
-    score: t.hookAnalysis.hookScore,
-  }))
-
-  const nicheMap = trends.reduce<Record<string, number>>((acc, t) => {
-    const niche = t.niche ?? 'Allgemein'
-    acc[niche] = (acc[niche] ?? 0) + (t.momentumScore ?? 0)
-    return acc
-  }, {})
-  const trendingNiches = Object.entries(nicheMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-    .map(([niche, score]) => ({
-      id: `niche-${niche}`,
-      label: niche,
-      meta: 'Kategorie Momentum',
-      score: Math.round(score / Math.max(1, trends.filter((t) => t.niche === niche).length)),
-    }))
-
-  const platformTrends = Object.entries(platformCounts)
+  const platformStats = Object.entries(platformCounts)
     .sort((a, b) => b[1] - a[1])
     .map(([platform, count]) => ({
       id: `platform-${platform}`,
       label: platform,
-      meta: `${count} Signale`,
+      meta: 'Signale',
       score: count,
     }))
 
-  const aiSignals = topBy(trends, (t) => t.momentumScore ?? 0, 5).map((t) => ({
-    id: `${t.id}-signal`,
-    label: t.aiInsight ?? 'Neue Creator-Chance',
-    meta: trendStateLabel(t.trendState),
-    score: t.momentumScore,
+  const topOpportunities = topBy(trends, (t) => t.opportunityScore ?? 0, SECTION_ITEM_CAP).map(
+    (t) => ({
+      id: t.id,
+      label: t.title,
+      meta: t.niche ?? t.platform,
+      score: t.opportunityScore,
+      platform: t.platform,
+    }),
+  )
+
+  const viralHooks = topBy(trends, (t) => t.hookAnalysis.hookScore, SECTION_ITEM_CAP).map((t) => ({
+    id: `${t.id}-hook`,
+    label: t.hookAnalysis.hookText,
+    meta: t.platform,
+    score: t.hookAnalysis.hookScore,
   }))
 
   const keywordMap = new Map<string, number>()
   for (const t of trends) {
     for (const kw of t.risingKeywords ?? []) {
-      const key = kw.toLowerCase()
+      const key = kw.toLowerCase().replace(/^#/, '')
       keywordMap.set(key, (keywordMap.get(key) ?? 0) + (t.momentumScore ?? 50))
     }
   }
   const risingKeywords = [...keywordMap.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
+    .slice(0, SECTION_ITEM_CAP)
     .map(([label, score]) => ({
       id: `kw-${label}`,
       label: label.startsWith('#') ? label : `#${label}`,
       meta: 'Im Trend',
-      score: Math.round(score / trends.length),
+      score: Math.min(99, Math.round(score / Math.max(1, trends.length))),
     }))
 
-  const opportunityScores = topBy(trends, (t) => t.opportunityScore ?? 0, 6).map((t) => ({
-    id: `${t.id}-opp`,
-    label: t.title.slice(0, 48) + (t.title.length > 48 ? '…' : ''),
-    meta: `${t.competitionScore}% Konkurrenz`,
-    score: t.opportunityScore,
+  const aiSignals = topBy(trends, (t) => t.momentumScore ?? 0, SECTION_ITEM_CAP).map((t) => ({
+    id: `${t.id}-signal`,
+    label: t.aiInsight ?? t.title,
+    meta: trendStateLabel(t.trendState),
+    score: t.momentumScore,
   }))
 
   const sections: TrendDashboardSection[] = [
     {
       id: 'topics',
-      title: 'Trendthemen',
-      subtitle: 'Trends mit größtem Potenzial',
-      items: trendingTopics,
+      title: 'Top Chancen',
+      subtitle: 'Trendthemen mit höchstem Potenzial',
+      layout: 'leaderboard',
+      defaultExpanded: true,
+      items: topOpportunities,
     },
     {
       id: 'hooks',
-      title: 'Virale Hooks',
-      subtitle: 'Beste Hook-Opener',
+      title: 'Top Hooks',
+      subtitle: 'Virale Hook-Opener nach Score',
+      layout: 'hook-rows',
+      defaultExpanded: true,
       items: viralHooks,
     },
     {
-      id: 'niches',
-      title: 'Trend-Nischen',
-      subtitle: 'Kategorie Momentum',
-      items: trendingNiches,
-    },
-    {
-      id: 'platforms',
-      title: 'Plattform-Trends',
-      subtitle: 'Signal-Verteilung',
-      items: platformTrends,
-    },
-    {
-      id: 'signals',
-      title: 'KI-Trend-Signale',
-      subtitle: 'Creator-Intelligence',
-      items: aiSignals,
-    },
-    {
       id: 'keywords',
-      title: 'Steigende Keywords',
-      subtitle: 'Hashtag- & Themen-Trend',
+      title: 'Top Keywords',
+      subtitle: 'Hashtags & Suchbegriffe im Trend',
+      layout: 'keyword-chips',
+      defaultExpanded: true,
       items: risingKeywords,
     },
     {
-      id: 'opportunity',
-      title: 'Chancen-Scores',
-      subtitle: 'Beste Einstiegsfenster',
-      items: opportunityScores,
+      id: 'signals',
+      title: 'Signals',
+      subtitle: 'KI-Trend-Signale für Creator',
+      layout: 'signal-rows',
+      defaultExpanded: false,
+      items: aiSignals,
     },
   ]
 
@@ -189,6 +195,33 @@ export function buildTrendDashboardSnapshot(
     explodingCount,
     risingCount,
     topPlatform,
+    platformStats,
     sections,
   }
+}
+
+/** Strip synthetic suffixes from dashboard item ids before opening a trend */
+export function trendIdFromDashboardItem(itemId: string): string {
+  if (itemId.startsWith('kw-') || itemId.startsWith('platform-') || itemId.startsWith('niche-')) {
+    return ''
+  }
+  return itemId.replace(/-(hook|signal|opp)$/, '')
+}
+
+export function resolveDashboardTrendId(
+  item: TrendDashboardItem,
+  trends: TrendIntelligence[],
+): string {
+  const direct = trendIdFromDashboardItem(item.id)
+  if (direct) return direct
+
+  if (item.id.startsWith('kw-')) {
+    const tag = item.label.replace(/^#/, '').toLowerCase()
+    const match = trends.find((t) =>
+      t.risingKeywords?.some((k) => k.toLowerCase().replace(/^#/, '') === tag),
+    )
+    return match?.id ?? ''
+  }
+
+  return ''
 }

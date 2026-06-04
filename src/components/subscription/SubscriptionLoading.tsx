@@ -1,5 +1,4 @@
-import { cn } from '@/lib'
-import { Spinner } from '@/components/ui/Spinner'
+import { SubscriptionPanelSkeleton } from '@/components/ui/loading-states'
 
 type SubscriptionLoadingProps = {
   className?: string
@@ -10,11 +9,5 @@ export function SubscriptionLoading({
   className,
   label = 'Lade dein Abo …',
 }: SubscriptionLoadingProps) {
-  return (
-    <Spinner
-      size="md"
-      label={label}
-      className={cn('min-h-[320px]', className)}
-    />
-  )
+  return <SubscriptionPanelSkeleton label={label} className={className} />
 }

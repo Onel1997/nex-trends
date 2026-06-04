@@ -28,7 +28,7 @@ export function MobileBottomNav({ activeTool, onSelectTool }: MobileBottomNavPro
 
   return (
     <nav
-      className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 md:hidden"
+      className="mobile-bottom-nav pointer-events-auto fixed inset-x-0 bottom-0 z-40 md:hidden"
       aria-label="Hauptnavigation"
     >
       <div className="mobile-bottom-nav__surface pointer-events-none absolute inset-0" aria-hidden />

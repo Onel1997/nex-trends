@@ -2,11 +2,6 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { CloseIcon, MenuIcon } from '@/components/ui/icons'
 import { APP_NAME, type DashboardToolId } from '@/lib'
 import { cn } from '@/lib'
-import {
-  clearDashboardBodyScrollLock,
-  setDashboardBodyScrollLocked,
-  setDashboardRouteActive,
-} from '@/lib/dashboard-scroll-lock'
 import { navigateToHome } from '@/lib/navigation'
 import { MobileBottomNav } from './mobile-bottom-nav'
 import { Sidebar } from './Sidebar'
@@ -36,18 +31,6 @@ export function DashboardLayout({
   }
 
   useEffect(() => {
-    setDashboardRouteActive(true)
-    return () => {
-      setDashboardRouteActive(false)
-      clearDashboardBodyScrollLock()
-    }
-  }, [])
-
-  useEffect(() => {
-    setDashboardBodyScrollLocked(mobileOpen)
-  }, [mobileOpen])
-
-  useEffect(() => {
     if (!mobileOpen) return
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMobileOpen(false)
@@ -57,7 +40,7 @@ export function DashboardLayout({
   }, [mobileOpen])
 
   return (
-    <div className="dashboard-shell dashboard-shell--mobile-nav flex min-h-dvh overflow-x-hidden bg-zinc-950 text-zinc-100">
+    <div className="dashboard-shell dashboard-shell--mobile-nav flex min-h-dvh bg-zinc-950 text-zinc-100">
       {mobileOpen ? (
         <button
           type="button"
@@ -108,7 +91,7 @@ export function DashboardLayout({
           </button>
         </header>
 
-        <main className="dashboard-main-safe dashboard-main-with-mobile-nav dashboard-mobile-scroll-root min-w-0">
+        <main className="dashboard-main-safe dashboard-main-with-mobile-nav min-w-0">
           {children}
         </main>
       </div>

@@ -14,10 +14,14 @@
   --color-accent-secondary: #d946ef;
 }
 
-html {
+html,
+body {
   height: auto;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -30,10 +34,7 @@ html {
 }
 
 body {
-  @apply m-0 min-h-svh bg-zinc-950 font-sans text-zinc-100 antialiased;
-  height: auto;
-  overflow-x: hidden;
-  overflow-y: auto;
+  @apply m-0 bg-zinc-950 font-sans text-zinc-100 antialiased;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -899,10 +900,6 @@ body {
   contain-intrinsic-size: auto 12rem;
 }
 
-.ad-copy-results-section {
-  -webkit-overflow-scrolling: touch;
-}
-
 @keyframes ad-copy-stagger-in {
   from {
     opacity: 0;
@@ -1048,10 +1045,6 @@ body {
   background: rgb(9 9 11 / 0.72);
   overflow: hidden;
   contain: layout style paint;
-}
-
-.seo-title-results-section {
-  -webkit-overflow-scrolling: touch;
 }
 
 .seo-score-badge {
@@ -1379,7 +1372,24 @@ body {
 }
 
 .trend-intelligence-page {
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .trend-intelligence-page,
+  .trends-grid-shell {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  .ti-dashboard {
+    overflow-x: hidden;
+  }
+
+  .ti-dashboard-section {
+    overflow-x: hidden;
+  }
 }
 
 /* Dashboard layout */
@@ -1774,8 +1784,17 @@ body {
 }
 
 .scroll-smooth-mobile {
-  -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+}
+
+/* Momentum scrolling only on horizontal overflow scrollers — never vertical page wrappers */
+.ti-horizontal-scroll,
+.dashboard-os-carousel__track,
+.trend-filter-scroll,
+.pricing-cards-carousel,
+.trend-card__meta-zone,
+.dashboard-ws-trend-scroll {
+  -webkit-overflow-scrolling: touch;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -1895,12 +1914,7 @@ body {
   }
 }
 
-/* Mobile: TikTok-style smooth scroll */
-.scroll-smooth-mobile {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
+/* Mobile: TikTok-style smooth scroll — horizontal carousels only */
 @media (max-width: 639px) {
   .detail-sheet {
     touch-action: pan-y;
@@ -1940,8 +1954,14 @@ body {
 @media (hover: hover) and (pointer: fine) {
   .nex-ambient::before {
     position: fixed;
-    max-height: 100vh;
     max-height: 100dvh;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .nex-ambient::before {
+    position: absolute !important;
+    max-height: none;
   }
 }
 
@@ -3504,39 +3524,12 @@ body {
   scroll-padding-top: calc(3rem + env(safe-area-inset-top, 0px));
   scroll-padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
   overflow: visible;
-  overflow-y: visible;
   max-height: none;
   height: auto;
-  touch-action: pan-y;
 }
-
-/* ── Dashboard: single document scroll (fixes iOS Safari freeze) ── */
 
 .dashboard-shell {
   min-height: 100dvh;
-  overflow-x: hidden;
-  touch-action: pan-y;
-}
-
-html.dashboard-route-active,
-html.dashboard-route-active body {
-  height: auto;
-  min-height: 100dvh;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-}
-
-@media (max-width: 767px) {
-  html.dashboard-route-active {
-    scroll-padding-bottom: var(--nex-mobile-nav-offset, calc(140px + env(safe-area-inset-bottom, 0px)));
-  }
-}
-
-body.dashboard-body-locked {
-  overflow: hidden !important;
-  touch-action: none;
 }
 
 .dashboard-shell__column {
@@ -3565,10 +3558,6 @@ body.dashboard-body-locked {
     display: block;
     flex: none !important;
     overflow: visible !important;
-    overflow-y: visible !important;
-    -webkit-overflow-scrolling: auto;
-    overscroll-behavior: auto;
-    touch-action: pan-y;
   }
 
   .dashboard-os {
@@ -3590,9 +3579,8 @@ body.dashboard-body-locked {
   }
 
   .trend-intelligence-page {
-    overflow-x: hidden;
+    overflow-x: clip;
     overflow-y: visible;
-    -webkit-overflow-scrolling: auto;
   }
 
   .sticky-header-smooth,
@@ -3625,13 +3613,13 @@ body.dashboard-body-locked {
 }
 
 .mobile-bottom-nav {
-  pointer-events: none;
+  pointer-events: auto;
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
-  touch-action: none;
 }
 
 .mobile-bottom-nav__surface {
+  pointer-events: none;
   border-radius: 1.25rem 1.25rem 0 0;
   border-top: 1px solid rgb(139 92 246 / 0.18);
   background: linear-gradient(
@@ -3662,7 +3650,6 @@ body.dashboard-body-locked {
 
 .mobile-bottom-nav__inner {
   pointer-events: auto;
-  touch-action: manipulation;
   min-height: var(--nex-mobile-nav-height);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -3711,11 +3698,11 @@ body.dashboard-body-locked {
     animation: nex-mobile-page-in 0.4s var(--ease-out-expo) both;
   }
 
-  /* Single source of bottom safe area — main scroll root */
+  /* Bottom clearance for fixed tab bar */
   .dashboard-shell--mobile-nav .dashboard-main-safe,
   .dashboard-shell--mobile-nav .dashboard-main-with-mobile-nav {
-    padding-bottom: var(--nex-mobile-nav-offset) !important;
-    scroll-padding-bottom: var(--nex-mobile-nav-offset);
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: calc(140px + env(safe-area-inset-bottom, 0px));
   }
 
   .dashboard-shell--mobile-nav .dashboard-shell__column {
@@ -4472,7 +4459,7 @@ body.dashboard-body-locked {
   filter: drop-shadow(0 0 6px rgb(139 92 246 / 0.35));
 }
 
-/* Skeleton */
+/* Skeleton — premium shimmer (Linear / Stripe rhythm) */
 .nex-skeleton {
   background: linear-gradient(
     90deg,
@@ -4483,6 +4470,63 @@ body.dashboard-body-locked {
     rgb(24 24 27 / 0.55) 100%
   );
   background-size: 220% 100%;
+}
+
+.nex-shimmer-surface {
+  position: relative;
+  overflow: hidden;
+}
+
+.nex-shimmer-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.03) 42%,
+    rgb(139 92 246 / 0.06) 50%,
+    rgb(255 255 255 / 0.03) 58%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: nex-shimmer-sweep 2.4s ease-in-out infinite;
+}
+
+.hook-skeleton-card.nex-shimmer-surface,
+.ti-dashboard-skeleton,
+.video-gen-placeholder__frame {
+  border-color: rgb(63 63 70 / 0.45);
+  background: rgb(9 9 11 / 0.72);
+}
+
+.video-gen-placeholder__frame {
+  box-shadow:
+    0 1px 0 0 rgb(255 255 255 / 0.03) inset,
+    0 12px 40px -24px rgb(0 0 0 / 0.65),
+    0 0 48px -28px rgb(139 92 246 / 0.18);
+}
+
+.trend-feed-item .trend-card-skeleton-shell,
+.dashboard-os-counter-skeleton {
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes nex-shimmer-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nex-shimmer-surface::after {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 /* Unified button system — premium SaaS (Linear / Vercel inspired) */
@@ -4733,7 +4777,14 @@ body.dashboard-body-locked {
 .sticky-header-smooth {
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
-  transform: translateZ(0);
+}
+
+@media (max-width: 1023px) {
+  .sticky-header-smooth,
+  .dashboard-mobile-header {
+    transform: none;
+    -webkit-transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5327,7 +5378,6 @@ body.dashboard-body-locked {
   .scroll-smooth-mobile,
   .studio-page {
     scroll-behavior: auto;
-    -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
   }
 
@@ -5337,17 +5387,7 @@ body.dashboard-body-locked {
   .ti-dashboard-metrics,
   .dashboard-ws-trend-scroll,
   .trend-filter-scroll {
-    overscroll-behavior-x: contain;
-    overscroll-behavior-y: auto;
-    touch-action: pan-x pan-y;
     -webkit-overflow-scrolling: touch;
-  }
-
-  .dashboard-main-safe,
-  .trend-intelligence-page,
-  .dashboard-shell,
-  .dashboard-shell__column {
-    overscroll-behavior-y: auto;
   }
 
   /* Glass utilities — higher opacity fill, lower blur (keeps glass feel) */
@@ -5620,9 +5660,8 @@ html.nex-reduced-motion *::after {
 }
 
 @media (max-width: 639px) {
-  .dashboard-main-safe {
-    -webkit-overflow-scrolling: auto;
-    overscroll-behavior-y: auto;
+  .video-card {
+    contain: none;
   }
 
   .landing-page,
@@ -5675,12 +5714,493 @@ html.nex-reduced-motion *::after {
   -webkit-tap-highlight-color: transparent;
 }
 
-@media (max-width: 639px) {
+/* Trend Intelligence — best opportunity hero */
+.ti-opportunity-hero {
+  isolation: isolate;
+}
+
+.ti-opportunity-hero__mesh {
+  background:
+    radial-gradient(ellipse 85% 55% at 100% 0%, rgb(217 70 239 / 0.14), transparent 58%),
+    radial-gradient(ellipse 70% 50% at 0% 100%, rgb(139 92 246 / 0.1), transparent 62%);
+}
+
+.ti-opportunity-hero__title {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ti-opportunity-hero__scores {
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+}
+
+.ti-opportunity-hero__cta {
+  box-shadow:
+    0 0 0 1px rgb(139 92 246 / 0.25),
+    0 12px 32px -12px rgb(139 92 246 / 0.45);
+}
+
+/* Trend Intelligence — compact dashboard (mobile-first density) */
+.ti-dashboard--compact {
+  --ti-dash-gap: 0.5rem;
+  --ti-dash-row-h: 2.375rem;
+}
+
+.ti-dashboard--compact .ti-dashboard-metrics {
+  gap: 0.5rem;
+}
+
+.ti-platform-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.ti-platform-stat {
+  display: inline-flex;
+  min-height: 2rem;
+  min-width: 0;
+  flex: 1 1 calc(33.333% - 0.25rem);
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-radius: 0.625rem;
+  border: 1px solid rgb(63 63 70 / 0.45);
+  background: rgb(9 9 11 / 0.65);
+  padding: 0.375rem 0.625rem;
+}
+
+.ti-platform-stat__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: rgb(212 212 216 / 0.9);
+}
+
+.ti-platform-stat__count {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: rgb(196 181 253 / 0.95);
+}
+
+.ti-dash-section {
+  border-radius: 0.75rem;
+  border: 1px solid rgb(63 63 70 / 0.35);
+  background: rgb(9 9 11 / 0.45);
+  overflow: hidden;
+}
+
+.ti-dash-section__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.ti-dash-section__toggle:active {
+  background: rgb(39 39 42 / 0.35);
+}
+
+.ti-dash-section__title {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgb(250 250 250);
+}
+
+.ti-dash-section__subtitle {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: rgb(113 113 122);
+}
+
+.ti-dash-section__chevron {
+  transition: transform 0.25s var(--ease-out-smooth);
+}
+
+.ti-dash-section__collapse,
+.ti-dash-overview__collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s var(--ease-out-expo);
+}
+
+.ti-dash-section__collapse--open,
+.ti-dash-overview__collapse--open {
+  grid-template-rows: 1fr;
+}
+
+.ti-dash-section__collapse > .ti-dash-section__body,
+.ti-dash-overview__collapse > .ti-dash-overview__body {
+  overflow: hidden;
+}
+
+.ti-dash-section__body {
+  border-top: 1px solid rgb(63 63 70 / 0.28);
+  padding: 0.375rem 0.5rem 0.5rem;
+}
+
+.ti-dash-section__body--animate {
+  animation: ti-dash-body-in 0.36s var(--ease-out-expo) both;
+}
+
+@keyframes ti-dash-body-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.ti-dash-overview {
+  border-radius: 0.75rem;
+  border: 1px solid rgb(63 63 70 / 0.32);
+  background: rgb(9 9 11 / 0.35);
+  overflow: hidden;
+}
+
+.ti-dash-overview__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.ti-dash-overview__toggle:active {
+  background: rgb(39 39 42 / 0.3);
+}
+
+.ti-dash-overview__title {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgb(212 212 216);
+}
+
+.ti-dash-overview__subtitle {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.625rem;
+  color: rgb(113 113 122);
+}
+
+.ti-dash-overview__body {
+  border-top: 1px solid rgb(63 63 70 / 0.25);
+  padding: 0.5rem 0.5rem 0.625rem;
+}
+
+.ti-list-reveal--open .ti-leaderboard-row,
+.ti-list-reveal--open .ti-hook-row,
+.ti-list-reveal--open .ti-signal-row,
+.ti-list-reveal--open .ti-keyword-chip {
+  animation: ti-list-item-in 0.34s var(--ease-out-expo) both;
+}
+
+.ti-list-reveal--open .ti-leaderboard-row:nth-child(4),
+.ti-list-reveal--open .ti-hook-row:nth-child(4),
+.ti-list-reveal--open .ti-signal-row:nth-child(4),
+.ti-list-reveal--open .ti-keyword-chip:nth-child(4) {
+  animation-delay: 40ms;
+}
+
+.ti-list-reveal--open .ti-leaderboard-row:nth-child(5),
+.ti-list-reveal--open .ti-hook-row:nth-child(5),
+.ti-list-reveal--open .ti-signal-row:nth-child(5),
+.ti-list-reveal--open .ti-keyword-chip:nth-child(5) {
+  animation-delay: 80ms;
+}
+
+@keyframes ti-list-item-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.ti-leaderboard,
+.ti-hook-rows,
+.ti-signal-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ti-leaderboard-row,
+.ti-hook-row,
+.ti-signal-row {
+  display: flex;
+  width: 100%;
+  min-height: var(--ti-dash-row-h);
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.375rem;
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.ti-leaderboard-row:hover,
+.ti-hook-row:hover,
+.ti-signal-row:hover {
+  background: rgb(139 92 246 / 0.06);
+}
+
+.ti-leaderboard-row:active,
+.ti-hook-row:active,
+.ti-signal-row:active {
+  background: rgb(139 92 246 / 0.1);
+  transform: scale(0.995);
+}
+
+.ti-leaderboard-row__rank {
+  flex-shrink: 0;
+  width: 1.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: rgb(167 139 250 / 0.85);
+}
+
+.ti-leaderboard-row__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgb(228 228 231);
+}
+
+.ti-leaderboard-row__score {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: rgb(196 181 253);
+}
+
+.ti-hook-row__score,
+.ti-signal-row__score {
+  flex-shrink: 0;
+  width: 1.75rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: rgb(167 139 250);
+}
+
+.ti-hook-row__text,
+.ti-signal-row__text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgb(228 228 231);
+}
+
+.ti-signal-row__meta {
+  flex-shrink: 0;
+  max-width: 5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgb(113 113 122);
+}
+
+.ti-keyword-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.ti-keyword-chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid rgb(63 63 70 / 0.5);
+  background: rgb(24 24 27 / 0.75);
+  padding: 0.3125rem 0.5rem 0.3125rem 0.625rem;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.ti-keyword-chip:active {
+  border-color: rgb(139 92 246 / 0.35);
+  background: rgb(139 92 246 / 0.12);
+}
+
+.ti-keyword-chip__tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(212 212 216);
+}
+
+.ti-keyword-chip__score {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: rgb(167 139 250);
+}
+
+.ti-dash-show-more {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: rgb(167 139 250 / 0.9);
+  touch-action: manipulation;
+  transition: color 0.2s ease;
+}
+
+.ti-dash-show-more:hover {
+  color: rgb(196 181 253);
+}
+
+@media (min-width: 640px) {
+  .ti-dashboard--compact {
+    --ti-dash-row-h: 2.5rem;
+  }
+
+  .ti-dash-section__body {
+    padding: 0.5rem 0.625rem 0.625rem;
+  }
+
+  .ti-leaderboard-row__label,
+  .ti-hook-row__text,
+  .ti-signal-row__text {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 767px) {
   .trend-intelligence-page {
     overflow-x: hidden;
     overflow-y: visible;
   }
 
+  .ti-dashboard {
+    margin-inline: 0;
+    padding-inline: 1rem;
+  }
+
+  .ti-horizontal-scroll,
+  .ti-dashboard-metrics {
+    margin-inline: 0;
+    padding-inline: 0;
+    scroll-padding-inline: 0;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
+    scroll-snap-type: none;
+  }
+
+  .dashboard-ws-trend-scroll {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
+    scroll-snap-type: none;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .dashboard-ws-trend-card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .dashboard-ws-panel {
+    overflow-x: hidden;
+  }
+
+  .dashboard-ws-trend-refresh {
+    width: 100%;
+  }
+
+  .ti-panel {
+    overflow-x: hidden;
+    min-width: 0;
+  }
+
+  .trend-card {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .trend-card__meta-zone {
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    row-gap: 0.375rem;
+  }
+
+  .trend-card__pill--audio,
+  .trend-card__pill--niche {
+    max-width: min(100%, 10rem);
+  }
+
+  .trend-card__actions {
+    min-width: 0;
+  }
+
+  .trend-card__action--primary {
+    padding-inline: 0.625rem;
+    font-size: 0.75rem;
+  }
+
+  .trend-feed {
+    gap: 1.375rem;
+    padding-inline: 0;
+  }
+
+  .trend-feed-item {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
   .ti-dashboard {
     margin-inline: -0.25rem;
     padding-inline: 1.125rem;
@@ -7594,7 +8114,6 @@ html.nex-reduced-motion *::after {
 /* ── Mobile touch: decor must not block taps (iOS Safari fixed-layer quirk) ── */
 
 .nex-decor-layer,
-.nex-ambient,
 .nex-ambient::before,
 .nex-ambient__orb,
 .nex-ambient__orb *,
@@ -7621,10 +8140,6 @@ html.nex-reduced-motion *::after {
   -webkit-tap-highlight-color: transparent;
 }
 
-.mobile-drawer-backdrop {
-  touch-action: none;
-}
-
 .mobile-drawer-backdrop[hidden] {
   display: none !important;
 }
@@ -7633,7 +8148,6 @@ html.nex-reduced-motion *::after {
   .nex-ambient::before {
     position: absolute !important;
     pointer-events: none !important;
-    touch-action: none !important;
   }
 
   .dashboard-os__content,
@@ -7641,16 +8155,11 @@ html.nex-reduced-motion *::after {
   .dashboard-main-interactive {
     position: relative;
     z-index: 1;
-    pointer-events: auto !important;
   }
 
-  /* Avoid compositor layers on the scroll root — causes iOS Safari scroll freezes */
   .dashboard-main-safe {
     position: relative;
     z-index: 1;
-    pointer-events: auto !important;
-    transform: none;
-    -webkit-transform: none;
   }
 }
 
@@ -7659,10 +8168,8 @@ html.nex-reduced-motion *::after {
     position: absolute !important;
     max-height: none;
     pointer-events: none !important;
-    touch-action: none;
   }
 
-  /* Never block touch/scroll on reveal wrappers (pricing + dashboard) */
   .nex-reveal-scroll,
   .nex-reveal-scroll:not(.nex-reveal-scroll--visible),
   .nex-reveal-scroll--visible {
@@ -7851,14 +8358,19 @@ html.nex-reduced-motion *::after {
 
   .ti-dashboard {
     margin-inline: 0;
-    padding-inline: 0;
+    padding-inline: 1rem;
   }
 
   .ti-horizontal-scroll,
   .ti-dashboard-metrics {
-    margin-inline: -1rem;
-    padding-inline: 1rem;
-    scroll-padding-inline: 1rem;
+    margin-inline: 0;
+    padding-inline: 0;
+    scroll-padding-inline: 0;
+    overflow-x: hidden;
+  }
+
+  .dashboard-ws-trend-scroll {
+    overflow-x: hidden;
   }
 
   .page-transition-enter {
