@@ -1,6 +1,6 @@
 import { useVideoGenerationHistory } from '@/hooks/useVideoGenerationHistory'
 import { cn } from '@/lib'
-import { SpinnerInline } from '@/components/ui/Spinner'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 type VideoGenerationHistoryProps = {
   onSelect?: (videoUrl: string, posterUrl?: string) => void
@@ -15,9 +15,17 @@ export function VideoGenerationHistory({
 
   if (loading && items.length === 0) {
     return (
-      <div className={cn('flex items-center gap-2 py-4 text-sm text-zinc-500', className)}>
-        <SpinnerInline size="sm" />
-        Verlauf wird geladen …
+      <div className={cn('space-y-3 py-2', className)} aria-busy="true" aria-label="Verlauf wird geladen">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex gap-3 rounded-xl border border-zinc-800/50 p-3">
+            <Skeleton className="aspect-[9/14] w-14 shrink-0 rounded-lg" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-2 w-20" />
+            </div>
+          </div>
+        ))}
       </div>
     )
   }

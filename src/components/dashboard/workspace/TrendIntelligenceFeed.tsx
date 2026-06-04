@@ -67,13 +67,13 @@ export function TrendIntelligenceFeed({ onNavigate }: TrendIntelligenceFeedProps
         <TrendFeedSkeleton />
       ) : (
         <motion.div
-          className="dashboard-ws-trend-scroll -mx-1 flex gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1 scrollbar-hide snap-x snap-mandatory"
+          className="dashboard-ws-trend-scroll flex flex-col gap-4 max-md:overflow-x-hidden md:-mx-1 md:flex-row md:gap-3 md:overflow-x-auto md:overscroll-x-contain md:px-1 md:pb-1 md:snap-x md:snap-mandatory md:scrollbar-hide"
           variants={reduced ? undefined : staggerContainer}
           initial={reduced ? false : 'hidden'}
           animate="visible"
         >
           {items.map((item) => (
-            <div key={item.id} className="snap-center">
+            <div key={item.id} className="min-w-0 w-full md:snap-center md:w-auto md:shrink-0">
               <TrendFeedCard
                 item={item}
                 saved={isSaved(item.id)}
@@ -81,13 +81,18 @@ export function TrendIntelligenceFeed({ onNavigate }: TrendIntelligenceFeedProps
               />
             </div>
           ))}
-          <span className="w-4 shrink-0 snap-none" aria-hidden />
+          <span className="hidden w-4 shrink-0 snap-none md:block" aria-hidden />
         </motion.div>
       )}
 
       {!loading ? (
-        <div className="mt-3 flex justify-end">
-          <Button variant="secondary" size="sm" onClick={() => void load()}>
+        <div className="dashboard-ws-trend-refresh mt-5 max-md:mt-4 md:mt-3 md:flex md:justify-end">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full max-md:min-h-11 md:w-auto"
+            onClick={() => void load()}
+          >
             Feed aktualisieren
           </Button>
         </div>

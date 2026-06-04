@@ -20,7 +20,10 @@ export const AUTH_ERROR_STORAGE_KEY = 'nextrends_auth_error'
 
 /** Read VITE_SITE_URL or NEXT_PUBLIC_SITE_URL (production: https://nextrends-ai.de). */
 export function getConfiguredSiteUrl(): string | null {
-  const raw = readEnv('NEXT_PUBLIC_SITE_URL', 'VITE_SITE_URL')
+  const raw =
+  typeof window !== 'undefined'
+    ? window.location.origin
+    : readEnv('NEXT_PUBLIC_SITE_URL', 'VITE_SITE_URL')
   if (!raw) return null
 
   try {
@@ -31,27 +34,10 @@ export function getConfiguredSiteUrl(): string | null {
   }
 }
 
-function isLocalDevHost(hostname: string): boolean {
-  return (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('10.')
-  )
-}
-
 /** Origin the user actually loaded (LAN IP on mobile, localhost on desktop). */
 export function getAppOrigin(): string {
-  if (!isBrowser()) return getConfiguredSiteUrl() ?? ''
-
-  const configured = getConfiguredSiteUrl()
-  if (configured && !isLocalDevHost(window.location.hostname)) {
-    const configuredHost = new URL(configured).hostname.replace(/^www\./, '')
-    const currentHost = window.location.hostname.replace(/^www\./, '')
-    if (currentHost === configuredHost) {
-      return window.location.origin
-    }
-    return configured
+  if (!isBrowser()) {
+    return getConfiguredSiteUrl() ?? ''
   }
 
   return window.location.origin
@@ -72,9 +58,7 @@ export function isLoginPath(pathname?: string): boolean {
  * Never hardcodes 127.0.0.1; uses whatever host the user opened.
  */
 export function getGoogleOAuthRedirectUrl(): string {
-  const origin = getAppOrigin()
-  if (!origin) return AUTH_CALLBACK_PATH
-  return `${origin}${AUTH_CALLBACK_PATH}`
+  return 'http://192.168.2.90:5173/dashboard'
 }
 
 /**

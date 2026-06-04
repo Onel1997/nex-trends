@@ -6,7 +6,7 @@ import {
   PlayIcon,
   TrashIcon,
 } from '@/components/ui/icons'
-import { SpinnerInline } from '@/components/ui/Spinner'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib'
 import {
   downloadVideoMp4,
@@ -194,9 +194,11 @@ export function VideoLibraryCard({
         )}
 
         {(isDeleting || isRegenerating) && (
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <SpinnerInline size="sm" />
-            {isDeleting ? 'Wird gelöscht …' : 'Regenerierung …'}
+          <div className="space-y-2" aria-busy="true">
+            <Skeleton className="h-2 w-full rounded-full" />
+            <p className="text-xs text-zinc-500">
+              {isDeleting ? 'Wird gelöscht …' : 'Regenerierung …'}
+            </p>
           </div>
         )}
       </div>

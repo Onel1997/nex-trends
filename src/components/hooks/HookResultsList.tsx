@@ -204,41 +204,7 @@ export function HookGenerationProgress({
   )
 }
 
-export function HookGeneratingSkeleton({ count = 10 }: { count?: number }) {
-  const visible = Math.min(count, 6)
-
-  return (
-    <div className="hook-results-feed hook-results-feed--skeleton">
-      {Array.from({ length: visible }).map((_, i) => (
-        <div
-          key={i}
-          className="hook-skeleton-card animate-shimmer p-4 sm:p-5"
-          style={{ animationDelay: `${i * 90}ms` }}
-        >
-          <div className="flex gap-3.5">
-            <div className="size-10 shrink-0 rounded-xl bg-zinc-800/80 sm:size-9" />
-            <div className="min-w-0 flex-1 space-y-2.5">
-              <div className="h-4 w-full rounded-lg bg-zinc-800/70" />
-              <div className="h-4 w-[88%] rounded-lg bg-zinc-800/50" />
-              <div className="flex gap-2 pt-1">
-                <div className="h-5 w-14 rounded-md bg-zinc-800/40" />
-                <div className="h-5 w-16 rounded-md bg-zinc-800/40" />
-                <div className="h-5 w-12 rounded-md bg-zinc-800/30" />
-              </div>
-            </div>
-            <div className="hidden shrink-0 flex-col gap-1.5 sm:flex">
-              <div className="size-9 rounded-xl bg-zinc-800/50" />
-              <div className="size-9 rounded-xl bg-zinc-800/50" />
-            </div>
-          </div>
-        </div>
-      ))}
-      <p className="text-center text-xs font-medium text-violet-400/85 animate-pulse-soft">
-        AI generiert Scroll-Stopper …
-      </p>
-    </div>
-  )
-}
+export { HookGeneratingSkeleton } from '@/components/ui/loading-states'
 
 type HookGenerationMetaProps = {
   topic: string

@@ -10,12 +10,17 @@ import {
 } from '@/lib/video-pipeline-errors'
 import { logVideoPipelineError } from '@/lib/video-pipeline-messages'
 
+/** JSON body shape returned by Supabase edge functions (success and error). */
 type EdgeFunctionErrorBody = PipelineErrorPayload & {
   code?: string
   hooks?: unknown
   generation?: unknown
   generations?: unknown
   ok?: boolean
+  /** Video pipeline (generate-video create/poll/retry). */
+  job?: unknown
+  /** Video history list (generate-video history). */
+  items?: unknown
 }
 
 export type InvokeEdgeFunctionOptions = {
@@ -49,7 +54,7 @@ function isCreditConsumeShape(payload: unknown): boolean {
 /** True when the JSON body is a successful edge function result (even if the client also set `error`). */
 function isSuccessEdgePayload(payload: unknown): boolean {
   if (!payload || typeof payload !== 'object') return false
-  const record = payload as EdgeFunctionErrorBody & { job?: unknown; items?: unknown }
+  const record = payload as EdgeFunctionErrorBody
 
   if (record.ok === true) return true
   if (record.job && typeof record.job === 'object') return true

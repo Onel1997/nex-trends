@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib'
 
 const STEPS = [
@@ -30,16 +31,14 @@ export function TrendAnalysisLoading({ className }: TrendAnalysisLoadingProps) {
       )}
       role="status"
       aria-live="polite"
+      aria-busy="true"
       aria-label="Trend Intelligence wird analysiert"
     >
       <div className="flex items-center gap-3">
-        <span className="relative flex size-11 shrink-0 items-center justify-center">
-          <span className="absolute inset-0 animate-ping rounded-full bg-violet-500/25" />
-          <span className="relative size-9 animate-spin rounded-full border-2 border-zinc-800 border-t-violet-500 border-r-fuchsia-500/80" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-white">AI Trend Intelligence</p>
-          <p className="mt-0.5 text-xs text-violet-300/80">{STEPS[activeStep]}</p>
+        <Skeleton className="size-11 shrink-0 rounded-2xl" />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="h-4 w-36" />
+          <p className="text-xs text-violet-300/80">{STEPS[activeStep]}</p>
         </div>
       </div>
 
@@ -62,7 +61,7 @@ export function TrendAnalysisLoading({ className }: TrendAnalysisLoadingProps) {
                 className={cn(
                   'flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
                   isDone && 'bg-emerald-500/20 text-emerald-400',
-                  isActive && 'bg-violet-500/30 text-violet-200 animate-pulse-soft',
+                  isActive && 'bg-violet-500/30 text-violet-200',
                   !isDone && !isActive && 'bg-zinc-800 text-zinc-600',
                 )}
                 aria-hidden
@@ -75,15 +74,17 @@ export function TrendAnalysisLoading({ className }: TrendAnalysisLoadingProps) {
         })}
       </ul>
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-16 animate-shimmer rounded-xl bg-zinc-800/35"
-            style={{ animationDelay: `${i * 120}ms` }}
-            aria-hidden
-          />
-        ))}
+      <div className="mt-4">
+        <Skeleton className="mb-3 h-3 w-28" />
+        <div className="grid grid-cols-3 gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton
+              key={i}
+              className="h-16 rounded-xl"
+              style={{ animationDelay: `${i * 120}ms` }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )

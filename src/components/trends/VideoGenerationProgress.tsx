@@ -1,5 +1,6 @@
+import { VideoGenerationPlaceholder } from '@/components/ui/loading-states'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib'
-import { SpinnerInline } from '@/components/ui/Spinner'
 import { VIDEO_LOADING_MESSAGE } from '@/hooks/useVideoGeneration'
 import type { VideoJobStatus } from '@/lib/video-generation-pipeline'
 
@@ -52,7 +53,7 @@ export function VideoGenerationProgress({
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {loading ? (
-            <SpinnerInline size="sm" className="text-violet-400" aria-hidden />
+            <Skeleton className="size-2 shrink-0 rounded-full" aria-hidden />
           ) : (
             <span
               className="size-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]"
@@ -108,23 +109,23 @@ export function VideoGenerationProgress({
 
       {loadingMessage ? (
         <div className="mt-3 flex items-start gap-3 rounded-xl border border-violet-500/15 bg-violet-500/5 px-3 py-2.5">
-          {loading ? (
-            <span className="relative mt-1.5 flex size-2 shrink-0 items-center justify-center">
-              <span className="ai-pulse-ring absolute inset-0 rounded-full bg-violet-400/50" />
-              <span className="relative size-1.5 rounded-full bg-violet-400" />
-            </span>
-          ) : null}
+          <Skeleton className="mt-1 size-2 shrink-0 rounded-full" aria-hidden />
           <p className="text-sm leading-relaxed text-violet-200/90">{loadingMessage}</p>
         </div>
       ) : null}
 
       {loading && (
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-zinc-800">
-          <div
-            className="h-full animate-progress-indeterminate rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-violet-600 shadow-[0_0_10px_rgba(139,92,246,0.45)]"
-            style={{ width: '40%' }}
-          />
-        </div>
+        <>
+          <div className="mt-4 max-w-[200px] sm:max-w-[240px]">
+            <VideoGenerationPlaceholder compact />
+          </div>
+          <div className="mt-3 h-1 overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className="h-full animate-progress-indeterminate rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-violet-600 shadow-[0_0_10px_rgba(139,92,246,0.45)]"
+              style={{ width: '40%' }}
+            />
+          </div>
+        </>
       )}
     </div>
   )

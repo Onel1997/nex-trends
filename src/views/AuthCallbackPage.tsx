@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Spinner } from '@/components/ui/Spinner'
+import { AuthPanelSkeleton } from '@/components/ui/loading-states'
 import {
   completeAuthCallback,
   formatAuthError,
@@ -31,7 +31,7 @@ export function AuthCallbackPage() {
       if (!mounted) return
 
       if (session) {
-        redirectToDashboard()
+        window.location.replace(`${window.location.origin}/dashboard`)
         return
       }
 
@@ -64,8 +64,11 @@ export function AuthCallbackPage() {
   }, [])
 
   return (
-    <div className="flex min-h-svh items-center justify-center ambient-glow bg-zinc-950">
-      <Spinner size="lg" label="Anmeldung wird abgeschlossen …" />
+    <div className="ambient-glow min-h-svh bg-zinc-950">
+      <AuthPanelSkeleton
+        title="Anmeldung wird abgeschlossen …"
+        subtitle="Einen Moment — dein Creator Workspace wird vorbereitet."
+      />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { cn } from '@/lib'
+import { VideoGenerationPlaceholder } from '@/components/ui/loading-states'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { SpinnerInline } from '@/components/ui/Spinner'
 import { CheckIcon } from '@/components/ui/icons'
 import type { VideoJobStatus } from '@/lib/video-generation-pipeline'
 
@@ -141,7 +141,7 @@ export function AiStudioPipeline({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {loading ? (
-            <SpinnerInline size="sm" className="text-violet-400" />
+            <Skeleton className="size-2 shrink-0 rounded-full" aria-hidden />
           ) : failed ? (
             <span className="size-2 rounded-full bg-amber-500" aria-hidden />
           ) : (
@@ -180,9 +180,8 @@ export function AiStudioPipeline({
       </div>
 
       {loading && (
-        <div className="mb-4 space-y-2 sm:hidden" aria-hidden>
-          <Skeleton className="h-2 w-full rounded-full" />
-          <Skeleton className="h-16 w-full rounded-xl" />
+        <div className="mb-4 sm:hidden" aria-hidden>
+          <VideoGenerationPlaceholder compact />
         </div>
       )}
 
@@ -277,12 +276,8 @@ export function AiStudioPipeline({
       </div>
 
       {loading && (
-        <div className="mt-4 hidden space-y-2 sm:block" aria-hidden>
-          <div className="flex gap-2">
-            <Skeleton className="h-3 flex-1 rounded-md" />
-            <Skeleton className="h-3 w-24 rounded-md" />
-          </div>
-          <Skeleton className="h-10 w-full rounded-xl" />
+        <div className="mt-4 hidden sm:block" aria-hidden>
+          <VideoGenerationPlaceholder compact className="max-w-xs" />
         </div>
       )}
 

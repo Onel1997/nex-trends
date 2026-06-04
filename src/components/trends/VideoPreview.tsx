@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { VideoCaptionsOverlay } from '@/components/trends/VideoCaptionsOverlay'
-import { SpinnerInline } from '@/components/ui/Spinner'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { cn } from '@/lib'
 import { PlayIcon } from '@/components/ui/icons'
 import { useInViewport } from '@/hooks/useInViewport'
@@ -517,8 +517,12 @@ export function VideoPreview({
       )}
 
       {(isBuffering || (shouldAttachVideo && !videoReady && !videoFailed)) && (
-        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/25 backdrop-blur-[1px]">
-          <SpinnerInline size="md" className="opacity-90" />
+        <div className="pointer-events-none absolute inset-0 z-30 bg-black/20 backdrop-blur-[1px]">
+          <Skeleton className="absolute inset-0 rounded-none opacity-70" />
+          <div className="absolute inset-x-0 bottom-0 space-y-2 bg-gradient-to-t from-black/70 to-transparent p-4 pt-12">
+            <Skeleton className="h-2.5 w-2/3 rounded-md opacity-80" />
+            <Skeleton className="h-2.5 w-1/2 rounded-md opacity-60" />
+          </div>
         </div>
       )}
 

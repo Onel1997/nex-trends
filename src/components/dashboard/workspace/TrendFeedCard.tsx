@@ -32,19 +32,19 @@ export function TrendFeedCard({ item, saved, onToggleSave }: TrendFeedCardProps)
     <motion.article
       variants={scaleIn}
       transition={transition}
-      className="dashboard-ws-trend-card group relative flex w-[min(82vw,17.5rem)] shrink-0 flex-col rounded-xl border border-zinc-800/60 bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-4 shadow-[0_12px_40px_-24px_rgba(0,0,0,0.65)] transition-colors hover:border-violet-500/25 sm:w-[17.5rem]"
+      className="dashboard-ws-trend-card group relative flex w-full min-w-0 max-w-full flex-col rounded-xl border border-zinc-800/60 bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-4 shadow-[0_12px_40px_-24px_rgba(0,0,0,0.65)] transition-colors hover:border-violet-500/25 sm:p-[1.125rem] md:w-[17.5rem] md:max-w-none md:shrink-0"
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex min-w-0 items-start justify-between gap-2">
         <span
           className={cn(
-            'rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+            'max-w-[45%] shrink-0 truncate rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
             PLATFORM_STYLES[item.platform] ?? PLATFORM_STYLES.TikTok,
           )}
         >
           {item.platform}
         </span>
-        <div className="flex items-center gap-1.5">
-          <Badge variant={STATUS_VARIANT[item.status]} className="text-[9px]">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5">
+          <Badge variant={STATUS_VARIANT[item.status]} className="max-w-full shrink-0 text-[9px]">
             {item.status}
           </Badge>
           {onToggleSave ? (
@@ -65,7 +65,7 @@ export function TrendFeedCard({ item, saved, onToggleSave }: TrendFeedCardProps)
         </div>
       </div>
 
-      <h3 className="mt-3 line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-zinc-100">
+      <h3 className="mt-3 break-words text-sm font-semibold leading-snug tracking-tight text-zinc-100 [overflow-wrap:anywhere]">
         {item.title}
       </h3>
       <p className="mt-1 text-[11px] font-medium uppercase tracking-wider text-violet-400/90">

@@ -25,7 +25,9 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
+  allowedDevOrigins: ['192.168.2.90'],
+reactStrictMode: true,
+
   turbopack: {
     resolveAlias: {
       '@': path.resolve(__dirname, './src'),

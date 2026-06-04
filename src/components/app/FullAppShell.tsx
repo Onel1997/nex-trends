@@ -2,15 +2,11 @@
 
 import { StrictMode, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Spinner } from '@/components/ui/Spinner'
+import { AppBootstrapSkeleton } from '@/components/ui/loading-states'
 
 const App = dynamic(() => import('@/App'), {
   ssr: false,
-  loading: () => (
-    <div className="flex min-h-svh items-center justify-center bg-zinc-950">
-      <Spinner size="lg" label="NexTrends wird geladen …" />
-    </div>
-  ),
+  loading: () => <AppBootstrapSkeleton />,
 })
 
 /** Full NexTrends SPA — opt-in via NEXT_PUBLIC_FULL_APP=true */
@@ -29,11 +25,7 @@ export default function FullAppShell() {
   }, [])
 
   if (!mounted) {
-    return (
-      <div className="flex min-h-svh items-center justify-center bg-zinc-950">
-        <Spinner size="lg" label="NexTrends wird geladen …" />
-      </div>
-    )
+    return <AppBootstrapSkeleton />
   }
 
   return (

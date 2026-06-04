@@ -6,31 +6,11 @@ import { AiStudioEmptyIllustration } from '@/components/ai-studio/AiStudioEmptyI
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SparklesIcon } from '@/components/ui/icons'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { VideoCardSkeleton } from '@/components/ui/Skeleton'
 import { navigateToTool } from '@/lib/navigation'
 import { cn } from '@/lib'
 import type { SavedAiVideo } from '@/types/ai-video-library'
 import { useState } from 'react'
-
-function VideoCardSkeleton() {
-  return (
-    <div className="glass-card overflow-hidden">
-      <div className="relative aspect-[9/16] w-full overflow-hidden bg-zinc-900/80">
-        <Skeleton className="absolute inset-0 rounded-none" />
-        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-zinc-950/90 to-transparent" />
-      </div>
-      <div className="space-y-3 p-4">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-1/2" />
-        <div className="flex gap-2 pt-1">
-          <Skeleton className="h-9 flex-1 rounded-xl" />
-          <Skeleton className="size-9 rounded-xl" />
-          <Skeleton className="size-9 rounded-xl" />
-        </div>
-      </div>
-    </div>
-  )
-}
 
 type VideoLibraryGridProps = {
   videos: SavedAiVideo[]

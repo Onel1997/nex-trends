@@ -60,7 +60,7 @@ async function callOpenAI(systemPrompt: string, userMessage: string): Promise<st
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1-mini',
       temperature: 0.7,
       messages: [
         { role: 'system', content: systemPrompt },
@@ -121,7 +121,7 @@ async function callOpenAIJson(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1-mini',
       temperature: 0.65,
       response_format: { type: 'json_object' },
       messages: [

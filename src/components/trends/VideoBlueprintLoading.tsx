@@ -1,3 +1,4 @@
+import { VideoGenerationPlaceholder } from '@/components/ui/loading-states'
 import { cn } from '@/lib'
 import type { VideoJobStatus } from '@/lib/video-generation-pipeline'
 
@@ -49,44 +50,50 @@ export function VideoBlueprintLoading({
       <div className="creator-loading-gradient pointer-events-none absolute inset-0 opacity-60" aria-hidden />
       <div className="creator-loading-grid pointer-events-none absolute inset-0 opacity-[0.07]" aria-hidden />
 
-      <div className="relative flex flex-col items-center text-center">
-        <div className={cn('creator-orb-wrap mb-6', retrying && 'creator-orb-wrap--retry')}>
-          <div className="creator-orb" aria-hidden />
-          <div className="creator-orb-ring creator-orb-ring--1" aria-hidden />
-          <div className="creator-orb-ring creator-orb-ring--2" aria-hidden />
-          <div className="creator-orb-core" aria-hidden />
+      <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center lg:text-left">
+        <div className="mx-auto w-full max-w-[220px] lg:mx-0 lg:max-w-none">
+          <VideoGenerationPlaceholder />
         </div>
 
-        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-violet-400/80">
-          Creator OS
-        </p>
-        <h3 className="mt-2 text-lg font-semibold tracking-tight text-white sm:text-xl">
-          {headline}
-        </h3>
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+          <div className={cn('creator-orb-wrap mb-5 lg:mb-4', retrying && 'creator-orb-wrap--retry')}>
+            <div className="creator-orb" aria-hidden />
+            <div className="creator-orb-ring creator-orb-ring--1" aria-hidden />
+            <div className="creator-orb-ring creator-orb-ring--2" aria-hidden />
+            <div className="creator-orb-core" aria-hidden />
+          </div>
 
-        <p
-          key={`${message}-${retryAttempt}`}
-          className="creator-loading-message mt-3 max-w-sm text-sm leading-relaxed text-violet-200/90"
-        >
-          {message}
-        </p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-violet-400/80">
+            Creator OS
+          </p>
+          <h3 className="mt-2 text-lg font-semibold tracking-tight text-white sm:text-xl">
+            {headline}
+          </h3>
 
-        <div className="mt-6 flex w-full max-w-xs gap-1.5">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className={cn(
-                'h-1 flex-1 rounded-full transition-all duration-700',
-                i <= progressIndex
-                  ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]'
-                  : 'bg-zinc-800/80',
-                retrying && i <= progressIndex && 'animate-pulse',
-              )}
-            />
-          ))}
+          <p
+            key={`${message}-${retryAttempt}`}
+            className="creator-loading-message mt-3 max-w-sm text-sm leading-relaxed text-violet-200/90"
+          >
+            {message}
+          </p>
+
+          <div className="mt-6 flex w-full max-w-xs gap-1.5 lg:max-w-sm">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className={cn(
+                  'h-1 flex-1 rounded-full transition-all duration-700',
+                  i <= progressIndex
+                    ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]'
+                    : 'bg-zinc-800/80',
+                  retrying && i <= progressIndex && 'animate-pulse',
+                )}
+              />
+            ))}
+          </div>
+
+          <p className="mt-4 text-[11px] text-zinc-600">{subline}</p>
         </div>
-
-        <p className="mt-4 text-[11px] text-zinc-600">{subline}</p>
       </div>
     </div>
   )

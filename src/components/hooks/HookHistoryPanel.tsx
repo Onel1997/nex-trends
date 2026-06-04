@@ -3,6 +3,7 @@ import { HookCard } from '@/components/hooks/HookCard'
 import { HookPanelError } from '@/components/hooks/HookResultsList'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { HookResultSkeleton } from '@/components/ui/loading-states'
 import {
   HookHistoryEmptyState,
   HookSavedEmptyState,
@@ -312,13 +313,12 @@ export function HookSavedPanel({
 
   if (isLoading) {
     return (
-      <div className={cn('hook-saved-feed hook-saved-feed--skeleton space-y-3.5', className)}>
+      <div
+        className={cn('hook-saved-feed hook-saved-feed--skeleton space-y-3.5', className)}
+        aria-busy="true"
+      >
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="hook-skeleton-card animate-shimmer h-36 w-full"
-            style={{ animationDelay: `${i * 80}ms` }}
-          />
+          <HookResultSkeleton key={i} index={i} />
         ))}
       </div>
     )
