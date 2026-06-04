@@ -46,14 +46,32 @@ function isCreditConsumeShape(payload: unknown): boolean {
   )
 }
 
+/** True when the JSON body is a successful edge function result (even if the client also set `error`). */
+function isSuccessEdgePayload(payload: unknown): boolean {
+  if (!payload || typeof payload !== 'object') return false
+  const record = payload as EdgeFunctionErrorBody & { job?: unknown; items?: unknown }
+
+  if (record.ok === true) return true
+  if (record.job && typeof record.job === 'object') return true
+  if (Array.isArray(record.items)) return true
+  if (Array.isArray(record.hooks) && record.hooks.length > 0) return true
+  if (record.generation && typeof record.generation === 'object') return true
+  if (Array.isArray(record.generations)) return true
+  if (isCreditConsumeShape(payload) && (payload as { allowed: boolean }).allowed) return true
+
+  return false
+}
+
 /** True when the JSON body is an error response (not a successful AI payload). */
 function isFatalEdgePayload(payload: unknown): payload is EdgeFunctionErrorBody {
   if (!payload || typeof payload !== 'object') return false
   if (isCreditConsumeShape(payload)) return false
+  if (isSuccessEdgePayload(payload)) return false
 
   const record = payload as EdgeFunctionErrorBody
 
   if (record.ok === true) return false
+  if (record.job && typeof record.job === 'object') return false
   if (Array.isArray(record.hooks) && record.hooks.length > 0) return false
   if (record.generation && typeof record.generation === 'object') return false
   if (Array.isArray(record.generations)) return false
@@ -162,6 +180,7 @@ function throwEdgeInvokeError(
   status: number,
   body: unknown,
   fallback?: string,
+  invokeErr?: unknown,
 ): never {
   const technical = parseEdgeErrorForLog(functionName, status, body, fallback)
 
@@ -186,7 +205,10 @@ function throwEdgeInvokeError(
   ) {
     throw new Error(`insufficient_credits: ${technical}`)
   }
-  if (isNetworkFetchError(new Error(technical))) {
+  if (
+    invokeErr instanceof FunctionsRelayError ||
+    (fallback && isNetworkFetchError(new Error(fallback)))
+  ) {
     throw new Error(formatEdgeFunctionNetworkError(functionName))
   }
 
@@ -230,15 +252,37 @@ export async function invokeEdgeFunction<T>(
     error,
   )
 
+  if (payload !== null && isSuccessEdgePayload(payload)) {
+    if (debug) {
+      console.debug(`[EdgeFunction] ${functionName} ← success`, {
+        status: httpStatus,
+        keys: Object.keys(payload as object),
+      })
+    }
+    return payload as T
+  }
+
   const isHttpError = Boolean(error) && httpStatus >= 400
   const allowedByStatus = extraOk.includes(httpStatus)
 
   if (isHttpError && !allowedByStatus) {
-    throwEdgeInvokeError(functionName, httpStatus, payload, invokeError ?? undefined)
+    throwEdgeInvokeError(
+      functionName,
+      httpStatus,
+      payload,
+      invokeError ?? undefined,
+      error ?? undefined,
+    )
   }
 
   if (payload && isFatalEdgePayload(payload)) {
-    throwEdgeInvokeError(functionName, httpStatus || 500, payload, invokeError ?? undefined)
+    throwEdgeInvokeError(
+      functionName,
+      httpStatus || 500,
+      payload,
+      invokeError ?? undefined,
+      error ?? undefined,
+    )
   }
 
   if (payload !== null) {
@@ -252,7 +296,13 @@ export async function invokeEdgeFunction<T>(
   }
 
   if (error) {
-    throwEdgeInvokeError(functionName, httpStatus, null, invokeError ?? undefined)
+    throwEdgeInvokeError(
+      functionName,
+      httpStatus,
+      null,
+      invokeError ?? undefined,
+      error ?? undefined,
+    )
   }
 
   logVideoPipelineError(`edge-${functionName}`, 'Empty response', { httpStatus })
