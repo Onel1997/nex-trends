@@ -80,7 +80,7 @@ const ROUTE_DEFINITIONS: Record<DashboardRouteId, Omit<DashboardRouteConfig, 'id
   'trend-intelligence': {
     path: `${DASHBOARD_BASE}/trend-intelligence`,
     label: 'Trend Intelligence',
-    description: 'Virale Trends, Feed & AI Insights',
+    description: 'Entscheidungs-Feed mit Opportunity Scores',
     Icon: TrendingUpIcon,
     showInSidebar: true,
     showOnDashboard: true,

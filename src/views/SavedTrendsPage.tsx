@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { HookSavedPanel, HookTabRefreshButton } from '@/components/hooks/HookHistoryPanel'
 import { HookEmptyStateAction } from '@/components/hooks/HookEmptyStates'
-import { SavedTrendsPanel } from '@/components/trends'
+import { TrendFeedV2List } from '@/components/trends/v2'
 import { BookmarkIcon, SparklesIcon, TrendingUpIcon } from '@/components/ui/icons'
 import { useToast } from '@/context/ToastContext'
 import { useHookClipboard } from '@/hooks/useHookClipboard'
 import { useSavedHooks } from '@/hooks/useSavedHooks'
 import { useSavedTrends } from '@/hooks/useSavedTrends'
 import { setHookRegeneratePrefill } from '@/lib/hook-regenerate-session'
+import { attachTrendV2Signals } from '@/lib/trend-v2'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import { cn, type DashboardToolId } from '@/lib'
 import type { HookPlatform, HookTone, SavedHookRow } from '@/types/ai-generation'
 
@@ -31,6 +33,10 @@ export function SavedTrendsPage({ onNavigate }: SavedTrendsPageProps) {
 
   const { copiedHook, copyHook } = useHookClipboard()
   const { savedTrends, isSaved, toggleSave } = useSavedTrends()
+  const savedTrendsV2 = useMemo(
+    () => savedTrends.map((t) => attachTrendV2Signals(t)),
+    [savedTrends],
+  )
 
   useEffect(() => {
     void refreshHooks()
@@ -88,7 +94,8 @@ export function SavedTrendsPage({ onNavigate }: SavedTrendsPageProps) {
         </h1>
         <p className="mt-2 text-sm text-zinc-500">
           {savedHooks.length} gespeicherte Hook{savedHooks.length === 1 ? '' : 's'} ·{' '}
-          {savedTrends.length} Trend{savedTrends.length === 1 ? '' : 's'} — Hooks in Supabase, Trends lokal.
+          {savedTrends.length} Trend{savedTrends.length === 1 ? '' : 's'}
+          {isSupabaseConfigured() ? ' · synchronisiert mit Supabase' : ' · lokal gespeichert'}.
         </p>
       </header>
 
@@ -149,10 +156,12 @@ export function SavedTrendsPage({ onNavigate }: SavedTrendsPageProps) {
       )}
 
       {activeTab === 'trends' && (
-        <SavedTrendsPanel
-          trends={savedTrends}
+        <TrendFeedV2List
+          trends={savedTrendsV2}
           isSaved={isSaved}
-          onToggleSave={toggleSave}
+          onToggleSave={(t) => toggleSave(t)}
+          emptyTitle="Noch keine gespeicherten Trends"
+          emptyDescription="Speichere Trends aus dem Feed — sie erscheinen hier in deiner Bibliothek."
         />
       )}
     </div>

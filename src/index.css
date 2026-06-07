@@ -8680,3 +8680,49 @@ html.nex-reduced-motion *::after {
   background: rgb(139 92 246 / 0.04);
 }
 
+/* ── Trend Intelligence V2 ── */
+
+.ti-v2-page {
+  isolation: isolate;
+}
+
+.ti-v2-panel {
+  isolation: isolate;
+}
+
+.ti-v2-filter-scroll {
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: max(1rem, env(safe-area-inset-left));
+  -webkit-overflow-scrolling: touch;
+}
+
+.ti-v2-feed {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ti-v2-card {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ti-v2-hero {
+  isolation: isolate;
+}
+
+@media (max-width: 639px) {
+  .ti-v2-page {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .ti-v2-card {
+    border-radius: 1.25rem;
+  }
+
+  .ti-v2-filter-scroll {
+    margin-inline: -0.25rem;
+    padding-inline: 0.25rem;
+  }
+}
+
