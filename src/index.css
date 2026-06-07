@@ -5072,6 +5072,16 @@ body {
   overflow-x: hidden;
 }
 
+@media (min-width: 640px) {
+  .pricing-cards-grid {
+    align-items: stretch;
+  }
+
+  .pricing-cards-grid > .pricing-card {
+    height: 100%;
+  }
+}
+
 @media (max-width: 767px) {
   .pricing-os {
     overflow-x: hidden;

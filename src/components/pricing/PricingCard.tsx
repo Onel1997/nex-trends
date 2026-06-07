@@ -88,7 +88,7 @@ export function PricingCard({
   return (
     <article
       className={cn(
-        'pricing-card nex-card-interactive group relative flex flex-col rounded-[var(--dash-radius-lg)] border bg-zinc-950/70 p-3.5 backdrop-blur-xl sm:p-5',
+        'pricing-card nex-card-interactive group relative flex h-full flex-col rounded-[var(--dash-radius-lg)] border bg-zinc-950/70 p-3.5 backdrop-blur-xl sm:p-5',
         styles.border,
         styles.glow,
         plan.featured &&
@@ -114,7 +114,7 @@ export function PricingCard({
         aria-hidden
       />
 
-      <div className="relative flex flex-1 flex-col">
+      <div className="relative flex min-h-0 flex-1 flex-col">
         <div className="flex items-start justify-between gap-2">
           <div>
             <p
@@ -179,7 +179,7 @@ export function PricingCard({
           fullWidth
           disabled={disabled}
           className={cn(
-            'mt-6',
+            'mt-6 shrink-0 sm:mt-auto',
             isAdminCard &&
               'border-amber-500/30 bg-gradient-to-r from-amber-600/80 to-orange-600/80 hover:brightness-110',
             isCurrent && 'opacity-70',

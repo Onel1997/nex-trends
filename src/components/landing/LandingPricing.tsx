@@ -39,7 +39,7 @@ export function LandingPricing() {
       </LandingReveal>
 
       <LandingReveal delay={120}>
-        <div className="mt-12 hidden gap-4 lg:grid lg:grid-cols-5 lg:gap-3 xl:gap-4">
+        <div className="mt-12 hidden gap-4 lg:grid lg:grid-cols-5 lg:items-stretch lg:gap-3 xl:gap-4">
           {LANDING_PRICING_TIERS.map((tier) => (
             <PricingCard key={tier.id} tier={tier} />
           ))}
@@ -74,7 +74,7 @@ function PricingCard({
         'landing-pricing-card landing-glass-card relative flex flex-col transition-all duration-300',
         mobile
           ? 'landing-pricing-card--mobile shrink-0 rounded-2xl p-5 sm:p-5'
-          : 'rounded-2xl p-5',
+          : 'h-full rounded-2xl p-5',
         isFeatured &&
           'landing-pricing-card--featured z-[1] border-fuchsia-500/45 bg-gradient-to-b from-fuchsia-950/25 via-zinc-950/95 to-zinc-950 shadow-[0_0_56px_-12px_rgba(217,70,239,0.4)] lg:scale-[1.03]',
         !isFeatured && 'hover:border-violet-500/20',

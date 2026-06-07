@@ -42,7 +42,7 @@ export function PricingCardsGrid({
   return (
     <div
       className={cn(
-        'pricing-cards-grid w-full min-w-0 max-w-full grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4',
+        'pricing-cards-grid w-full min-w-0 max-w-full grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-stretch sm:gap-4',
         plans.length >= 5 ? 'xl:grid-cols-3' : 'lg:grid-cols-3',
       )}
     >
