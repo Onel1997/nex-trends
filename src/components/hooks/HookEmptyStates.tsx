@@ -64,12 +64,20 @@ export function HookSavedEmptyState({
 export function HookEmptyStateAction({
   label,
   onClick,
+  disabled,
 }: {
   label: string
   onClick: () => void
+  disabled?: boolean
 }) {
   return (
-    <Button variant="secondary" size="md" onClick={onClick} className="min-h-11 px-5">
+    <Button
+      variant="secondary"
+      size="md"
+      onClick={onClick}
+      disabled={disabled}
+      className="min-h-11 px-5"
+    >
       <SparklesIcon className="size-4" aria-hidden />
       {label}
     </Button>

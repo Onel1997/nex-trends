@@ -41,6 +41,7 @@ export function HookGeneratorPanel() {
   const [tone, setTone] = useState<HookTone>('storytelling')
   const [platform, setPlatform] = useState<HookPlatform>('TikTok')
   const [savingHook, setSavingHook] = useState<string | null>(null)
+  const [expandedWhyKey, setExpandedWhyKey] = useState<string | null>(null)
 
   const canGenerate = topic.trim().length >= 2
   const displayHooks = hooks.filter((h) => formatHookDisplayText(h).length > 0)
@@ -178,24 +179,31 @@ export function HookGeneratorPanel() {
               animate="visible"
               variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
             >
-              {previewHooks.map((hook, index) => (
-                <motion.li key={`${index}-${getHookText(hook).slice(0, 24)}`} variants={fadeUp} transition={transition}>
+              {previewHooks.map((hook, index) => {
+                const hookText = getHookText(hook)
+                const whyKey = `${index}-${hookText.slice(0, 24)}`
+                return (
+                <motion.li key={`${index}-${hookText.slice(0, 24)}`} variants={fadeUp} transition={transition}>
                   <HookCard
                     hook={hook}
                     index={index}
                     tone={tone}
                     platform={platform}
-                    saved={isSaved(getHookText(hook))}
-                    saving={savingHook === getHookText(hook)}
-                    copied={copiedHook === getHookText(hook)}
-                    onCopy={() => copyHook(getHookText(hook))}
-                    onToggleSave={() => void handleToggleSave(getHookText(hook))}
+                    saved={isSaved(hookText)}
+                    saving={savingHook === hookText}
+                    copied={copiedHook === hookText}
+                    onCopy={() => copyHook(hookText)}
+                    onToggleSave={() => void handleToggleSave(hookText)}
+                    whyExpanded={expandedWhyKey === whyKey}
+                    onToggleWhy={() =>
+                      setExpandedWhyKey((current) => (current === whyKey ? null : whyKey))
+                    }
                     showIndex
                     variant="result"
-                    className="dashboard-ws-hook-card !p-3.5"
+                    className="dashboard-ws-hook-card !p-3"
                   />
                 </motion.li>
-              ))}
+              )})}
             </motion.ul>
           ) : null}
         </AnimatePresence>

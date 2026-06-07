@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   HookErrorState,
   HookGeneratingSkeleton,
@@ -34,7 +34,7 @@ const JUST_SAVED_MS = 900
 export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps) {
   const { showToast } = useToast()
   const { hooks, generation, status, error, isGenerating, generate } = useHookGenerationFlow()
-  const { savedHooks, toggleSave } = useSavedHooks()
+  const { savedHooks, toggleSave, refresh: refreshSaved, isSaved } = useSavedHooks()
   const { copiedHook, copyHook } = useHookClipboard()
 
   const [tone, setTone] = useState<HookTone>('aggressive')
@@ -44,7 +44,10 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
   const [savingHook, setSavingHook] = useState<string | null>(null)
   const [justSavedHook, setJustSavedHook] = useState<string | null>(null)
 
-  const savedHookTexts = new Set(savedHooks.map((h) => h.hook_text))
+  const savedHookTexts = useMemo(
+    () => new Set(savedHooks.map((h) => h.hook_text.trim())),
+    [savedHooks],
+  )
   const isRegenerating = isGenerating && hooks.length > 0
   const displayTone = generation?.tone ?? tone
   const displayPlatform = generation?.platform ?? platform
@@ -71,9 +74,10 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
           type: 'success',
           title: skipCreditCharge ? 'Hooks neu generiert' : `${result.hooks.length} Hooks generiert`,
         })
+        void refreshSaved()
       }
     },
-    [isGenerating, generate, trend, tone, platform, showToast],
+    [isGenerating, generate, trend, tone, platform, showToast, refreshSaved],
   )
 
   const handleToggleSave = useCallback(
@@ -178,6 +182,7 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
             onCopy={copyHook}
             onToggleSave={handleToggleSave}
             savedHooks={savedHookTexts}
+            isHookSaved={isSaved}
             isSaving={savingHook}
             justSavedHook={justSavedHook}
             copiedHook={copiedHook}

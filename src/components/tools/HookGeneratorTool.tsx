@@ -82,6 +82,7 @@ export function HookGeneratorTool() {
     toggleSave,
     removeSavedHook,
     refresh: refreshSaved,
+    isSaved,
   } = useSavedHooks()
 
   const { copiedHook, copyHook, recentCopies } = useHookClipboard()
@@ -104,10 +105,6 @@ export function HookGeneratorTool() {
 
   const canGenerate = Boolean(selectedTrend || topic.trim().length >= 2)
   const isRegenerating = isGenerating && hooks.length > 0
-  const savedHookTexts = useMemo(
-    () => new Set(savedHooks.map((h) => h.hook_text)),
-    [savedHooks],
-  )
 
   const displayTone = generation?.tone ?? tone
   const displayPlatform = generation?.platform ?? platform
@@ -220,9 +217,10 @@ export function HookGeneratorTool() {
         })
         setActiveTab('results')
         void refreshHistory()
+        void refreshSaved()
       }
     },
-    [canGenerate, isGenerating, generate, buildRequest, showToast, unlimited, refreshHistory],
+    [canGenerate, isGenerating, generate, buildRequest, showToast, unlimited, refreshHistory, refreshSaved],
   )
 
   const handleRegenerateFromHistory = useCallback(
@@ -259,13 +257,14 @@ export function HookGeneratorTool() {
           type: 'success',
           title: action === 'saved' ? 'Hook gespeichert' : 'Aus Favoriten entfernt',
         })
+        void refreshSaved()
       } catch {
         showToast({ type: 'error', title: 'Speichern fehlgeschlagen' })
       } finally {
         setSavingHook(null)
       }
     },
-    [toggleSave, generation, topic, displayTone, displayPlatform, showToast],
+    [toggleSave, generation, topic, displayTone, displayPlatform, showToast, refreshSaved],
   )
 
   const tabs: { id: TabId; label: string; icon: typeof SparklesIcon; count?: number }[] = [
@@ -280,13 +279,13 @@ export function HookGeneratorTool() {
         variant="pro"
         size="lg"
         fullWidth
-        loading={isGenerating && !isRegenerating}
+        loading={isGenerating}
         disabled={isGenerating || !canGenerate}
         onClick={() => void handleGenerate(false)}
         className="min-h-12 sm:flex-1"
       >
         <SparklesIcon className="size-4" aria-hidden />
-        {isGenerating && !isRegenerating
+        {isGenerating
           ? 'Generiert …'
           : `Hooks generieren · ${HOOK_GENERATION_COST} Credits`}
       </Button>
@@ -295,7 +294,7 @@ export function HookGeneratorTool() {
           variant="secondary"
           size="lg"
           fullWidth
-          loading={isRegenerating}
+          loading={isGenerating}
           disabled={isGenerating || !canGenerate}
           onClick={() => void handleGenerate(false)}
           className="min-h-12 sm:w-auto sm:min-w-[10rem]"
@@ -475,7 +474,7 @@ export function HookGeneratorTool() {
                       platform={displayPlatform}
                       onCopy={copyHook}
                       onToggleSave={handleToggleSave}
-                      savedHooks={savedHookTexts}
+                      isHookSaved={isSaved}
                       isSaving={savingHook}
                       justSavedHook={justSavedHook}
                       copiedHook={copiedHook}
@@ -493,6 +492,7 @@ export function HookGeneratorTool() {
                       <HookEmptyStateAction
                         label="Jetzt generieren"
                         onClick={() => void handleGenerate(false)}
+                        disabled={isGenerating || !canGenerate}
                       />
                     }
                   />

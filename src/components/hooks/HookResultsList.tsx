@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { HookCard } from '@/components/hooks/HookCard'
 import { Button } from '@/components/ui/Button'
 import {
@@ -25,6 +25,8 @@ type HookResultItemProps = {
   copied: boolean
   copyDisabled: boolean
   justSaved: boolean
+  whyExpanded: boolean
+  onToggleWhy: () => void
   onCopy: (text: string) => void
   onToggleSave?: (text: string) => void
 }
@@ -39,6 +41,8 @@ const HookResultItem = memo(function HookResultItem({
   copied,
   copyDisabled,
   justSaved,
+  whyExpanded,
+  onToggleWhy,
   onCopy,
   onToggleSave,
 }: HookResultItemProps) {
@@ -61,6 +65,8 @@ const HookResultItem = memo(function HookResultItem({
       copied={copied}
       copyDisabled={copyDisabled}
       justSaved={justSaved}
+      whyExpanded={whyExpanded}
+      onToggleWhy={onToggleWhy}
       animationDelayMs={0}
       onCopy={handleCopy}
       onToggleSave={onToggleSave ? handleToggleSave : undefined}
@@ -73,6 +79,7 @@ type HookResultsListProps = {
   onCopy: (text: string) => void
   onToggleSave?: (text: string) => void
   savedHooks?: Set<string>
+  isHookSaved?: (text: string) => boolean
   isSaving?: string | null
   justSavedHook?: string | null
   tone?: string | null
@@ -88,6 +95,7 @@ export const HookResultsList = memo(function HookResultsList({
   onCopy,
   onToggleSave,
   savedHooks,
+  isHookSaved,
   isSaving,
   justSavedHook,
   tone,
@@ -98,11 +106,28 @@ export const HookResultsList = memo(function HookResultsList({
   showSort = true,
 }: HookResultsListProps) {
   const [sortMode, setSortMode] = useState<HookSortMode>('retention')
+  const [expandedWhyKey, setExpandedWhyKey] = useState<string | null>(null)
 
   const sortedHooks = useMemo(
     () => sortHooks(hooks, sortMode),
     [hooks, sortMode],
   )
+
+  const getWhyKey = useCallback(
+    (hook: PremiumHook, index: number) =>
+      `${sortMode}-${index}-${getHookText(hook).slice(0, 32)}`,
+    [sortMode],
+  )
+
+  const handleToggleWhy = useCallback((key: string) => {
+    setExpandedWhyKey((current) => (current === key ? null : key))
+  }, [])
+
+  // Reset accordion when hooks list changes (new generation)
+  const hooksFingerprint = hooks.map((h) => getHookText(h).slice(0, 24)).join('|')
+  useEffect(() => {
+    setExpandedWhyKey(null)
+  }, [hooksFingerprint])
 
   if (hooks.length === 0) return null
 
@@ -140,6 +165,7 @@ export const HookResultsList = memo(function HookResultsList({
       >
         {sortedHooks.map((hook, index) => {
           const hookText = getHookText(hook)
+          const whyKey = getWhyKey(hook, index)
           return (
             <li
               key={`${sortMode}-${index}-${hookText.slice(0, 32)}`}
@@ -151,11 +177,13 @@ export const HookResultsList = memo(function HookResultsList({
                 index={index}
                 tone={tone}
                 platform={platform}
-                isSaved={savedHooks?.has(hookText) ?? false}
+                isSaved={isHookSaved?.(hookText) ?? savedHooks?.has(hookText.trim()) ?? false}
                 saving={isSaving === hookText}
                 copied={copiedHook === hookText}
                 copyDisabled={copiedHook != null && copiedHook !== hookText}
                 justSaved={justSavedHook === hookText}
+                whyExpanded={expandedWhyKey === whyKey}
+                onToggleWhy={() => handleToggleWhy(whyKey)}
                 onCopy={onCopy}
                 onToggleSave={onToggleSave}
               />

@@ -3,7 +3,7 @@ import { useToast } from '@/context/ToastContext'
 import { copyToClipboard } from '@/lib/clipboard'
 import { getRecentCopies, recordHookCopy } from '@/lib/hook-analytics'
 
-const COPY_FEEDBACK_MS = 2200
+const COPY_FEEDBACK_MS = 2000
 const COPY_COOLDOWN_MS = 700
 
 export function useHookClipboard() {
@@ -41,9 +41,8 @@ export function useHookClipboard() {
 
       showToast({
         type: 'success',
-        title: 'Hook kopiert',
-        message: text.length > 48 ? `${text.slice(0, 45)}…` : text,
-        durationMs: 3200,
+        title: '✓ Hook kopiert',
+        durationMs: COPY_FEEDBACK_MS,
       })
     },
     [showToast],

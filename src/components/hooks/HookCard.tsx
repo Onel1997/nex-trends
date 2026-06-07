@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react'
+import { memo, useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import {
   ArrowPathIcon,
@@ -43,6 +43,8 @@ export type HookCardProps = {
   savedAt?: string | null
   className?: string
   animationDelayMs?: number
+  whyExpanded?: boolean
+  onToggleWhy?: () => void
 }
 
 export const HookCard = memo(function HookCard({
@@ -65,9 +67,9 @@ export const HookCard = memo(function HookCard({
   savedAt,
   className,
   animationDelayMs = 0,
+  whyExpanded = false,
+  onToggleWhy,
 }: HookCardProps) {
-  const [whyExpanded, setWhyExpanded] = useState(false)
-
   const hookText = formatHookDisplayText(hook)
   const premium = typeof hook === 'object' && hook !== null ? hook : null
   const isPremium = premium ? hasPremiumMetadata(premium) : false
@@ -78,10 +80,6 @@ export const HookCard = memo(function HookCard({
   const platformLabel = getPlatformLabel(platform)
   const scoreLabel = premium ? formatRetentionScore(premium.retentionScore) : ''
 
-  const toggleWhy = useCallback(() => {
-    setWhyExpanded((prev) => !prev)
-  }, [])
-
   const whyId = useMemo(
     () => `hook-why-${index ?? 'x'}-${hookText.slice(0, 12).replace(/\s+/g, '-')}`,
     [index, hookText],
@@ -90,7 +88,7 @@ export const HookCard = memo(function HookCard({
   return (
     <article
       className={cn(
-        'hook-card group h-auto max-h-none p-4 sm:p-5',
+        'hook-card group h-auto max-h-none p-3 sm:p-5',
         saved && 'hook-card--saved',
         justSaved && 'animate-save-glow border-amber-400/40',
         removing && 'hook-card--removing',
@@ -107,11 +105,11 @@ export const HookCard = memo(function HookCard({
         <div className="absolute -bottom-8 -left-8 size-24 rounded-full bg-fuchsia-500/8 blur-2xl" />
       </div>
 
-      <div className="hook-card__inner relative flex flex-col gap-3.5 sm:flex-row sm:items-start sm:gap-4">
+      <div className="hook-card__inner relative flex flex-col gap-2.5 sm:flex-row sm:items-start sm:gap-4">
         {showIndex && typeof index === 'number' && (
           <span
             className={cn(
-              'flex size-10 shrink-0 items-center justify-center rounded-xl sm:size-9',
+              'flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-9',
               'bg-violet-500/15 text-xs font-bold tabular-nums text-violet-300',
               'ring-1 ring-violet-500/25 transition-smooth group-hover:bg-violet-500/22 group-hover:ring-violet-500/35',
             )}
@@ -122,11 +120,11 @@ export const HookCard = memo(function HookCard({
         )}
 
         <div className="hook-card__content min-w-0 flex-1">
-          <p className="hook-card__text break-words text-[15px] font-medium leading-[1.6] tracking-tight text-zinc-50 sm:text-base sm:leading-relaxed">
+          <p className="hook-card__text break-words text-[15px] font-medium leading-[1.55] tracking-tight text-zinc-50 sm:text-base sm:leading-relaxed">
             {hookText}
           </p>
 
-          <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-1 sm:gap-1.5">
             {isPremium && scoreLabel && premium && (
               <span
                 className={cn(
@@ -162,18 +160,18 @@ export const HookCard = memo(function HookCard({
             )}
           </div>
 
-          {isPremium && premium?.whyItWorks && variant === 'result' && (
-            <div className="mt-3">
+          {isPremium && premium?.whyItWorks && variant === 'result' && onToggleWhy && (
+            <div className="mt-2">
               <button
                 type="button"
-                onClick={toggleWhy}
-                className="flex min-h-9 items-center gap-1.5 text-xs font-semibold text-violet-300/90 transition-smooth hover:text-violet-200"
+                onClick={onToggleWhy}
+                className="flex min-h-8 items-center gap-1.5 text-xs font-semibold text-violet-300/90 transition-smooth hover:text-violet-200"
                 aria-expanded={whyExpanded}
                 aria-controls={whyId}
               >
                 <span
                   className={cn(
-                    'inline-block text-[10px] transition-transform duration-200',
+                    'inline-block text-[10px] transition-transform duration-300 ease-out',
                     whyExpanded && 'rotate-90',
                   )}
                   aria-hidden
@@ -185,12 +183,12 @@ export const HookCard = memo(function HookCard({
               <div
                 id={whyId}
                 className={cn(
-                  'grid transition-all duration-200 ease-out',
-                  whyExpanded ? 'mt-2 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+                  'hook-why-expand grid transition-all duration-300 ease-out',
+                  whyExpanded ? 'mt-1.5 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
                 )}
               >
                 <div className="overflow-hidden">
-                  <p className="rounded-lg border border-violet-500/15 bg-violet-500/5 px-3 py-2.5 text-xs leading-relaxed text-zinc-300">
+                  <p className="rounded-lg border border-violet-500/15 bg-violet-500/5 px-2.5 py-2 text-xs leading-relaxed text-zinc-300 sm:px-3 sm:py-2.5">
                     {premium.whyItWorks}
                   </p>
                 </div>

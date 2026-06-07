@@ -7,6 +7,10 @@ function tempId() {
   return `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
+function normalizeHookText(text: string): string {
+  return text.trim()
+}
+
 export function useSavedHooks() {
   const [savedHooks, setSavedHooks] = useState<SavedHookRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -82,7 +86,10 @@ export function useSavedHooks() {
       tone?: string
       platform?: string
     }): Promise<'saved' | 'removed'> => {
-      const existing = savedHooks.find((h) => h.hook_text === params.hookText)
+      const hookText = normalizeHookText(params.hookText)
+      const existing = savedHooks.find(
+        (h) => normalizeHookText(h.hook_text) === hookText,
+      )
 
       if (existing) {
         setSavedHooks((prev) => prev.filter((h) => h.id !== existing.id))
@@ -99,7 +106,7 @@ export function useSavedHooks() {
       const optimistic: SavedHookRow = {
         id: tempId(),
         generation_id: params.generationId ?? null,
-        hook_text: params.hookText,
+        hook_text: hookText,
         topic: params.topic ?? null,
         tone: params.tone ?? null,
         platform: params.platform ?? null,
@@ -109,7 +116,7 @@ export function useSavedHooks() {
       setSavedHooks((prev) => [optimistic, ...prev])
 
       try {
-        const row = await persistSave(params)
+        const row = await persistSave({ ...params, hookText })
         setSavedHooks((prev) => prev.map((h) => (h.id === optimistic.id ? row : h)))
         recordHookSave(params.tone, params.platform)
         return 'saved'
@@ -139,7 +146,10 @@ export function useSavedHooks() {
   )
 
   const isSaved = useCallback(
-    (hookText: string) => savedHooks.some((h) => h.hook_text === hookText),
+    (hookText: string) =>
+      savedHooks.some(
+        (h) => normalizeHookText(h.hook_text) === normalizeHookText(hookText),
+      ),
     [savedHooks],
   )
 
