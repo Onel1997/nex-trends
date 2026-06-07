@@ -32,21 +32,34 @@ function loadEnv() {
   return {}
 }
 
-const env = loadEnv()
-const baseUrl = (env.VITE_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '').replace(
-  /\/$/,
-  '',
-)
+const env = { ...loadEnv(), ...process.env }
+const baseUrl = (
+  env.NEXT_PUBLIC_SUPABASE_URL ??
+  env.VITE_SUPABASE_URL ??
+  ''
+).replace(/\/$/, '')
 const origins = ['http://localhost:5173', 'http://192.168.2.90:5173']
 
-const FUNCTIONS = [
+const AI_GENERATORS = [
   'hook-generator',
+  'ad-copy-generator',
+  'seo-title-generator',
+]
+
+const FUNCTIONS = [
+  ...AI_GENERATORS,
   'consume-credits',
   'generate-video',
   'usage-limit',
 ]
 
-if (baseUrl) {
+if (!baseUrl) {
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or VITE_SUPABASE_URL in .env / .env.local')
+  process.exit(1)
+}
+
+if (baseUrl.includes('127.0.0.1') || baseUrl.includes('localhost')) {
+  console.error('verify:functions requires a hosted Supabase URL (not local).')
   process.exit(1)
 }
 
