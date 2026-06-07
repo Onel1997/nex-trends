@@ -177,7 +177,7 @@ export const HookResultsList = memo(function HookResultsList({
             <li
               key={`${sortMode}-${index}-${hookText.slice(0, 32)}`}
               id={index === 0 ? HOOK_RESULT_FIRST_ID : undefined}
-              className="hook-results-feed__item hook-stagger-item min-w-0 max-w-full scroll-mt-24"
+              className="hook-results-feed__item hook-stagger-item hook-result-scroll-target min-w-0 max-w-full"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <HookResultItem

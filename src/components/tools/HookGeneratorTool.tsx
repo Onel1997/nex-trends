@@ -429,11 +429,19 @@ export function HookGeneratorTool() {
         className="hook-results-section mt-6 max-md:overflow-x-hidden max-md:pb-0 sm:pb-4"
         aria-busy={isGenerating}
       >
-        <div className="hook-results-tabs sticky top-0 z-10 -mx-1 mb-5 flex flex-wrap items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/92 px-1 pb-3.5 backdrop-blur-lg">
+        <div
+          className="hook-results-tabs hook-results-tabs--sticky-mobile -mx-1 mb-5 flex flex-wrap items-center gap-2 border-b border-zinc-800/60 bg-zinc-950/92 px-1 pb-3.5 backdrop-blur-lg"
+          role="tablist"
+          aria-label="Hook Generator Ansichten"
+        >
           {tabs.map(({ id, label, icon: Icon, count }) => (
             <button
               key={id}
               type="button"
+              role="tab"
+              aria-selected={activeTab === id}
+              aria-controls={`hook-tabpanel-${id}`}
+              id={`hook-tab-${id}`}
               disabled={isGenerating && id !== activeTab}
               onClick={() => setActiveTab(id)}
               className={cn(
@@ -472,6 +480,9 @@ export function HookGeneratorTool() {
         <div
           className={cn('hook-results-panel', activeTab !== 'results' && 'hidden')}
           aria-hidden={activeTab !== 'results'}
+          role="tabpanel"
+          id="hook-tabpanel-results"
+          aria-labelledby="hook-tab-results"
         >
           {isUsageLimitReached && userPlan === 'free' && !unlimited ? (
             <UsageLimitWarning />
@@ -547,6 +558,9 @@ export function HookGeneratorTool() {
         <div
           className={cn('hook-history-panel', activeTab !== 'history' && 'hidden')}
           aria-hidden={activeTab !== 'history'}
+          role="tabpanel"
+          id="hook-tabpanel-history"
+          aria-labelledby="hook-tab-history"
         >
           <HookHistoryPanel
             history={history}
@@ -562,6 +576,9 @@ export function HookGeneratorTool() {
         <div
           className={cn('hook-saved-panel', activeTab !== 'saved' && 'hidden')}
           aria-hidden={activeTab !== 'saved'}
+          role="tabpanel"
+          id="hook-tabpanel-saved"
+          aria-labelledby="hook-tab-saved"
         >
           <HookSavedPanel
             hooks={savedHooks}
