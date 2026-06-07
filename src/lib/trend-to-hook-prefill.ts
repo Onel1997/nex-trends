@@ -3,7 +3,6 @@ import {
   type HookRegeneratePrefill,
 } from '@/lib/hook-regenerate-session'
 import { navigateToTool } from '@/lib/navigation'
-import { trendTopicFromIntelligence } from '@/lib/trend-session-storage'
 import type { TrendWithV2 } from '@/lib/trend-v2'
 import type { HookPlatform, HookTone } from '@/types/ai-generation'
 import { TREND_CATEGORY_V2_LABELS } from '@/types/trend-v2'
@@ -20,8 +19,9 @@ export function resolveHookPlatformFromTrend(platform: string): HookPlatform {
 export function buildTrendHookPrefill(trend: TrendWithV2): HookRegeneratePrefill {
   const categoryLabel = TREND_CATEGORY_V2_LABELS[trend.v2.category]
   const platform = resolveHookPlatformFromTrend(trend.platform)
-  const topic = trendTopicFromIntelligence(trend)
+  const topic = trend.title.trim()
   const description = trend.description?.trim() || undefined
+  const referenceHook = trend.hookAnalysis?.hookText?.trim() || undefined
 
   const contextParts = [
     description,
@@ -37,6 +37,7 @@ export function buildTrendHookPrefill(trend: TrendWithV2): HookRegeneratePrefill
     category: categoryLabel,
     description,
     context: contextParts.join('\n'),
+    referenceHook,
   }
 }
 

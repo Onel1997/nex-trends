@@ -39,7 +39,7 @@ import { useHookQuickActions } from '@/hooks/useHookQuickActions'
 import { useSavedHooks } from '@/hooks/useSavedHooks'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { recordHookGeneration } from '@/lib/hook-analytics'
-import { consumeHookRegeneratePrefill } from '@/lib/hook-regenerate-session'
+import { consumeHookRegeneratePrefill, clearHookRegeneratePrefill } from '@/lib/hook-regenerate-session'
 import { cn } from '@/lib'
 import { trendToHookInput, type TrendHookStyle } from '@/lib/openai'
 import {
@@ -104,6 +104,7 @@ export function HookGeneratorTool() {
   const [highlightFirstHook, setHighlightFirstHook] = useState(false)
   const [pendingScrollToResults, setPendingScrollToResults] = useState(false)
   const [trendPrefillContext, setTrendPrefillContext] = useState<string | undefined>()
+  const [trendPrefillReferenceHook, setTrendPrefillReferenceHook] = useState<string | undefined>()
   const [trendPrefillMeta, setTrendPrefillMeta] = useState<{
     title?: string
     category?: string
@@ -158,6 +159,10 @@ export function HookGeneratorTool() {
       setTrendPrefillContext(prefill.context)
     }
 
+    if (prefill.referenceHook) {
+      setTrendPrefillReferenceHook(prefill.referenceHook)
+    }
+
     if (prefill.trendTitle || prefill.category || prefill.description) {
       setTrendPrefillMeta({
         title: prefill.trendTitle,
@@ -165,6 +170,8 @@ export function HookGeneratorTool() {
         description: prefill.description,
       })
     }
+
+    const clearTimer = window.setTimeout(() => clearHookRegeneratePrefill(), 0)
 
     if (prefill.autoGenerate) {
       void generate(
@@ -184,6 +191,8 @@ export function HookGeneratorTool() {
         }
       })
     }
+
+    return () => window.clearTimeout(clearTimer)
   // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount for session prefill
   }, [])
 
@@ -275,6 +284,7 @@ export function HookGeneratorTool() {
         platform: resolvedPlatform,
         context: trendPrefillContext,
         trendTitle: trendPrefillMeta?.title,
+        referenceHook: trendPrefillReferenceHook,
       }
     }
 
@@ -284,7 +294,7 @@ export function HookGeneratorTool() {
       platform: resolvedPlatform,
     }
   },
-  [topic, tone, platform, selectedTrend, trendPrefillContext, trendPrefillMeta],
+  [topic, tone, platform, selectedTrend, trendPrefillContext, trendPrefillMeta, trendPrefillReferenceHook],
 )
 
   const handleGenerate = useCallback(
