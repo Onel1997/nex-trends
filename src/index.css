@@ -4920,6 +4920,15 @@ body {
   isolation: isolate;
 }
 
+.pricing-os__ambient {
+  z-index: 0;
+}
+
+.pricing-hero {
+  position: relative;
+  isolation: isolate;
+}
+
 .pricing-glow {
   position: absolute;
   border-radius: 50%;
@@ -5066,6 +5075,45 @@ body {
 @media (max-width: 767px) {
   .pricing-os {
     overflow-x: hidden;
+  }
+
+  .pricing-hero {
+    overflow: hidden;
+    border-radius: var(--dash-radius-lg);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .pricing-hero__backdrop {
+    border-radius: inherit;
+    background:
+      radial-gradient(
+        ellipse 95% 85% at 92% 8%,
+        rgb(139 92 246 / 0.24),
+        transparent 58%
+      ),
+      radial-gradient(
+        ellipse 80% 70% at 8% 92%,
+        rgb(52 211 153 / 0.12),
+        transparent 55%
+      ),
+      linear-gradient(
+        165deg,
+        rgb(24 24 27 / 0.92) 0%,
+        rgb(46 16 101 / 0.28) 42%,
+        rgb(9 9 11 / 0.88) 100%
+      );
+    border: 1px solid rgb(63 63 70 / 0.38);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 12px 40px -28px rgb(91 33 182 / 0.35);
+  }
+
+  .pricing-hero__content {
+    padding-top: 1.25rem;
+    padding-bottom: 1.375rem;
+    padding-left: max(1rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
   }
 
   .pricing-cards-grid {

@@ -25,23 +25,29 @@ export function PricingPage() {
 
   return (
     <div className="dashboard-os pricing-os nex-os-polish relative mx-auto w-full min-w-0 max-w-6xl max-md:pb-0 sm:pb-20 lg:pb-0">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <div
+        className="pricing-os__ambient pointer-events-none absolute inset-0 hidden overflow-hidden md:block"
+        aria-hidden
+      >
         <div className="pricing-glow pricing-glow--1" />
         <div className="pricing-glow pricing-glow--2" />
       </div>
 
       <div className="dashboard-os__content relative flex flex-col gap-3 sm:gap-5">
-        <header className="pricing-hero text-center sm:text-left">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-violet-400">
-            NexTrends AI OS · Preise
-          </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-            Creator-Pläne für jedes Wachstumsstadium
-          </h1>
-          <p className="dashboard-os-muted mx-auto mt-1 max-w-2xl text-[11px] leading-relaxed sm:mx-0 sm:text-xs">
-            Vom ersten viralen Trend bis zur Agentur-Skalierung — wähle den Workspace,
-            der zu deinem Output passt. Jederzeit upgraden, jederzeit kündigen.
-          </p>
+        <header className="pricing-hero relative mx-auto w-full min-w-0 text-center sm:text-left">
+          <div className="pricing-hero__backdrop pointer-events-none absolute inset-0 md:hidden" aria-hidden />
+          <div className="pricing-hero__content relative z-[1]">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-violet-400">
+              NexTrends AI OS · Preise
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              Creator-Pläne für jedes Wachstumsstadium
+            </h1>
+            <p className="dashboard-os-muted mx-auto mt-1 max-w-2xl text-[11px] leading-relaxed sm:mx-0 sm:text-xs">
+              Vom ersten viralen Trend bis zur Agentur-Skalierung — wähle den Workspace,
+              der zu deinem Output passt. Jederzeit upgraden, jederzeit kündigen.
+            </p>
+          </div>
         </header>
 
         <ScrollReveal delay={60}>
