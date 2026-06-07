@@ -1,5 +1,6 @@
 'use client'
 
+import { OAuthCallbackRedirect } from '@/components/auth/OAuthCallbackRedirect'
 import { LandingAmbientBackground } from '@/components/landing/LandingAmbientBackground'
 import { LandingDashboardSection } from '@/components/landing/LandingDashboardSection'
 import { LandingFeatureGrid } from '@/components/landing/LandingFeatureGrid'
@@ -13,6 +14,7 @@ import { LandingWorkflow } from '@/components/landing/LandingWorkflow'
 export default function LandingPage() {
   return (
     <div className="landing-page">
+      <OAuthCallbackRedirect />
       {/* Decor FIRST in DOM — behind interactive shell (iOS Safari stacking) */}
       <LandingAmbientBackground />
 

@@ -24,6 +24,20 @@ function isPublicAuthPath(pathname: string): boolean {
   return normalized === AUTH_LOGIN_PATH || normalized === AUTH_CALLBACK_PATH
 }
 
+/** OAuth returned to Site URL (`/?code=`) — forward to `/auth/callback` for session exchange. */
+function shouldForwardOAuthToCallback(
+  pathname: string,
+  searchParams: URLSearchParams,
+): boolean {
+  const normalized = pathname.replace(/\/$/, '') || '/'
+  if (normalized === AUTH_CALLBACK_PATH) return false
+  return (
+    searchParams.has('code') ||
+    searchParams.has('error') ||
+    searchParams.has('error_description')
+  )
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -59,6 +73,12 @@ export async function updateSession(request: NextRequest) {
       },
     })
 
+    if (shouldForwardOAuthToCallback(pathname, request.nextUrl.searchParams)) {
+      const callbackUrl = request.nextUrl.clone()
+      callbackUrl.pathname = AUTH_CALLBACK_PATH
+      return NextResponse.redirect(callbackUrl)
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -80,12 +100,6 @@ export async function updateSession(request: NextRequest) {
       dashboardUrl.pathname = destination.split('?')[0] ?? '/dashboard'
       dashboardUrl.search = ''
       return NextResponse.redirect(dashboardUrl)
-    }
-
-    if (user && pathname === '/' && request.nextUrl.searchParams.has('code')) {
-      const callbackUrl = request.nextUrl.clone()
-      callbackUrl.pathname = AUTH_CALLBACK_PATH
-      return NextResponse.redirect(callbackUrl)
     }
   } catch (error) {
     console.error('[middleware] Supabase session refresh failed:', error)

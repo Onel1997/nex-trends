@@ -54,11 +54,11 @@ export function isLoginPath(pathname?: string): boolean {
 }
 
 /**
- * Google OAuth redirect URL — always `${window.location.origin}/auth/callback`.
- * Never hardcodes 127.0.0.1; uses whatever host the user opened.
+ * Google OAuth redirect URL — always `${origin}/auth/callback`.
+ * Must match Supabase Auth → Redirect URLs allow-list.
  */
 export function getGoogleOAuthRedirectUrl(): string {
-  return 'http://192.168.2.90:5173/dashboard'
+  return getAuthRedirectUrl(AUTH_CALLBACK_PATH)
 }
 
 /**
