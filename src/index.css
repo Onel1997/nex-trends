@@ -1791,7 +1791,6 @@ body {
 .ti-horizontal-scroll,
 .dashboard-os-carousel__track,
 .trend-filter-scroll,
-.pricing-cards-carousel,
 .trend-card__meta-zone,
 .dashboard-ws-trend-scroll {
   -webkit-overflow-scrolling: touch;
@@ -5059,19 +5058,25 @@ body {
   animation: pricing-sticky-in 0.45s var(--ease-out-expo) both;
 }
 
-.pricing-cards-carousel {
-  overscroll-behavior-x: contain;
-  touch-action: pan-x pan-y;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+.pricing-cards-grid {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
-.pricing-cards-carousel::-webkit-scrollbar {
-  display: none;
-}
+@media (max-width: 767px) {
+  .pricing-os {
+    overflow-x: hidden;
+  }
 
-.pricing-card--mobile {
-  scroll-snap-align: center;
+  .pricing-cards-grid {
+    width: 100%;
+  }
+
+  .pricing-cards-grid .pricing-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
 }
 
 @keyframes pricing-sticky-in {
