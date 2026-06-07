@@ -11,8 +11,8 @@ import { UpgradeModal } from '@/components/subscription'
 import type { DashboardToolId } from '@/lib'
 import {
   DASHBOARD_NAVIGATE_EVENT,
+  DASHBOARD_ROUTE_PUSH_EVENT,
   ensureDashboardPath,
-  navigateToTool,
   readToolFromUrl,
   syncLegacyToolQueryToPath,
 } from '@/lib/navigation'
@@ -36,15 +36,8 @@ export function HomePage() {
 
   const handleSelectTool = useCallback(
     (tool: DashboardToolId) => {
-      const path = getPathForTool(tool)
       setActiveTool(tool)
-
-      // Next.js router for /dashboard/* — pushState alone desyncs the app on mobile Safari.
-      if (path.startsWith('/dashboard')) {
-        router.push(path)
-      } else {
-        navigateToTool(tool)
-      }
+      router.push(getPathForTool(tool))
 
       if (isBrowser()) {
         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -68,13 +61,22 @@ export function HomePage() {
 
     const syncFromUrl = () => setActiveTool(readToolFromUrl())
 
+    const onRoutePush = (event: Event) => {
+      const detail = (event as CustomEvent<{ href: string; replace?: boolean }>).detail
+      if (!detail?.href) return
+      if (detail.replace) router.replace(detail.href)
+      else router.push(detail.href)
+    }
+
     window.addEventListener('popstate', syncFromUrl)
     window.addEventListener(DASHBOARD_NAVIGATE_EVENT, syncFromUrl)
+    window.addEventListener(DASHBOARD_ROUTE_PUSH_EVENT, onRoutePush)
     return () => {
       window.removeEventListener('popstate', syncFromUrl)
       window.removeEventListener(DASHBOARD_NAVIGATE_EVENT, syncFromUrl)
+      window.removeEventListener(DASHBOARD_ROUTE_PUSH_EVENT, onRoutePush)
     }
-  }, [])
+  }, [router])
 
   if (billingResult === 'success') {
     return <BillingSuccessPage />

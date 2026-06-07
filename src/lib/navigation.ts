@@ -4,6 +4,7 @@ import {
   getPathForTool,
   isValidToolId,
   pathToToolId,
+  STANDALONE_DASHBOARD_PATHS,
   type DashboardRouteId,
 } from './routes'
 
@@ -31,10 +32,19 @@ function buildUrl(tool: DashboardRouteId): string {
   return `${url.pathname}${url.search}`
 }
 
-/** True when pathname is served by the dashboard Next.js app (`/dashboard/*`). */
+/** True when pathname is served by a dashboard Next.js route. */
 export function isDashboardAppPath(pathname?: string): boolean {
   const normalized = (pathname ?? getBrowserPathname()).replace(/\/$/, '') || '/'
-  return normalized === DASHBOARD_BASE || normalized.startsWith(`${DASHBOARD_BASE}/`)
+  if (normalized === DASHBOARD_BASE || normalized.startsWith(`${DASHBOARD_BASE}/`)) {
+    return true
+  }
+  if (STANDALONE_DASHBOARD_PATHS.some((path) => normalized === path)) {
+    return true
+  }
+  if (normalized === '/billing/success' || normalized === '/billing/cancel') {
+    return true
+  }
+  return false
 }
 
 export function isDashboardShellMounted(): boolean {
@@ -42,15 +52,16 @@ export function isDashboardShellMounted(): boolean {
   return document.querySelector('.dashboard-shell') != null
 }
 
-/** Use a full navigation when leaving marketing/auth shells or the dashboard SPA is not mounted. */
+/** Use a full navigation when leaving marketing/auth shells or the dashboard shell is not mounted. */
 export function shouldHardNavigateToTool(tool: DashboardRouteId): boolean {
   if (!isBrowser()) return false
 
   const current = getBrowserPathname().replace(/\/$/, '') || '/'
   if (current === '/' || current === '/login') return true
 
-  const target = getPathForTool(tool)
-  if (target.startsWith(DASHBOARD_BASE) && !isDashboardShellMounted()) return true
+  if (!isDashboardShellMounted() && pathToToolId(getPathForTool(tool))) {
+    return true
+  }
 
   return false
 }
@@ -70,10 +81,26 @@ export function readToolFromUrl(): DashboardRouteId {
 
 export const DASHBOARD_NAVIGATE_EVENT = 'dashboard:navigate'
 
+export const DASHBOARD_ROUTE_PUSH_EVENT = 'dashboard:route-push'
+
+type DashboardRoutePushDetail = {
+  href: string
+  replace?: boolean
+}
+
 function notifyDashboardNavigate(tool: DashboardRouteId) {
   if (!isBrowser()) return
   window.dispatchEvent(
     new CustomEvent(DASHBOARD_NAVIGATE_EVENT, { detail: { tool } }),
+  )
+}
+
+function requestDashboardRoutePush(href: string, options?: { replace?: boolean }) {
+  if (!isBrowser()) return
+  window.dispatchEvent(
+    new CustomEvent<DashboardRoutePushDetail>(DASHBOARD_ROUTE_PUSH_EVENT, {
+      detail: { href, replace: options?.replace },
+    }),
   )
 }
 
@@ -92,11 +119,14 @@ export function navigateToTool(
     return
   }
 
-  if (options?.replace) {
-    window.history.replaceState({ tool }, '', href)
-  } else {
-    window.history.pushState({ tool }, '', href)
+  if (isDashboardShellMounted()) {
+    requestDashboardRoutePush(href, { replace: options?.replace })
+    notifyDashboardNavigate(tool)
+    return
   }
+
+  if (options?.replace) window.location.replace(href)
+  else window.location.assign(href)
   notifyDashboardNavigate(tool)
 }
 
@@ -155,7 +185,12 @@ export function syncLegacyToolQueryToPath(): void {
   if (getBrowserPathname() === path) {
     params.delete('tool')
     const search = params.toString() ? `?${params}` : ''
-    window.history.replaceState({ tool: mapped }, '', `${path}${search}`)
+    if (isDashboardShellMounted()) {
+      requestDashboardRoutePush(`${path}${search}`, { replace: true })
+    } else {
+      window.location.replace(`${path}${search}`)
+    }
+    notifyDashboardNavigate(mapped)
     return
   }
 

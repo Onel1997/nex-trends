@@ -59,6 +59,9 @@ export type DashboardRouteConfig = {
 
 export const DASHBOARD_BASE = '/dashboard'
 
+/** Top-level creator routes that render the dashboard shell outside `/dashboard/*`. */
+export const STANDALONE_DASHBOARD_PATHS = ['/ai-studio', '/my-videos'] as const
+
 const ROUTE_DEFINITIONS: Record<DashboardRouteId, Omit<DashboardRouteConfig, 'id'>> = {
   dashboard: {
     path: DASHBOARD_BASE,

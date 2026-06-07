@@ -1,5 +1,5 @@
 import { DashboardAppShell } from '@/components/app/DashboardAppShell'
 
-export default function DashboardAppPage() {
+export default function MyVideosRoutePage() {
   return <DashboardAppShell />
 }
