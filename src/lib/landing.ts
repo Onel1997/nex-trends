@@ -20,24 +20,14 @@ export type LandingFeature = {
 }
 
 export const HERO_PILLS = [
-  'Trend Intelligence',
   'Hook Generator',
-  'AI Ad Copy',
   'SEO Generator',
+  'AI Ad Copy',
+  'Trend Intelligence',
   'AI Video Studio',
 ] as const
 
 export const LANDING_FEATURES: LandingFeature[] = [
-  {
-    id: 'trends',
-    title: 'Trend Intelligence',
-    description:
-      'Entdecke explodierende Nischen, virale Hooks und Opportunity Scores — bevor der Markt gesättigt ist.',
-    benefit: 'Live Signale',
-    status: 'Core OS',
-    Icon: TrendingUpIcon,
-    featured: true,
-  },
   {
     id: 'hook',
     title: 'Hook Generator',
@@ -46,15 +36,6 @@ export const LANDING_FEATURES: LandingFeature[] = [
     benefit: '+42% Watchtime',
     status: 'Creator Tool',
     Icon: BoltIcon,
-  },
-  {
-    id: 'ad-copy',
-    title: 'AI Ad Copy Generator',
-    description:
-      'Conversion-optimierte Werbetexte in Sekunden — abgestimmt auf Plattform und Zielgruppe.',
-    benefit: '3× schneller',
-    status: 'Creator Tool',
-    Icon: SparklesIcon,
   },
   {
     id: 'seo',
@@ -66,6 +47,15 @@ export const LANDING_FEATURES: LandingFeature[] = [
     Icon: MagnifyingGlassIcon,
   },
   {
+    id: 'ad-copy',
+    title: 'AI Ad Copy Generator',
+    description:
+      'Conversion-optimierte Werbetexte in Sekunden — abgestimmt auf Plattform und Zielgruppe.',
+    benefit: '3× schneller',
+    status: 'Creator Tool',
+    Icon: SparklesIcon,
+  },
+  {
     id: 'analyzer',
     title: 'Landing Page Analyzer',
     description:
@@ -73,6 +63,16 @@ export const LANDING_FEATURES: LandingFeature[] = [
     benefit: 'Pro Creator',
     status: 'Pro Feature',
     Icon: ChartBarIcon,
+  },
+  {
+    id: 'trends',
+    title: 'Trend Intelligence',
+    description:
+      'Entdecke explodierende Nischen, virale Hooks und Opportunity Scores — bevor der Markt gesättigt ist.',
+    benefit: 'Live Signale',
+    status: 'Core OS',
+    Icon: TrendingUpIcon,
+    featured: true,
   },
   {
     id: 'studio',
@@ -96,22 +96,10 @@ export type WorkflowStep = {
 
 export const WORKFLOW_STEPS: WorkflowStep[] = [
   {
-    id: 'discover',
-    title: 'Trend entdecken',
-    description: 'Live Intelligence für TikTok, Instagram & YouTube.',
-    Icon: TrendingUpIcon,
-  },
-  {
     id: 'hook',
     title: 'Hook generieren',
     description: 'Scroll-stoppende Opener in Sekunden.',
     Icon: BoltIcon,
-  },
-  {
-    id: 'ad-copy',
-    title: 'Ad Copy erstellen',
-    description: 'Headlines, CTAs & Skripte für Paid & Organic.',
-    Icon: SparklesIcon,
   },
   {
     id: 'seo',
@@ -120,10 +108,22 @@ export const WORKFLOW_STEPS: WorkflowStep[] = [
     Icon: MagnifyingGlassIcon,
   },
   {
+    id: 'ad-copy',
+    title: 'Ad Copy erstellen',
+    description: 'Headlines, CTAs & Skripte für Paid & Organic.',
+    Icon: SparklesIcon,
+  },
+  {
     id: 'analyzer',
     title: 'Landingpage analysieren',
     description: 'CRO-Scores & Quick Wins mit KI.',
     Icon: ChartBarIcon,
+  },
+  {
+    id: 'discover',
+    title: 'Trend entdecken',
+    description: 'Live Intelligence für TikTok, Instagram & YouTube.',
+    Icon: TrendingUpIcon,
   },
   {
     id: 'studio',

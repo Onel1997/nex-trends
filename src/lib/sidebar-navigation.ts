@@ -1,4 +1,4 @@
-import type { DashboardRouteId } from '@/lib/routes'
+import { AI_CREATOR_TOOL_ORDER, type DashboardRouteId } from '@/lib/routes'
 
 export type SidebarSectionId = 'main' | 'creator' | 'library' | 'system'
 
@@ -22,14 +22,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     id: 'creator',
     label: 'AI Creator',
-    routes: [
-      'trend-intelligence',
-      'ai-studio',
-      'analyzer',
-      'hook',
-      'ad-copy',
-      'seo',
-    ],
+    routes: [...AI_CREATOR_TOOL_ORDER],
     dividerAfter: 'library',
   },
   {

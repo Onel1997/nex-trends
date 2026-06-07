@@ -11,8 +11,8 @@ import type { SubscriptionStatus, UserProfile } from '@/types/subscription'
 
 export const PREMIUM_TOOL_IDS = [
   'hook',
-  'ad-copy',
   'seo',
+  'ad-copy',
   'analyzer',
 ] as const satisfies readonly DashboardRouteId[]
 

@@ -33,7 +33,7 @@ const STEPS: {
     id: 'tools',
     title: 'Deine Werkzeuge',
     description:
-      'Trend Intelligence, Hook Generator, Ad Copy, SEO Titles, Landing Analyzer und AI Video Studio — starte mit dem Hook Generator.',
+      'Hook Generator, SEO Titles, Ad Copy, Landing Analyzer, Trend Intelligence und AI Video Studio — starte mit dem Hook Generator.',
     icon: <BoltIcon className="size-5 text-violet-300" aria-hidden />,
   },
   {

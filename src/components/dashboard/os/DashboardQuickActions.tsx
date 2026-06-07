@@ -23,13 +23,6 @@ const QUICK_ACTIONS = [
     accent: 'from-violet-600/20 to-fuchsia-600/10',
   },
   {
-    id: 'saved-trends' as const,
-    label: 'Saved Hooks',
-    description: 'Your hook library & favorites',
-    icon: BookmarkIcon,
-    accent: 'from-indigo-600/20 to-violet-600/10',
-  },
-  {
     id: 'ad-copy' as const,
     label: 'AI Ad Copy',
     description: 'Headlines & CTAs for paid ads',
@@ -42,6 +35,13 @@ const QUICK_ACTIONS = [
     description: 'Conversion insights for pages',
     icon: ChartBarIcon,
     accent: 'from-cyan-600/12 to-violet-600/10',
+  },
+  {
+    id: 'saved-trends' as const,
+    label: 'Saved Hooks',
+    description: 'Your hook library & favorites',
+    icon: BookmarkIcon,
+    accent: 'from-indigo-600/20 to-violet-600/10',
   },
 ] as const
 

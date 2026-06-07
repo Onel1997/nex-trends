@@ -7,17 +7,10 @@ import {
   SparklesIcon,
   TrendingUpIcon,
 } from '@/components/ui/icons'
-import type { DashboardRouteId } from '@/lib/routes'
+import { AI_CREATOR_TOOL_ORDER } from '@/lib/routes'
 
-/** Core Products — Trend Intelligence first; AI Video Studio is flagship */
-export const DASHBOARD_CORE_PRODUCT_IDS = [
-  'trend-intelligence',
-  'ai-studio',
-  'analyzer',
-  'hook',
-  'ad-copy',
-  'seo',
-] as const satisfies readonly DashboardRouteId[]
+/** Core Products — journey order (easiest → premium); AI Video Studio is flagship */
+export const DASHBOARD_CORE_PRODUCT_IDS = AI_CREATOR_TOOL_ORDER
 
 export const DASHBOARD_FLAGSHIP_ROUTE_ID = 'ai-studio' as const
 

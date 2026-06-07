@@ -27,16 +27,21 @@ export type DashboardRouteId =
   | 'billing'
   | 'settings'
 
+/** AI Creator tools — easiest/free first through most advanced/premium */
+export const AI_CREATOR_TOOL_ORDER = [
+  'hook',
+  'seo',
+  'ad-copy',
+  'analyzer',
+  'trend-intelligence',
+  'ai-studio',
+] as const satisfies readonly DashboardRouteId[]
+
 /** Canonical navigation order — sidebar, mobile drawer, dashboard */
 export const NAV_ROUTE_ORDER = [
   'dashboard',
-  'trend-intelligence',
-  'ai-studio',
+  ...AI_CREATOR_TOOL_ORDER,
   'my-videos',
-  'hook',
-  'ad-copy',
-  'seo',
-  'analyzer',
   'saved-trends',
   'pricing',
   'billing',
@@ -191,14 +196,7 @@ export function getSidebarRoutes(): DashboardRouteConfig[] {
 }
 
 /** Core NexTrends modules — Quick Actions & Core Products (in display order) */
-export const DASHBOARD_CORE_FEATURES = [
-  'trend-intelligence',
-  'ai-studio',
-  'analyzer',
-  'hook',
-  'ad-copy',
-  'seo',
-] as const satisfies readonly DashboardRouteId[]
+export const DASHBOARD_CORE_FEATURES = AI_CREATOR_TOOL_ORDER
 
 /** Remaining tools below core module grid on legacy home sections */
 export const DASHBOARD_SECONDARY_TOOL_ORDER = [

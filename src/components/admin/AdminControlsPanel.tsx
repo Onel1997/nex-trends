@@ -21,11 +21,11 @@ import { useAdminPanelLoad } from '@/hooks/useAdminPanelLoad'
 import type { AdminFeatureFlags, AdminSettings } from '@/types/admin'
 
 const FLAG_LABELS: { key: keyof AdminFeatureFlags; label: string }[] = [
-  { key: 'trend_intelligence', label: 'Trend Intelligence' },
   { key: 'hook_generator', label: 'Hook Generator' },
-  { key: 'ad_copy', label: 'Ad Copy Generator' },
   { key: 'seo_titles', label: 'SEO Titles' },
+  { key: 'ad_copy', label: 'Ad Copy Generator' },
   { key: 'landing_analyzer', label: 'Landing Analyzer' },
+  { key: 'trend_intelligence', label: 'Trend Intelligence' },
 ]
 
 function AdminControlsPanelInner() {
