@@ -1,4 +1,4 @@
-/** AI video providers: Replicate (Minimax) primary, Luma fallback. */
+/** AI video providers: Replicate (Minimax video-01 T2V) primary, Luma fallback. */
 
 import { generateId } from "./generate-id.ts";
 
@@ -12,13 +12,17 @@ export type ProviderJob = {
   error?: string
 }
 
-const REPLICATE_MODEL = "minimax/video-01-live"
+const REPLICATE_MODEL = "minimax/video-01"
 const LUMA_API = "https://api.lumalabs.ai/dream-machine/v1/generations"
 
-async function startReplicate(
-  prompt: string,
-  aspectRatio: string,
-): Promise<ProviderJob | null> {
+function formatReplicateHttpError(status: number, body: string): string {
+  const trimmed = body.trim().slice(0, 2000)
+  return trimmed
+    ? `Replicate HTTP ${status}: ${trimmed}`
+    : `Replicate HTTP ${status}`
+}
+
+async function startReplicate(prompt: string): Promise<ProviderJob | null> {
   const token = Deno.env.get("REPLICATE_API_TOKEN")?.trim()
   if (!token) return null
 
@@ -35,7 +39,6 @@ async function startReplicate(
         input: {
           prompt,
           prompt_optimizer: true,
-          aspect_ratio: aspectRatio === "9:16" ? "9:16" : "16:9",
         },
       }),
     },
@@ -43,12 +46,18 @@ async function startReplicate(
 
   if (!res.ok) {
     const err = await res.text()
+    const errorMessage = formatReplicateHttpError(res.status, err)
     console.error("[video-provider][video_generation] Replicate start failed", {
       status: res.status,
       body: err.slice(0, 2000),
       model: REPLICATE_MODEL,
     })
-    return null
+    return {
+      id: generateId(),
+      provider: "replicate",
+      status: "failed",
+      error: errorMessage,
+    }
   }
 
   const data = await res.json() as {
@@ -212,7 +221,7 @@ export async function startVideoProviderJob(
   prompt: string,
   aspectRatio = "9:16",
 ): Promise<ProviderJob> {
-  const replicate = await startReplicate(prompt, aspectRatio)
+  const replicate = await startReplicate(prompt)
   if (replicate) return replicate
 
   const luma = await startLuma(prompt, aspectRatio)
