@@ -1,4 +1,4 @@
-import { memo, useCallback, useState, type KeyboardEvent, type MouseEvent } from 'react'
+import { memo, useCallback, type KeyboardEvent, type MouseEvent } from 'react'
 import { cn } from '@/lib'
 import { OPPORTUNITY_TIER_META } from '@/lib/trend-v2'
 import type { TrendWithV2 } from '@/lib/trend-v2'
