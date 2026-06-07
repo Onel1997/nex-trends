@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
 import { LowCreditBanner } from '@/components/subscription/LowCreditBanner'
-import { CreditIcon, SparklesIcon } from '@/components/ui/icons'
+import { ToolCreditsBadge } from '@/components/tools/ToolCreditsBadge'
+import { SparklesIcon } from '@/components/ui/icons'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { MAX_FREE_CREDITS } from '@/lib/constants'
+import { getUiCreditSnapshot } from '@/lib/credits/display'
 import { cn } from '@/lib'
 
 type AiToolLayoutProps = {
@@ -11,6 +12,7 @@ type AiToolLayoutProps = {
   children: ReactNode
   className?: string
   creditCost?: number
+  creditCostLabel?: string
 }
 
 export function AiToolLayout({
@@ -19,10 +21,10 @@ export function AiToolLayout({
   children,
   className,
   creditCost = 1,
+  creditCostLabel = 'pro Generierung',
 }: AiToolLayoutProps) {
-  const { hasProAccess, isAdmin, isCreditsLow, usage } = useUsageLimit()
-  const remaining = usage.remaining ?? 0
-  const limit = usage.limit ?? MAX_FREE_CREDITS
+  const { hasProAccess, isAdmin, isCreditsLow, usage, userPlan } = useUsageLimit()
+  const { remaining } = getUiCreditSnapshot(userPlan, usage, isAdmin)
 
   return (
     <div className={cn('mx-auto w-full min-w-0 max-w-3xl animate-fade-in', className)}>
@@ -36,23 +38,11 @@ export function AiToolLayout({
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">{description}</p>
 
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-zinc-800/60 bg-zinc-950/60 px-3 py-1.5 text-xs">
-          <CreditIcon className="size-3.5 text-violet-400/80" aria-hidden />
-          {isAdmin ? (
-            <span className="text-zinc-400">
-              Admin · <span className="font-medium text-amber-300">unbegrenzt</span>
-            </span>
-          ) : hasProAccess ? (
-            <span className="text-zinc-400">
-              Pro · <span className="font-medium text-violet-300">unbegrenzt</span>
-            </span>
-          ) : (
-            <span className="text-zinc-400">
-              <span className="font-semibold tabular-nums text-violet-300">{remaining}</span>
-              <span className="text-zinc-600"> / {limit}</span> Credits · {creditCost} pro Generierung
-            </span>
-          )}
-        </div>
+        <ToolCreditsBadge
+          className="mt-4"
+          creditCost={creditCost}
+          costLabel={creditCostLabel}
+        />
       </header>
 
       {!hasProAccess && isCreditsLow && (

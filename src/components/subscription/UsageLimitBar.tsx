@@ -1,7 +1,8 @@
-import { CreditIcon, CrownIcon } from '@/components/ui/icons'
+import { CreditIcon } from '@/components/ui/icons'
 import { CreditsProgressBar } from '@/components/ui/CreditsProgressBar'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { formatUsageResetDate, MAX_FREE_CREDITS } from '@/lib/usage'
+import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
+import { formatUsageResetDate } from '@/lib/usage'
 import { cn } from '@/lib'
 
 type UsageLimitBarProps = {
@@ -10,47 +11,9 @@ type UsageLimitBarProps = {
 }
 
 export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps) {
-  const { usage, isAdmin } = useUsageLimit()
+  const { usage, isAdmin, userPlan } = useUsageLimit()
+  const { planLabel, remaining, limit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
 
-  if (usage.unlimited) {
-    return (
-      <div
-        className={cn(
-          'relative overflow-hidden rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-950/80 to-fuchsia-950/40 p-4',
-          'shadow-[0_0_24px_-6px_rgba(139,92,246,0.35)]',
-          className,
-        )}
-      >
-        <div
-          className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-fuchsia-500/20 blur-2xl"
-          aria-hidden
-        />
-        <div className="relative flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-violet-500/20 ring-1 ring-violet-400/30">
-              <CrownIcon className="size-4 text-violet-200" aria-hidden />
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-violet-200">
-              Credits
-            </span>
-          </div>
-          <span className="text-sm font-bold text-white">
-            ∞ {isAdmin ? 'Admin' : 'Pro'}
-          </span>
-        </div>
-        {!compact && (
-          <p className="relative mt-2 text-[11px] text-violet-300/90">
-            {isAdmin
-              ? 'Admin-Zugang — unbegrenzte Credits, alle Tools freigeschaltet.'
-              : 'Unbegrenzte Credits — alle Tools freigeschaltet.'}
-          </p>
-        )}
-      </div>
-    )
-  }
-
-  const limit = usage.limit ?? MAX_FREE_CREDITS
-  const remaining = usage.remaining ?? 0
   const isDepleted = remaining <= 0
   const isLow = remaining > 0 && remaining <= 3
 
@@ -81,8 +44,8 @@ export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps
           </span>
         </div>
         <span className="text-sm font-bold tabular-nums text-white">
-          {remaining}
-          <span className="font-medium text-violet-400/80"> / {limit}</span>
+          {formatCreditAmount(remaining)}
+          <span className="font-medium text-violet-400/80"> / {formatCreditAmount(limit)}</span>
         </span>
       </div>
 
@@ -97,18 +60,18 @@ export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps
         <p className="relative mt-2.5 text-[11px] leading-relaxed text-zinc-400">
           {isDepleted ? (
             <span className="text-fuchsia-300/90">
-              Keine Credits mehr — upgrade für unbegrenzten Zugriff.
+              Keine Credits mehr — upgrade für mehr monatliches Kontingent.
             </span>
           ) : isLow ? (
             <span className="text-amber-300/90">
-              Wenige Credits übrig — jede Aktion kostet 1 Credit.
+              Wenige Credits übrig — jede Aktion kostet Credits.
             </span>
           ) : (
             <>
-              <span className="text-zinc-300">{remaining} Credit{remaining === 1 ? '' : 's'}</span>{' '}
-              verfügbar · +5 wöchentlich (max. {limit}).
+              <span className="text-zinc-300">{planLabel}</span> ·{' '}
+              {formatCreditAmount(remaining)} von {formatCreditAmount(limit)} Credits verfügbar
               {usage.usageResetDate && (
-                <> Nächste Aufladung {formatUsageResetDate(usage.usageResetDate)}.</>
+                <> · Nächste Aufladung {formatUsageResetDate(usage.usageResetDate)}</>
               )}
             </>
           )}

@@ -16,7 +16,7 @@ export function PricingCreditUsage() {
           </h3>
           <p className="dashboard-os-muted mt-1 max-w-xl text-[11px] leading-relaxed sm:text-xs">
             Jede KI-Aktion verbraucht Credits. Free enthält {SIGNUP_CREDITS} Credits pro
-            Monat. Bezahlpläne schalten höhere monatliche Kontingente frei — Agency ist unbegrenzt.
+            Monat. Bezahlpläne schalten höhere monatliche Kontingente frei — bis zu 20.000 Credits / Monat im Agency-Plan.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2 rounded-[var(--dash-radius)] border border-violet-500/20 bg-violet-500/10 px-3 py-2">

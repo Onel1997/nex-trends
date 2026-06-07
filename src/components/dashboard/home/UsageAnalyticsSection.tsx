@@ -4,14 +4,13 @@ import { TrendingUpIcon } from '@/components/ui/icons'
 import { UsageBarChart } from '@/components/dashboard/home/UsageBarChart'
 import { RecentActivityList } from '@/components/dashboard/home/RecentActivityList'
 import { useDashboardData } from '@/hooks/useDashboardData'
-import { MAX_FREE_CREDITS } from '@/lib/constants'
+import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
 
 export function UsageAnalyticsSection() {
-  const { usage, hasProAccess, weeklyUsage, resetDateLabel } = useDashboardData()
+  const { usage, weeklyUsage, resetDateLabel, userPlan, isAdmin } = useDashboardData()
 
-  const limit = usage.limit ?? MAX_FREE_CREDITS
+  const { remaining, limit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
   const used = usage.used
-  const remaining = usage.remaining ?? 0
 
   return (
     <Card className="animate-fade-in animation-delay-100">
@@ -30,31 +29,29 @@ export function UsageAnalyticsSection() {
         <div className="grid gap-3 sm:grid-cols-3">
           <MetricCard
             label="Verfügbar"
-            value={hasProAccess ? 'Unbegrenzt' : `${remaining} Credits`}
+            value={`${formatCreditAmount(remaining)} Credits`}
           />
           <MetricCard
             label="Genutzt"
-            value={hasProAccess ? `${used} (∞)` : `${used} Aktionen`}
+            value={`${used} Aktionen`}
           />
           <MetricCard label="Reset" value={resetDateLabel || '—'} />
         </div>
 
-        {!hasProAccess && (
-          <div>
-            <div className="mb-2.5 flex items-center justify-between text-xs">
-              <span className="font-medium text-zinc-500">Credits</span>
-              <span className="font-semibold tabular-nums text-zinc-300">
-                {remaining} / {limit} übrig
-              </span>
-            </div>
-            <ProgressBar
-              value={remaining}
-              max={limit}
-              mode="remaining"
-              label={`${remaining} von ${limit} Credits verbleibend`}
-            />
+        <div>
+          <div className="mb-2.5 flex items-center justify-between text-xs">
+            <span className="font-medium text-zinc-500">Credits</span>
+            <span className="font-semibold tabular-nums text-zinc-300">
+              {formatCreditAmount(remaining)} / {formatCreditAmount(limit)} übrig
+            </span>
           </div>
-        )}
+          <ProgressBar
+            value={remaining}
+            max={limit}
+            mode="remaining"
+            label={`${formatCreditAmount(remaining)} von ${formatCreditAmount(limit)} Credits verbleibend`}
+          />
+        </div>
 
         <UsageBarChart data={weeklyUsage} />
         <RecentActivityList />

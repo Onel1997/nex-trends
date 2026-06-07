@@ -1,5 +1,6 @@
 import { isAdminEmail } from '@/lib/admin'
 import { isUnlimitedPlan, planMonthlyCredits, type PlanId } from '@/lib/plans'
+import { UI_PLAN_MONTHLY_CREDITS } from '@/lib/credits/display'
 import { resolveUserPlan } from '@/lib/subscription'
 import type { UserProfile } from '@/types/subscription'
 import type { CreditConsumeResult } from '@/types/credits'
@@ -86,7 +87,6 @@ export function isCreditsLow(result: CreditConsumeResult, threshold = 5): boolea
 }
 
 export function planLabelForCredits(plan: PlanId): string {
-  if (isUnlimitedPlan(plan)) return 'Unlimited'
-  const monthly = planMonthlyCredits(plan)
-  return monthly != null ? `${monthly.toLocaleString('de-DE')} / month` : '—'
+  const monthly = UI_PLAN_MONTHLY_CREDITS[plan] ?? UI_PLAN_MONTHLY_CREDITS.free
+  return `${monthly.toLocaleString('de-DE')} / Monat`
 }

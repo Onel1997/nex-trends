@@ -18,7 +18,7 @@ import { useSavedTrends } from '@/hooks/useSavedTrends'
 import { useTrendHistory } from '@/hooks/useTrendHistory'
 import { useTrendSessionRestore } from '@/hooks/useTrendSessionRestore'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { MAX_FREE_CREDITS } from '@/lib/constants'
+import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
 import { getBrowserSearch } from '@/lib/runtime'
 import { createSearchNonce, getDemoUserSeed } from '@/lib/demo-trend-seed'
 import { markDemoSeen, shouldShowDemoOnLoad } from '@/lib/trend-intelligence'
@@ -32,7 +32,7 @@ import {
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 export function TrendIntelligencePanel() {
-  const { hasProAccess, usage, isCreditsLow, requireCredits, consumeCreditAfterSuccess } =
+  const { hasProAccess, usage, isCreditsLow, requireCredits, consumeCreditAfterSuccess, userPlan, isAdmin } =
     useUsageLimit()
   const { savedTrends, savedCount, isSaved, toggleSave } = useSavedTrends()
   const { history, logSearch, clear, removeEntry } = useTrendHistory()
@@ -63,8 +63,7 @@ export function TrendIntelligencePanel() {
   const sessionReadyRef = useRef(false)
   const scrollRestoredRef = useRef(false)
 
-  const remaining = usage.unlimited ? null : (usage.remaining ?? 0)
-  const creditLimit = usage.limit ?? MAX_FREE_CREDITS
+  const { remaining, limit: creditLimit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
 
   const loadDemo = useCallback(async () => {
     setIsLoadingDemo(true)
@@ -248,7 +247,7 @@ export function TrendIntelligencePanel() {
   return (
     <div className="ti-panel space-y-4 min-w-0 max-w-full overflow-x-hidden sm:space-y-5">
       {!hasProAccess && isCreditsLow && (
-        <LowCreditBanner remaining={remaining ?? 0} className="mb-1" />
+        <LowCreditBanner remaining={remaining} className="mb-1" />
       )}
 
       <TrendsTabNav active={view} onChange={setView} savedCount={savedCount} />
@@ -288,12 +287,10 @@ export function TrendIntelligencePanel() {
             </>
           )}
 
-          {!hasProAccess && remaining !== null && (
-            <p className="text-center text-xs text-zinc-500 sm:text-left">
-              <span className="font-medium text-violet-300/90">{remaining}</span> von{' '}
-              {creditLimit} Credits · 1 Credit pro Analyse
-            </p>
-          )}
+          <p className="text-center text-xs text-zinc-500 sm:text-left">
+            <span className="font-medium text-violet-300/90">{formatCreditAmount(remaining)}</span> von{' '}
+            {formatCreditAmount(creditLimit)} Credits · 1 Credit pro Analyse
+          </p>
 
           {error && (
             <p

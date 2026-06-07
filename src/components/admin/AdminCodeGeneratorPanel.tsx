@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { CodeBlock } from '@/components/code/CodeBlock'
+import { ToolCreditsBadge } from '@/components/tools/ToolCreditsBadge'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Input'
 import { SelectField } from '@/components/ui/SelectField'
@@ -10,7 +11,6 @@ import {
   BoltIcon,
   ClockIcon,
   CodeBracketIcon,
-  SparklesIcon,
 } from '@/components/ui/icons'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useCodeGenerationFlow } from '@/hooks/useCodeGenerationFlow'
@@ -40,7 +40,7 @@ function formatHistoryDate(iso: string): string {
 }
 
 export function AdminCodeGeneratorPanel() {
-  const { isAdmin, unlimited } = useUsageLimit()
+  const { isAdmin } = useUsageLimit()
   const {
     generation,
     summary,
@@ -98,21 +98,7 @@ export function AdminCodeGeneratorPanel() {
           </div>
         </div>
 
-        <div className="inline-flex items-center gap-2 rounded-full border border-zinc-800/60 bg-zinc-950/60 px-3 py-1.5 text-xs">
-          <SparklesIcon className="size-3.5 text-violet-400/80" aria-hidden />
-          {unlimited ? (
-            <span className="text-zinc-400">
-              Admin · <span className="font-medium text-amber-300">unbegrenzt</span>
-            </span>
-          ) : (
-            <span className="text-zinc-400">
-              <span className="font-semibold tabular-nums text-violet-300">
-                {CODE_GENERATION_COST}
-              </span>{' '}
-              Credit pro Generierung
-            </span>
-          )}
-        </div>
+        <ToolCreditsBadge className="mt-0" creditCost={CODE_GENERATION_COST} />
       </header>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">

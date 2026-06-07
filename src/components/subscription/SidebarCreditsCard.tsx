@@ -1,7 +1,7 @@
 import { CrownIcon } from '@/components/ui/icons'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { PLAN_LABELS } from '@/lib/plans'
-import { MAX_FREE_CREDITS } from '@/lib/usage'
+import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
 import { cn } from '@/lib'
 
 type SidebarCreditsCardProps = {
@@ -11,15 +11,8 @@ type SidebarCreditsCardProps = {
 
 export function SidebarCreditsCard({ onUpgrade, className }: SidebarCreditsCardProps) {
   const { usage, userPlan, isAdmin } = useUsageLimit()
+  const { planLabel, remaining, limit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
 
-  const planLabel = isAdmin
-    ? 'Admin'
-    : usage.unlimited
-      ? 'Unbegrenzt'
-      : (PLAN_LABELS[userPlan] ?? 'Free')
-  const unlimited = usage.unlimited
-  const limit = usage.limit ?? MAX_FREE_CREDITS
-  const remaining = unlimited ? '∞' : String(usage.remaining ?? 0)
   const showUpgrade = userPlan === 'free' && onUpgrade
 
   return (
@@ -42,11 +35,9 @@ export function SidebarCreditsCard({ onUpgrade, className }: SidebarCreditsCardP
               Credits
             </span>
             <span className="text-sm font-bold tabular-nums tracking-tight text-white">
-              {remaining}
+              {formatCreditAmount(remaining)}
             </span>
-            {!unlimited && (
-              <span className="text-[11px] font-medium text-zinc-600">/ {limit}</span>
-            )}
+            <span className="text-[11px] font-medium text-zinc-600">/ {formatCreditAmount(limit)}</span>
           </div>
           <p className="mt-0.5 text-[11px] font-medium text-zinc-500">
             Plan ·{' '}
@@ -57,7 +48,7 @@ export function SidebarCreditsCard({ onUpgrade, className }: SidebarCreditsCardP
                   : 'text-zinc-400',
               )}
             >
-              {planLabel}
+              {isAdmin ? 'Admin' : (PLAN_LABELS[userPlan] ?? planLabel)}
             </span>
           </p>
         </div>

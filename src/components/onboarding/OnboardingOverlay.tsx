@@ -26,7 +26,7 @@ const STEPS: {
     id: 'credits',
     title: 'Credits verstehen',
     description:
-      'Jede KI-Generierung verbraucht Credits. Free-Plan: monatliches Kontingent. Pro: unbegrenzt. Credits erneuern sich automatisch.',
+      'Jede KI-Generierung verbraucht Credits. Free: 25/Monat. Creator: 250, Pro Creator: 1.000, Studio: 5.000, Agency: 20.000 Credits/Monat.',
     icon: <CreditIcon className="size-5 text-violet-300" aria-hidden />,
   },
   {

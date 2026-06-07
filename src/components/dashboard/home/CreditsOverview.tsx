@@ -1,12 +1,11 @@
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { CreditIcon } from '@/components/ui/icons'
 import { useDashboardData } from '@/hooks/useDashboardData'
-import { MAX_FREE_CREDITS } from '@/lib/constants'
+import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
 
 export function CreditsOverview() {
-  const { usage, hasProAccess, isAdmin, remainingLabel, resetDateLabel } = useDashboardData()
-  const limit = usage.limit ?? MAX_FREE_CREDITS
-  const remaining = usage.remaining ?? 0
+  const { usage, isAdmin, userPlan } = useDashboardData()
+  const { planLabel, remaining, limit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
   const used = Math.max(0, limit - remaining)
   const pctUsed = limit > 0 ? Math.round((used / limit) * 100) : 0
 
@@ -26,34 +25,24 @@ export function CreditsOverview() {
               AI Credits
             </p>
             <p className="mt-0.5 text-lg font-semibold tracking-tight text-white">
-              {remainingLabel}
+              {formatCreditAmount(remaining)} / {formatCreditAmount(limit)}
             </p>
-            {resetDateLabel && !hasProAccess && (
-              <p className="dashboard-os-muted mt-0.5 text-[10px]">Resets {resetDateLabel}</p>
-            )}
-            {isAdmin && (
-              <p className="mt-0.5 text-[10px] font-medium text-amber-300/90">Unlimited · Admin</p>
-            )}
-            {hasProAccess && !isAdmin && (
-              <p className="mt-0.5 text-[10px] font-medium text-violet-300/90">Unlimited · Pro</p>
-            )}
+            <p className="mt-0.5 text-[10px] font-medium text-violet-300/90">
+              {planLabel} · {formatCreditAmount(limit)} Credits / Monat
+            </p>
           </div>
-          {!hasProAccess && (
-            <span className="shrink-0 rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold tabular-nums text-violet-200">
-              {pctUsed}%
-            </span>
-          )}
+          <span className="shrink-0 rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold tabular-nums text-violet-200">
+            {pctUsed}%
+          </span>
         </div>
-        {!hasProAccess && (
-          <div className="mt-3">
-            <ProgressBar
-              value={remaining}
-              max={limit}
-              mode="remaining"
-              label={`${remaining} von ${limit} Credits`}
-            />
-          </div>
-        )}
+        <div className="mt-3">
+          <ProgressBar
+            value={remaining}
+            max={limit}
+            mode="remaining"
+            label={`${formatCreditAmount(remaining)} von ${formatCreditAmount(limit)} Credits`}
+          />
+        </div>
       </div>
     </div>
   )

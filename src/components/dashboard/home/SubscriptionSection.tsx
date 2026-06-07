@@ -5,7 +5,8 @@ import { useDashboardData } from '@/hooks/useDashboardData'
 import { PlanBadge } from '@/components/billing/PlanBadge'
 import { useSubscription } from '@/hooks/useSubscription'
 import { navigateToTool } from '@/lib/navigation'
-import { PRO_PRICE_LABEL, SIGNUP_CREDITS } from '@/lib/constants'
+import { formatUiCreditAllowance } from '@/lib/credits/display'
+import { PRO_PRICE_LABEL } from '@/lib/constants'
 import { cn } from '@/lib'
 
 export function SubscriptionSection() {
@@ -59,14 +60,14 @@ export function SubscriptionSection() {
           <ul className="mt-3 space-y-2 text-[11px] text-zinc-400">
             {isAdmin || hasProAccess ? (
               <>
-                <FeatureItem>Unlimited credits</FeatureItem>
+                <FeatureItem>{formatUiCreditAllowance(userPlan, isAdmin)}</FeatureItem>
                 <FeatureItem>All premium tools</FeatureItem>
                 <FeatureItem>Priority AI access</FeatureItem>
               </>
             ) : (
               <>
                 <FeatureItem muted>
-                  {SIGNUP_CREDITS} credits / month on Free
+                  {formatUiCreditAllowance('free')} on Free
                 </FeatureItem>
                 <FeatureItem muted>All AI tools with credits</FeatureItem>
                 <FeatureItem muted>Trend scouting included</FeatureItem>

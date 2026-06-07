@@ -1,7 +1,7 @@
 import { CreditIcon } from '@/components/ui/icons'
 import { PlanBadge } from '@/components/billing/PlanBadge'
 import { useCredits } from '@/hooks/useCredits'
-import { PLAN_LABELS } from '@/lib/plans'
+import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
 import { formatUsageResetDate } from '@/lib/usage'
 import { cn } from '@/lib'
 
@@ -13,15 +13,20 @@ type CreditsUsageCardProps = {
 export function CreditsUsageCard({ className, onUpgrade }: CreditsUsageCardProps) {
   const {
     userPlan,
-    unlimited,
-    remaining,
-    limit,
     used,
     usageResetDate,
     percentUsed,
     openUpgradeModal,
     isAdmin,
+    remaining,
+    limit,
   } = useCredits()
+
+  const { planLabel, remaining: displayRemaining, limit: displayLimit } = getUiCreditSnapshot(
+    userPlan,
+    { remaining, limit, used },
+    isAdmin,
+  )
 
   const handleUpgrade = onUpgrade ?? openUpgradeModal
 
@@ -50,8 +55,7 @@ export function CreditsUsageCard({ className, onUpgrade }: CreditsUsageCardProps
             )}
           </div>
           <p className="mt-1.5 text-[11px] text-zinc-500">
-            {PLAN_LABELS[userPlan]} ·{' '}
-            {unlimited ? 'Unlimited monthly usage' : 'Monthly allowance'}
+            {planLabel} · {formatCreditAmount(displayLimit)} Credits / Monat
           </p>
         </div>
 
@@ -60,26 +64,22 @@ export function CreditsUsageCard({ className, onUpgrade }: CreditsUsageCardProps
           <div>
             <p className="text-[9px] uppercase tracking-wider text-zinc-500">Available</p>
             <p className="text-lg font-bold tabular-nums text-white">
-              {unlimited ? '∞' : (remaining ?? 0)}
-              {!unlimited && limit != null && (
-                <span className="text-sm font-medium text-violet-400/80"> / {limit}</span>
-              )}
+              {formatCreditAmount(displayRemaining)}
+              <span className="text-sm font-medium text-violet-400/80"> / {formatCreditAmount(displayLimit)}</span>
             </p>
           </div>
         </div>
       </div>
 
-      {!unlimited && (
-        <p className="relative mt-3 text-[10px] text-zinc-500">
-          <span className="text-zinc-400">{used}</span> credits used this period
-          {usageResetDate && (
-            <> · Resets {formatUsageResetDate(usageResetDate)}</>
-          )}
-          {!usageResetDate && <> · {percentUsed}% of monthly allowance</>}
-        </p>
-      )}
+      <p className="relative mt-3 text-[10px] text-zinc-500">
+        <span className="text-zinc-400">{used}</span> credits used this period
+        {usageResetDate && (
+          <> · Resets {formatUsageResetDate(usageResetDate)}</>
+        )}
+        {!usageResetDate && <> · {percentUsed}% of monthly allowance</>}
+      </p>
 
-      {!unlimited && (remaining ?? 0) <= 0 && (
+      {displayRemaining <= 0 && (
         <button
           type="button"
           onClick={() => void handleUpgrade()}

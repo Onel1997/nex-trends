@@ -12,8 +12,8 @@ import {
   fetchDashboardProfileFields,
   resolveDashboardUserDisplay,
 } from '@/lib/dashboard-profile'
-import { MAX_FREE_CREDITS } from '@/lib/constants'
 import { PLAN_LABELS } from '@/lib/plans'
+import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
 import { resolveUserPlan } from '@/lib/subscription'
 import { startStripePortalFlow } from '@/lib/stripe'
 import { formatUsageResetDate } from '@/lib/usage'
@@ -104,10 +104,8 @@ export function useDashboardData() {
     : usage.unlimited
       ? 'Active'
       : 'Free'
-  const remainingLabel =
-    isAdmin || usage.unlimited
-      ? 'Unbegrenzt'
-      : `${usage.remaining ?? 0} / ${usage.limit ?? MAX_FREE_CREDITS}`
+  const creditSnapshot = getUiCreditSnapshot(userPlan, usage, isAdmin)
+  const remainingLabel = `${formatCreditAmount(creditSnapshot.remaining)} / ${formatCreditAmount(creditSnapshot.limit)}`
 
   const trendInsights: TrendInsight[] = useMemo(
     () => buildTrendInsightsFromSaved(savedTrends),

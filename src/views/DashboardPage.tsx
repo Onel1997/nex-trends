@@ -37,7 +37,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
         <OnboardingTip
           tipId="dashboard-credits"
           title="Credits im Blick behalten"
-          message="Dein monatliches Kontingent erneuert sich automatisch. Pro-Nutzer haben unbegrenzte Generierungen."
+          message="Dein monatliches Kontingent erneuert sich automatisch. Bezahlpläne erhalten höhere Credit-Limits pro Monat."
           action={{ label: 'Credits ansehen', onClick: () => onNavigate('billing') }}
           className="mb-1"
         />

@@ -6,10 +6,12 @@ import {
 import { VideoBlueprintLoading } from '@/components/trends/VideoBlueprintLoading'
 import { VideoBlueprintPanel } from '@/components/trends/VideoBlueprintPanel'
 import { VideoGenerationFallback } from '@/components/trends/VideoGenerationFallback'
+import { ToolCreditsBadge } from '@/components/tools/ToolCreditsBadge'
 import { ProtectedTool } from '@/components/subscription/ProtectedTool'
 import { ClapperboardIcon } from '@/components/ui/icons'
 import { useAiStudio } from '@/hooks/useAiStudio'
 import { VIDEO_LOADING_MESSAGE } from '@/hooks/useVideoGeneration'
+import { CREDIT_COSTS } from '@/lib/plans'
 import { navigateToTool } from '@/lib/navigation'
 import { cn } from '@/lib'
 
@@ -41,6 +43,11 @@ export function AiStudioPage() {
           AI Strategist + Creative Director + Viral Editor — complete creator-ready blueprints
           with hooks, scenes, captions & platform optimization.
         </p>
+        <ToolCreditsBadge
+          className="mt-1"
+          creditCost={CREDIT_COSTS.ai_video}
+          costLabel="pro Video"
+        />
       </header>
 
       <div

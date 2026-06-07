@@ -1,6 +1,7 @@
 import { CreditsProgressBar } from '@/components/ui/CreditsProgressBar'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useCredits } from '@/hooks/useCredits'
+import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
 import { formatUsageResetDate } from '@/lib/usage'
 import { cn } from '@/lib'
 
@@ -16,27 +17,17 @@ export function MonthlyUsageProgressBar({
   compact = false,
   mode = 'remaining',
 }: MonthlyUsageProgressBarProps) {
-  const { unlimited, remaining, limit, usageResetDate, percentUsed, depleted, low } =
+  const { userPlan, isAdmin, remaining, limit, used, usageResetDate, percentUsed, depleted, low } =
     useCredits()
 
-  if (unlimited) {
-    return (
-      <div
-        className={cn(
-          'rounded-xl border border-violet-500/25 bg-violet-950/40 px-3 py-2.5',
-          className,
-        )}
-      >
-        <p className="text-[11px] font-semibold text-violet-200">Unlimited credits</p>
-        {!compact && (
-          <p className="mt-0.5 text-[10px] text-zinc-500">No monthly cap on this plan</p>
-        )}
-      </div>
-    )
-  }
+  const { remaining: displayRemaining, limit: displayLimit } = getUiCreditSnapshot(
+    userPlan,
+    { remaining, limit, used },
+    isAdmin,
+  )
 
-  const safeLimit = limit ?? 25
-  const safeRemaining = remaining ?? 0
+  const safeLimit = displayLimit
+  const safeRemaining = displayRemaining
   const usedAmount = Math.max(0, safeLimit - safeRemaining)
 
   return (
@@ -47,8 +38,8 @@ export function MonthlyUsageProgressBar({
         </span>
         <span className="tabular-nums text-zinc-400">
           {mode === 'remaining'
-            ? `${safeRemaining} left`
-            : `${usedAmount} / ${safeLimit}`}
+            ? `${formatCreditAmount(safeRemaining)} left`
+            : `${formatCreditAmount(usedAmount)} / ${formatCreditAmount(safeLimit)}`}
         </span>
       </div>
 
