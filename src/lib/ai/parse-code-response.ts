@@ -5,7 +5,6 @@ import {
 } from '@/lib/code-db'
 import type {
   CodeGeneration,
-  CodeGenerationRequest,
   CodeGenerationResult,
   GeneratedCodeRow,
 } from '@/types/code-generation'
