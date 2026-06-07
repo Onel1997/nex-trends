@@ -4,15 +4,37 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "next dev --port 5173",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "dev:vite": "vite",
+    "build:vite": "tsc -b && vite build",
+    "preview": "vite preview",
+    "fetch-demo-videos": "bash scripts/fetch-demo-videos.sh",
+    "validate-demo-media": "node scripts/validate-demo-media.mjs",
+    "compress:demo-videos": "bash scripts/compress-demo-videos.sh",
+    "deploy:admin-api": "supabase functions deploy admin-api",
+    "deploy:admin": "supabase db push && supabase functions deploy admin-api track-event usage-limit",
+    "deploy:functions": "supabase functions deploy admin-api usage-limit track-event consume-credits hook-generator ad-copy-generator seo-title-generator code-generator generate-video create-checkout-session create-portal-session stripe-webhook",
+    "deploy:hooks": "supabase functions deploy hook-generator ad-copy-generator seo-title-generator code-generator consume-credits",
+    "deploy:ai-tools": "supabase functions deploy hook-generator ad-copy-generator seo-title-generator code-generator consume-credits",
+    "deploy:video": "supabase functions deploy generate-video",
+    "verify:functions": "node scripts/verify-edge-functions.mjs",
+    "test:hook-generator": "node scripts/test-hook-generator.mjs",
+    "test:ai-generators": "node scripts/test-ai-generators.mjs",
+    "test:edge-invoke-parse": "node scripts/test-edge-invoke-parse.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.1",
+    "@tailwindcss/postcss": "^4.3.0",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.17.0",
+    "next": "^16.2.6",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "recharts": "^2.15.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

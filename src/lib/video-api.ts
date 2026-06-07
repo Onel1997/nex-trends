@@ -1,0 +1,173 @@
+import { invokeEdgeFunction } from '@/lib/edgeFunctions'
+import { isVideoDebugEnabled } from '@/lib/runtime'
+import { formatPipelineError, type PipelineErrorPayload } from '@/lib/video-pipeline-errors'
+import type { GeneratedVideoHistoryItem, GeneratedVideoJob } from '@/types/generated-video'
+import type { StudioCreateOptions } from '@/lib/ai-studio'
+import type { TrendIntelligence } from '@/types/trend-intelligence'
+
+function log(scope: string, detail?: unknown) {
+  if (isVideoDebugEnabled()) {
+    console.debug(`[VideoAPI] ${scope}`, detail ?? '')
+  }
+}
+
+type VideoEdgeResponse = PipelineErrorPayload & {
+  ok?: boolean
+  job?: GeneratedVideoJob
+}
+
+type CreateResponse = VideoEdgeResponse
+type PollResponse = VideoEdgeResponse
+type HistoryRow = GeneratedVideoHistoryItem & {
+  video_url?: string
+  poster_url?: string
+  hook_text?: string
+  scene_prompt?: string
+  voiceover_url?: string
+  music_url?: string
+  has_audio?: boolean
+  error_message?: string
+  trend_id?: string
+  created_at?: string
+  metadata?: Record<string, unknown>
+}
+
+type HistoryResponse = { ok?: boolean; items?: HistoryRow[]; error?: string }
+
+function buildTrendPayload(trend: TrendIntelligence, studio?: StudioCreateOptions) {
+  return {
+    trend_id: trend.id,
+    title: trend.title,
+    niche: trend.niche,
+    platform: trend.platform,
+    description: trend.description,
+    hook_text: trend.hookAnalysis?.hookText ?? trend.title,
+    content_breakdown: trend.contentBreakdown,
+    hook_analysis: trend.hookAnalysis,
+    why_viral: trend.whyViral,
+    ai_insight: trend.aiInsight,
+    engagement_prediction: trend.engagementPrediction,
+    viral_score: trend.viralScore,
+    trend_velocity: trend.trendVelocity,
+    hook_suggestions: trend.hookSuggestions,
+    content_ideas: trend.contentIdeas,
+    ai_recommendations: trend.aiRecommendations,
+    cta_angles: trend.ctaAngles,
+    rising_keywords: trend.risingKeywords,
+    hashtags: trend.hashtags,
+    target_audience: trend.targetAudience,
+    monetization_potential: trend.monetizationPotential,
+    studio_duration: studio?.duration ?? trend.videoDuration,
+    studio_style: studio?.style ?? trend.niche,
+    enable_voiceover: studio?.enableVoiceover ?? true,
+    enable_captions: studio?.enableCaptions ?? true,
+  }
+}
+
+export async function createVideoStrategyJob(
+  trend: TrendIntelligence,
+  generationId?: string | null,
+  studio?: StudioCreateOptions,
+): Promise<GeneratedVideoJob> {
+  log('create-strategy', { trendId: trend.id, platform: trend.platform })
+
+  const result = await invokeEdgeFunction<CreateResponse>('generate-video', {
+    action: 'create',
+    ...buildTrendPayload(trend, studio),
+    generation_id: generationId ?? undefined,
+    idempotency_key: generationId ? `video:${generationId}` : undefined,
+  })
+
+  if (!result?.job) {
+    throw new Error(
+      formatPipelineError(result, 'Creator Blueprint konnte nicht generiert werden'),
+    )
+  }
+
+  log('create-strategy ok', {
+    jobId: result.job.id,
+    status: result.job.status,
+    provider: result.job.provider,
+    hasBlueprint: Boolean(result.job.blueprint),
+  })
+
+  return result.job
+}
+
+/** @deprecated Use createVideoStrategyJob — kept for retry/history compatibility */
+export async function createVideoJob(
+  trend: TrendIntelligence,
+  generationId?: string | null,
+  studio?: StudioCreateOptions,
+): Promise<GeneratedVideoJob> {
+  return createVideoStrategyJob(trend, generationId, studio)
+}
+
+export async function pollVideoJob(jobId: string): Promise<GeneratedVideoJob> {
+  const result = await invokeEdgeFunction<PollResponse>('generate-video', {
+    action: 'poll',
+    job_id: jobId,
+  })
+
+  if (!result?.job) {
+    throw new Error(formatPipelineError(result, 'Poll fehlgeschlagen'))
+  }
+
+  log('poll', { jobId, status: result.job.status, error: result.job.errorMessage })
+  return result.job
+}
+
+export async function retryVideoJob(jobId: string): Promise<GeneratedVideoJob> {
+  const result = await invokeEdgeFunction<PollResponse>('generate-video', {
+    action: 'retry',
+    job_id: jobId,
+  })
+
+  if (!result?.job) {
+    throw new Error(formatPipelineError(result, 'Retry fehlgeschlagen'))
+  }
+
+  return result.job
+}
+
+export async function fetchVideoHistory(
+  limit = 12,
+): Promise<GeneratedVideoHistoryItem[]> {
+  const result = await invokeEdgeFunction<HistoryResponse>('generate-video', {
+    action: 'history',
+    limit,
+  })
+
+  return (result?.items ?? []).map((row) => ({
+    id: row.id,
+    status: row.status as GeneratedVideoJob['status'],
+    provider: row.provider,
+    videoUrl: row.video_url ?? row.videoUrl,
+    posterUrl: row.poster_url ?? row.posterUrl,
+    hookText: row.hook_text ?? row.hookText,
+    captions: Array.isArray(row.captions) ? row.captions : [],
+    scenePrompt: row.scene_prompt ?? row.scenePrompt,
+    voiceoverUrl: row.voiceover_url ?? row.voiceoverUrl,
+    musicUrl: row.music_url ?? row.musicUrl,
+    duration: row.duration ?? '0:15',
+    hasAudio: row.has_audio ?? row.hasAudio ?? false,
+    errorMessage: row.error_message ?? row.errorMessage,
+    trendId: row.trend_id ?? row.trendId,
+    createdAt: row.created_at ?? row.createdAt,
+    blueprint: row.metadata?.blueprint as GeneratedVideoJob['blueprint'],
+    postingStrategy: row.metadata?.postingStrategy as string | undefined,
+    mode: row.metadata?.mode === 'strategy' ? 'strategy' : 'video',
+  }))
+}
+
+export function strategyProgressDetail(step: number): string {
+  const messages = [
+    'Analysiere Viral-Struktur...',
+    'Berechne Hook-Potenzial...',
+    'Generiere Storyboard...',
+    'Optimiere Retention...',
+    'Baue CTA Sequenz...',
+    'Finalisiere Creator Blueprint...',
+  ]
+  return messages[Math.min(step, messages.length - 1)]
+}

@@ -1,36 +1,141 @@
-import { APP_NAME } from '@/lib'
-import { TrendScoutSearch } from './TrendScoutSearch'
-import { TrendsGrid } from './TrendsGrid'
+import { lazy, memo, Suspense } from 'react'
+import { isImmersiveTool, type DashboardToolId } from '@/lib'
+import { ToolPageHeader } from '@/components/layout/ToolPageHeader'
+import { PageLoadingFallback } from '@/components/ui/PageLoadingFallback'
+import { DashboardPage } from '@/views/DashboardPage'
+import { cn } from '@/lib'
 
-export function DashboardMain() {
+const TrendIntelligencePage = lazy(() =>
+  import('@/views/trend-intelligence/TrendIntelligencePage').then((m) => ({
+    default: m.TrendIntelligencePage,
+  })),
+)
+const SavedTrendsPage = lazy(() =>
+  import('@/views/SavedTrendsPage').then((m) => ({ default: m.SavedTrendsPage })),
+)
+const MyAiVideosPage = lazy(() =>
+  import('@/views/MyAiVideosPage').then((m) => ({ default: m.MyAiVideosPage })),
+)
+const AiStudioPage = lazy(() =>
+  import('@/views/AiStudioPage').then((m) => ({ default: m.AiStudioPage })),
+)
+const HookGeneratorPage = lazy(() =>
+  import('@/views/HookGeneratorPage').then((m) => ({ default: m.HookGeneratorPage })),
+)
+const SettingsPage = lazy(() =>
+  import('@/views/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+)
+const PricingPage = lazy(() =>
+  import('@/views/PricingPage').then((m) => ({ default: m.PricingPage })),
+)
+const BillingPage = lazy(() =>
+  import('@/views/BillingPage').then((m) => ({ default: m.BillingPage })),
+)
+const AdCopyGeneratorPage = lazy(() =>
+  import('@/views/tools/AdCopyGeneratorPage').then((m) => ({
+    default: m.AdCopyGeneratorPage,
+  })),
+)
+const SeoTitleGeneratorPage = lazy(() =>
+  import('@/views/tools/SeoTitleGeneratorPage').then((m) => ({
+    default: m.SeoTitleGeneratorPage,
+  })),
+)
+const LandingPageAnalyzerPage = lazy(() =>
+  import('@/views/tools/LandingPageAnalyzerPage').then((m) => ({
+    default: m.LandingPageAnalyzerPage,
+  })),
+)
+
+type DashboardMainProps = {
+  activeTool: DashboardToolId
+  onSelectTool: (tool: DashboardToolId) => void
+}
+
+function renderPage(activeTool: DashboardToolId, onSelectTool: (tool: DashboardToolId) => void) {
+  switch (activeTool) {
+    case 'trend-intelligence':
+      return <TrendIntelligencePage />
+    case 'saved-trends':
+      return <SavedTrendsPage onNavigate={onSelectTool} />
+    case 'ai-studio':
+      return <AiStudioPage />
+    case 'my-videos':
+      return <MyAiVideosPage />
+    case 'hook':
+      return <HookGeneratorPage />
+    case 'ad-copy':
+      return <AdCopyGeneratorPage />
+    case 'seo':
+      return <SeoTitleGeneratorPage />
+    case 'analyzer':
+      return <LandingPageAnalyzerPage />
+    case 'pricing':
+      return <PricingPage />
+    case 'billing':
+      return <BillingPage />
+    case 'settings':
+      return <SettingsPage />
+    case 'dashboard':
+    default:
+      return <DashboardPage onNavigate={onSelectTool} />
+  }
+}
+
+function DashboardMainInner({ activeTool, onSelectTool }: DashboardMainProps) {
+  const immersive = isImmersiveTool(activeTool)
+  const isDashboard = activeTool === 'dashboard'
+
   return (
-    <div className="relative min-h-full overflow-hidden">
-      <div
-        className="pointer-events-none absolute -right-32 top-0 size-80 rounded-full bg-violet-600/10 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute bottom-0 left-0 size-64 rounded-full bg-fuchsia-600/5 blur-3xl"
-        aria-hidden
-      />
+    <div
+      className={cn(
+        'relative min-w-0',
+        immersive ? 'ti-ambient' : 'ambient-glow',
+      )}
+    >
+      {!immersive && (
+        <>
+          <div
+            className="pointer-events-none absolute -right-40 top-0 size-96 rounded-full bg-violet-600/6 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 size-80 rounded-full bg-fuchsia-600/4 blur-3xl"
+            aria-hidden
+          />
+        </>
+      )}
 
-      <div className="relative mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        <header className="mb-5 sm:mb-8">
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-            Dashboard
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Willkommen zurück
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-            Scoute die heißesten Trends für {APP_NAME} — optimiert für TikTok und
-            Instagram.
-          </p>
-        </header>
+      {immersive && (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-violet-950/30 to-transparent"
+          aria-hidden
+        />
+      )}
 
-        <TrendScoutSearch />
-        <TrendsGrid />
+      <div
+        className={cn(
+          'dashboard-main-interactive relative mx-auto w-full',
+          isDashboard
+            ? 'dashboard-mobile-page-container nex-page-pad min-w-0 pt-1 max-md:pb-0 sm:pt-3 sm:pb-8 lg:pt-4 lg:pb-10'
+            : 'dashboard-mobile-page-container nex-page-pad min-w-0 py-4 max-md:pb-0 sm:py-6 sm:pb-8 lg:py-8',
+          immersive
+            ? 'max-w-6xl xl:max-w-7xl 2xl:max-w-[1680px]'
+            : 'max-w-7xl',
+        )}
+      >
+        <ToolPageHeader activeTool={activeTool} onBack={() => onSelectTool('dashboard')} />
+        <div
+          key={activeTool}
+          className="page-transition-enter nex-mobile-page-enter nex-page-enter"
+        >
+          <Suspense fallback={<PageLoadingFallback tool={activeTool} />}>
+            {renderPage(activeTool, onSelectTool)}
+          </Suspense>
+        </div>
       </div>
     </div>
   )
 }
+
+export const DashboardMain = memo(DashboardMainInner)

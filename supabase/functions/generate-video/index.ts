@@ -1,0 +1,1029 @@
+import { createClient } from "@supabase/supabase-js";
+import {
+  generateVideoStrategy,
+  type TrendStrategyInput,
+} from "../_shared/video-strategy.ts";
+import {
+  pickBackgroundMusic,
+  synthesizeVoiceover,
+} from "../_shared/video-audio.ts";
+import {
+  downloadToBytes,
+  pollVideoProviderJob,
+  startVideoProviderJob,
+} from "../_shared/video-provider.ts";
+import { consumeCredits } from "../_shared/credits.ts";
+import { ensureProfile } from "../_shared/usage.ts";
+import {
+  checkPipelineEnv,
+  getStorageBucket,
+  logPipeline,
+  pipelineError,
+  type PipelineStep,
+} from "../_shared/video-pipeline.ts";
+import { corsHeadersFor, jsonHeadersFor } from "../_shared/cors.ts";
+import { generateId } from "../_shared/generate-id.ts";
+
+type Action = "create" | "poll" | "history" | "retry" | "health" | "library" | "delete";
+
+function jsonResponse(req: Request, body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: jsonHeadersFor(req),
+  });
+}
+
+function buildTrendStrategyInput(
+  body: Record<string, unknown>,
+  trendId: string,
+  title: string,
+): TrendStrategyInput {
+  const hookAnalysis = body.hook_analysis as TrendStrategyInput["hookAnalysis"];
+  const contentBreakdown = body.content_breakdown as TrendStrategyInput["contentBreakdown"];
+
+  return {
+    trendId: trendId || generateId(),
+    title,
+    niche: typeof body.niche === "string" ? body.niche : undefined,
+    platform: typeof body.platform === "string" ? body.platform : undefined,
+    description: typeof body.description === "string" ? body.description : undefined,
+    hookText: typeof body.hook_text === "string" ? body.hook_text : undefined,
+    videoDuration: typeof body.studio_duration === "string"
+      ? body.studio_duration
+      : undefined,
+    contentBreakdown,
+    hookAnalysis,
+    whyViral: typeof body.why_viral === "string" ? body.why_viral : undefined,
+    aiInsight: typeof body.ai_insight === "string" ? body.ai_insight : undefined,
+    engagementPrediction: typeof body.engagement_prediction === "string"
+      ? body.engagement_prediction
+      : undefined,
+    viralScore: typeof body.viral_score === "number" ? body.viral_score : undefined,
+    trendVelocity: typeof body.trend_velocity === "string"
+      ? body.trend_velocity
+      : undefined,
+    hookSuggestions: Array.isArray(body.hook_suggestions)
+      ? body.hook_suggestions.filter((v): v is string => typeof v === "string")
+      : undefined,
+    contentIdeas: Array.isArray(body.content_ideas)
+      ? body.content_ideas.filter((v): v is string => typeof v === "string")
+      : undefined,
+    aiRecommendations: Array.isArray(body.ai_recommendations)
+      ? body.ai_recommendations.filter((v): v is string => typeof v === "string")
+      : undefined,
+    ctaAngles: Array.isArray(body.cta_angles)
+      ? body.cta_angles.filter((v): v is string => typeof v === "string")
+      : undefined,
+    risingKeywords: Array.isArray(body.rising_keywords)
+      ? body.rising_keywords.filter((v): v is string => typeof v === "string")
+      : undefined,
+    hashtags: Array.isArray(body.hashtags)
+      ? body.hashtags.filter((v): v is string => typeof v === "string")
+      : undefined,
+    targetAudience: typeof body.target_audience === "string"
+      ? body.target_audience
+      : undefined,
+    monetizationPotential: typeof body.monetization_potential === "string"
+      ? body.monetization_potential
+      : undefined,
+    studioStyle: typeof body.studio_style === "string" ? body.studio_style : undefined,
+    studioDuration: typeof body.studio_duration === "string"
+      ? body.studio_duration
+      : undefined,
+  };
+}
+
+async function runStrategyJob(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  jobId: string,
+  input: TrendStrategyInput,
+  generationId: string | null,
+  existingMetadata: Record<string, unknown> = {},
+) {
+  await supabaseAdmin.from("generated_videos").update({
+    status: "generating",
+    error_message: null,
+    updated_at: new Date().toISOString(),
+  }).eq("id", jobId);
+
+  const strategy = await generateVideoStrategy(input);
+  const primaryHook = strategy.hooks[0]?.text ?? input.hookText ?? input.title;
+
+  await supabaseAdmin.from("generated_videos").update({
+    status: "processing",
+    provider: "openai-strategy",
+    hook_text: primaryHook,
+    captions: strategy.captions,
+    scene_prompt: strategy.scenes[0]?.shotPrompt ?? strategy.concept,
+    prompt: strategy.concept,
+    duration: input.studioDuration ?? input.videoDuration ?? "0:15",
+    has_audio: false,
+    metadata: {
+      ...existingMetadata,
+      mode: "strategy",
+      niche: input.niche,
+      platform: input.platform,
+      pacing: strategy.pacing,
+      motionStyle: strategy.motionStyle,
+      visualMood: strategy.visualMood,
+      postingStrategy: strategy.postingStrategy,
+      blueprint: strategy,
+      generation_id: generationId,
+    },
+    updated_at: new Date().toISOString(),
+  }).eq("id", jobId);
+
+  const { data: row } = await supabaseAdmin.from("generated_videos")
+    .select("*")
+    .eq("id", jobId)
+    .single();
+
+  return row;
+}
+
+function jsonError(
+  req: Request,
+  step: PipelineStep,
+  message: string,
+  status = 500,
+  details?: Record<string, unknown>,
+): Response {
+  logPipeline(step, "error", { message, ...details })
+  return jsonResponse(req, pipelineError(step, message, details), status);
+}
+
+async function uploadBytes(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  path: string,
+  bytes: Uint8Array,
+  contentType: string,
+): Promise<{ url: string | null; error?: string; bucket: string }> {
+  const bucket = getStorageBucket()
+  const bucketsToTry = bucket === "generated-videos"
+    ? [bucket]
+    : [bucket, "generated-videos", "ai-videos"]
+
+  for (const tryBucket of [...new Set(bucketsToTry)]) {
+    const { error } = await supabaseAdmin.storage
+      .from(tryBucket)
+      .upload(path, bytes, { contentType, upsert: true })
+
+    if (error) {
+      logPipeline("upload", "bucket failed", {
+        bucket: tryBucket,
+        message: error.message,
+        path,
+      })
+      continue
+    }
+
+    const { data } = supabaseAdmin.storage.from(tryBucket).getPublicUrl(path)
+    logPipeline("storage", "upload ok", {
+      bucket: tryBucket,
+      path,
+      bytes: bytes.byteLength,
+      contentType,
+    })
+    return { url: data.publicUrl ?? null, bucket: tryBucket }
+  }
+
+  return {
+    url: null,
+    error: `Storage upload failed for buckets: ${bucketsToTry.join(", ")}`,
+    bucket,
+  }
+}
+
+async function persistRemoteVideo(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  jobId: string,
+  remoteUrl: string,
+): Promise<{ url: string; storageError?: string }> {
+  try {
+    logPipeline("compose", "download remote video", { jobId, remoteUrl })
+    const bytes = await downloadToBytes(remoteUrl);
+    const storagePath = `${userId}/${jobId}.mp4`;
+    const stored = await uploadBytes(
+      supabaseAdmin,
+      storagePath,
+      bytes,
+      "video/mp4",
+    );
+    if (stored.url) return { url: stored.url };
+    return {
+      url: remoteUrl,
+      storageError: stored.error ?? "Upload returned no URL",
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    logPipeline("compose", "persist remote failed", { jobId, message })
+    return { url: remoteUrl, storageError: message };
+  }
+}
+
+type GeneratedVideoRow = Record<string, unknown>;
+
+async function finalizeProviderOutput(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  jobId: string,
+  row: GeneratedVideoRow,
+  outputUrl: string,
+): Promise<GeneratedVideoRow> {
+  logPipeline("poll", "provider succeeded", {
+    jobId,
+    provider: row.provider,
+    outputUrl,
+  });
+
+  const persisted = await persistRemoteVideo(
+    supabaseAdmin,
+    userId,
+    jobId,
+    outputUrl,
+  );
+  const videoUrl = persisted.url;
+
+  const voiceBytes = await synthesizeVoiceover(
+    String(row.hook_text ?? ""),
+    jobId,
+  );
+  let voiceoverUrl: string | null = null;
+  if (voiceBytes) {
+    const voiceUpload = await uploadBytes(
+      supabaseAdmin,
+      `${userId}/${jobId}-voice.mp3`,
+      voiceBytes,
+      "audio/mpeg",
+    );
+    voiceoverUrl = voiceUpload.url;
+    if (!voiceoverUrl) {
+      logPipeline("audio_generation", "voice upload skipped", {
+        error: voiceUpload.error,
+      });
+    }
+  }
+
+  const meta = (row.metadata ?? {}) as Record<string, unknown>;
+  const musicUrl = (row.music_url as string | null) ?? pickBackgroundMusic(
+    String(meta.visualMood ?? ""),
+    jobId,
+  );
+
+  await supabaseAdmin.from("generated_videos").update({
+    status: "completed",
+    video_url: videoUrl,
+    voiceover_url: voiceoverUrl,
+    music_url: musicUrl,
+    has_audio: true,
+    updated_at: new Date().toISOString(),
+  }).eq("id", jobId);
+
+  const { data: updated } = await supabaseAdmin.from("generated_videos")
+    .select("*")
+    .eq("id", jobId)
+    .single();
+
+  return updated ?? row;
+}
+
+async function startProviderRenderAfterStrategy(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  row: GeneratedVideoRow,
+): Promise<GeneratedVideoRow> {
+  const jobId = String(row.id);
+  const prompt = String(row.scene_prompt ?? row.prompt ?? "").trim();
+  const aspectRatio = String(row.aspect_ratio ?? "9:16");
+
+  if (!prompt) {
+    await supabaseAdmin.from("generated_videos").update({
+      status: "failed",
+      error_message: "[video_generation] Scene prompt missing",
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+    const { data } = await supabaseAdmin.from("generated_videos")
+      .select("*")
+      .eq("id", jobId)
+      .single();
+    return data ?? row;
+  }
+
+  logPipeline("video_generation", "start provider", { jobId, aspectRatio });
+  const providerJob = await startVideoProviderJob(prompt, aspectRatio);
+
+  if (providerJob.provider === "synthetic") {
+    await supabaseAdmin.from("generated_videos").update({
+      status: "failed",
+      error_message:
+        "[video_generation] REPLICATE_API_TOKEN oder LUMA_API_KEY fehlt",
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+    const { data } = await supabaseAdmin.from("generated_videos")
+      .select("*")
+      .eq("id", jobId)
+      .single();
+    return data ?? row;
+  }
+
+  if (providerJob.status === "failed") {
+    await supabaseAdmin.from("generated_videos").update({
+      status: "failed",
+      error_message: `[video_generation] ${providerJob.error ?? "Provider-Fehler"}`,
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+    const { data } = await supabaseAdmin.from("generated_videos")
+      .select("*")
+      .eq("id", jobId)
+      .single();
+    return data ?? row;
+  }
+
+  if (providerJob.status === "succeeded" && providerJob.outputUrl) {
+    await supabaseAdmin.from("generated_videos").update({
+      external_job_id: providerJob.id,
+      provider: providerJob.provider,
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+    return await finalizeProviderOutput(
+      supabaseAdmin,
+      userId,
+      jobId,
+      row,
+      providerJob.outputUrl,
+    );
+  }
+
+  await supabaseAdmin.from("generated_videos").update({
+    external_job_id: providerJob.id,
+    provider: providerJob.provider,
+    status: providerJob.status === "starting" ? "queued" : "generating",
+    updated_at: new Date().toISOString(),
+  }).eq("id", jobId);
+
+  const { data: refreshed } = await supabaseAdmin.from("generated_videos")
+    .select("*")
+    .eq("id", jobId)
+    .single();
+
+  return refreshed ?? row;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeadersFor(req) });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
+        status: 401,
+        headers: jsonHeadersFor(req),
+      });
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")?.trim();
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+    const appOrigin = Deno.env.get("APP_ORIGIN")?.trim() ||
+      Deno.env.get("VITE_APP_URL")?.trim() || "";
+
+    const envCheck = checkPipelineEnv();
+    logPipeline("env", "check", {
+      ...envCheck,
+      replicateApiToken: envCheck.replicateApiToken ? "[set]" : "[missing]",
+      openaiApiKey: envCheck.openaiApiKey ? "[set]" : "[missing]",
+      lumaApiKey: envCheck.lumaApiKey ? "[set]" : "[missing]",
+    });
+
+    if (envCheck.missingRequired.length > 0) {
+      return jsonError(req,
+        "env",
+        `Supabase-Umgebungsvariablen fehlen: ${envCheck.missingRequired.join(", ")}`,
+        500,
+        { missing: envCheck.missingRequired },
+      );
+    }
+
+    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+      return jsonError(req,"env", "Supabase-Umgebungsvariablen fehlen", 500);
+    }
+
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser(token);
+
+    if (authError || !user?.id) {
+      return new Response(JSON.stringify({ error: "User nicht gefunden" }), {
+        status: 401,
+        headers: jsonHeadersFor(req),
+      });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const action = String(body.action ?? "create") as Action;
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    if (action === "health") {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          env: {
+            ...envCheck,
+            replicateApiToken: envCheck.replicateApiToken,
+            openaiApiKey: envCheck.openaiApiKey,
+            lumaApiKey: envCheck.lumaApiKey,
+          },
+        }),
+        { headers: jsonHeadersFor(req) },
+      );
+    }
+
+    if (action === "history") {
+      const limit = Math.min(Number(body.limit) || 20, 50);
+      const { data, error } = await supabaseAdmin
+        .from("generated_videos")
+        .select(
+          "id, trend_id, status, video_url, poster_url, hook_text, captions, voiceover_url, music_url, duration, provider, created_at, error_message",
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ ok: true, items: data ?? [] }), {
+        headers: jsonHeadersFor(req),
+      });
+    }
+
+    if (action === "library") {
+      const limit = Math.min(Number(body.limit) || 50, 100);
+      const platformFilter = typeof body.platform === "string"
+        ? body.platform.trim()
+        : "";
+      const statusFilter = typeof body.status === "string"
+        ? body.status.trim()
+        : "";
+
+      let genQuery = supabaseAdmin
+        .from("ai_generations")
+        .select(
+          "id, tool_used, niche, platform, prompt, credits_used, status, output_url, created_at, updated_at, generated_videos ( id, status, video_url, poster_url, hook_text, captions, voiceover_url, music_url, duration, trend_id, provider, error_message )",
+        )
+        .eq("user_id", user.id)
+        .eq("generation_type", "video")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+
+      if (platformFilter) {
+        genQuery = genQuery.ilike("platform", platformFilter);
+      }
+      if (statusFilter) {
+        genQuery = genQuery.eq("status", statusFilter);
+      }
+
+      const { data: generations, error: genErr } = await genQuery;
+      if (genErr) throw genErr;
+
+      const items = (generations ?? []).map((row) =>
+        formatLibraryRow(row as Record<string, unknown>, appOrigin)
+      );
+
+      const seenJobIds = new Set(
+        items.map((i) => i.jobId).filter(Boolean) as string[],
+      );
+
+      const { data: orphanJobs } = await supabaseAdmin
+        .from("generated_videos")
+        .select(
+          "id, trend_id, status, video_url, poster_url, hook_text, captions, voiceover_url, music_url, duration, provider, created_at, error_message, metadata",
+        )
+        .eq("user_id", user.id)
+        .is("generation_id", null)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      for (const job of orphanJobs ?? []) {
+        if (seenJobIds.has(job.id)) continue;
+        const meta = (job.metadata ?? {}) as Record<string, string>;
+        if (
+          platformFilter &&
+          !String(meta.platform ?? "").toLowerCase().includes(
+            platformFilter.toLowerCase(),
+          )
+        ) {
+          continue;
+        }
+        if (statusFilter && job.status !== statusFilter) continue;
+        items.push(formatOrphanJobRow(job, appOrigin));
+      }
+
+      items.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+      return new Response(JSON.stringify({ ok: true, items }), {
+        headers: jsonHeadersFor(req),
+      });
+    }
+
+    if (action === "delete") {
+      const generationId = typeof body.generation_id === "string"
+        ? body.generation_id
+        : "";
+      const jobId = typeof body.job_id === "string" ? body.job_id : "";
+
+      if (!generationId && !jobId) {
+        return new Response(JSON.stringify({ error: "generation_id oder job_id fehlt" }), {
+          status: 400,
+          headers: jsonHeadersFor(req),
+        });
+      }
+
+      const urlsToRemove: string[] = [];
+
+      if (jobId) {
+        const { data: job } = await supabaseAdmin
+          .from("generated_videos")
+          .select("id, video_url, poster_url, voiceover_url, user_id")
+          .eq("id", jobId)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (job) {
+          if (job.video_url) urlsToRemove.push(job.video_url);
+          if (job.poster_url) urlsToRemove.push(job.poster_url);
+          if (job.voiceover_url) urlsToRemove.push(job.voiceover_url);
+          await supabaseAdmin.from("generated_videos").delete().eq("id", jobId);
+        }
+      }
+
+      if (generationId) {
+        const { data: linkedJobs } = await supabaseAdmin
+          .from("generated_videos")
+          .select("id, video_url, poster_url, voiceover_url")
+          .eq("generation_id", generationId)
+          .eq("user_id", user.id);
+
+        for (const job of linkedJobs ?? []) {
+          if (job.video_url) urlsToRemove.push(job.video_url);
+          if (job.poster_url) urlsToRemove.push(job.poster_url);
+          if (job.voiceover_url) urlsToRemove.push(job.voiceover_url);
+          await supabaseAdmin.from("generated_videos").delete().eq("id", job.id);
+        }
+
+        await supabaseAdmin
+          .from("ai_generations")
+          .delete()
+          .eq("id", generationId)
+          .eq("user_id", user.id);
+      }
+
+      for (const url of [...new Set(urlsToRemove)]) {
+        const parsed = parseStorageObject(url);
+        if (parsed) {
+          await supabaseAdmin.storage.from(parsed.bucket).remove([parsed.path]);
+        }
+      }
+
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: jsonHeadersFor(req),
+      });
+    }
+
+    if (action === "poll" || action === "retry") {
+      const jobId = String(body.job_id ?? "");
+      if (!jobId) {
+        return new Response(JSON.stringify({ error: "job_id fehlt" }), {
+          status: 400,
+          headers: jsonHeadersFor(req),
+        });
+      }
+
+      const { data: row, error: fetchErr } = await supabaseAdmin
+        .from("generated_videos")
+        .select("*")
+        .eq("id", jobId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (fetchErr || !row) {
+        return new Response(JSON.stringify({ error: "Job nicht gefunden" }), {
+          status: 404,
+          headers: jsonHeadersFor(req),
+        });
+      }
+
+      if (action === "retry" && row.status === "failed") {
+        const meta = (row.metadata ?? {}) as Record<string, unknown>;
+        const trendInput = (meta.trendInput ?? {}) as TrendStrategyInput;
+
+        await supabaseAdmin.from("generated_videos").update({
+          status: "queued",
+          retry_count: (row.retry_count ?? 0) + 1,
+          error_message: null,
+          updated_at: new Date().toISOString(),
+        }).eq("id", jobId);
+
+        try {
+          const updated = await runStrategyJob(
+            supabaseAdmin,
+            user.id,
+            jobId,
+            {
+              ...trendInput,
+              trendId: row.trend_id ?? jobId,
+              title: trendInput.title ?? row.hook_text ?? "Trend Video",
+            },
+            row.generation_id ?? null,
+            meta,
+          );
+
+          const finalRow = await startProviderRenderAfterStrategy(
+            supabaseAdmin,
+            user.id,
+            updated ?? row,
+          );
+
+          return new Response(JSON.stringify({
+            ok: true,
+            job: formatJobRow(finalRow, appOrigin),
+          }), { headers: jsonHeadersFor(req) });
+        } catch (strategyErr) {
+          const message = strategyErr instanceof Error
+            ? strategyErr.message
+            : String(strategyErr);
+          await supabaseAdmin.from("generated_videos").update({
+            status: "failed",
+            error_message: `[prompt] ${message}`,
+            updated_at: new Date().toISOString(),
+          }).eq("id", jobId);
+
+          return jsonError(req,"prompt", message, 502);
+        }
+      }
+
+      if (row.status === "failed") {
+        return new Response(JSON.stringify({
+          ok: true,
+          job: formatJobRow(row, appOrigin),
+        }), { headers: jsonHeadersFor(req) });
+      }
+
+      if (row.video_url) {
+        return new Response(JSON.stringify({
+          ok: true,
+          job: formatJobRow(row, appOrigin),
+        }), { headers: jsonHeadersFor(req) });
+      }
+
+      if (!row.external_job_id) {
+        return new Response(JSON.stringify({
+          ok: true,
+          job: formatJobRow(row, appOrigin),
+        }), { headers: jsonHeadersFor(req) });
+      }
+
+      const polled = await pollVideoProviderJob({
+        id: row.external_job_id,
+        provider: row.provider ?? "replicate",
+      });
+
+      if (polled.status === "succeeded" && polled.outputUrl) {
+        const updated = await finalizeProviderOutput(
+          supabaseAdmin,
+          user.id,
+          jobId,
+          row,
+          polled.outputUrl,
+        );
+
+        return new Response(JSON.stringify({
+          ok: true,
+          job: formatJobRow(updated, appOrigin),
+        }), { headers: jsonHeadersFor(req) });
+      }
+
+      if (polled.status === "failed") {
+        const providerErr = polled.error ?? "Provider-Fehler"
+        logPipeline("video_generation", "provider failed", {
+          jobId,
+          error: providerErr,
+        })
+        await supabaseAdmin.from("generated_videos").update({
+          status: "failed",
+          error_message: `[video_generation] ${providerErr}`,
+          updated_at: new Date().toISOString(),
+        }).eq("id", jobId);
+      } else {
+        await supabaseAdmin.from("generated_videos").update({
+          status: polled.status === "starting" ? "queued" : "generating",
+          updated_at: new Date().toISOString(),
+        }).eq("id", jobId);
+      }
+
+      const { data: refreshed } = await supabaseAdmin.from("generated_videos")
+        .select("*").eq("id", jobId).single();
+
+      return new Response(JSON.stringify({
+        ok: true,
+        job: formatJobRow(refreshed ?? row, appOrigin),
+      }), { headers: jsonHeadersFor(req) });
+    }
+
+    // create — OpenAI strategy blueprint, then Replicate/Luma render
+    const trendId = String(body.trend_id ?? "");
+    const title = String(body.title ?? "Trend Video");
+    const generationId = typeof body.generation_id === "string"
+      ? body.generation_id
+      : null;
+
+    await ensureProfile(supabaseAdmin, user.id, user.email);
+
+    if (!envCheck.openaiApiKey) {
+      return jsonError(req,
+        "env",
+        "OPENAI_API_KEY fehlt. Setze das Secret im Supabase Dashboard unter Edge Functions → Secrets.",
+        503,
+        { missing: ["OPENAI_API_KEY"] },
+      );
+    }
+
+    const idempotencyKey = typeof body.idempotency_key === "string"
+      ? body.idempotency_key
+      : generationId
+      ? `video:${generationId}`
+      : undefined;
+
+    const creditResult = await consumeCredits(supabaseAdmin, user.id, {
+      feature: "ai_video",
+      metadata: {
+        trend_id: trendId,
+        generation_id: generationId,
+        title,
+        mode: "strategy",
+      },
+      idempotencyKey,
+      email: user.email,
+    });
+
+    if (!creditResult.allowed) {
+      logPipeline("queue", "insufficient credits", { userId: user.id, trendId });
+      return new Response(
+        JSON.stringify({
+          ...creditResult,
+          error: creditResult.error ?? "insufficient_credits",
+        }),
+        { status: 402, headers: jsonHeadersFor(req) },
+      );
+    }
+
+    const trendInput = buildTrendStrategyInput(body, trendId, title);
+
+    logPipeline("queue", "create strategy job", {
+      trendId,
+      userId: user.id,
+      cost: creditResult.cost,
+      platform: trendInput.platform,
+    });
+
+    const { data: inserted, error: insertErr } = await supabaseAdmin
+      .from("generated_videos")
+      .insert({
+        user_id: user.id,
+        generation_id: generationId,
+        trend_id: trendId || null,
+        status: "queued",
+        provider: "openai-strategy",
+        aspect_ratio: "9:16",
+        has_audio: false,
+        metadata: {
+          mode: "strategy",
+          niche: trendInput.niche,
+          platform: trendInput.platform,
+          studio_style: body.studio_style,
+          studio_duration: body.studio_duration,
+          enable_voiceover: body.enable_voiceover !== false,
+          enable_captions: body.enable_captions !== false,
+          trendInput,
+        },
+      })
+      .select("*")
+      .single();
+
+    if (insertErr || !inserted) {
+      return jsonError(req,
+        "queue",
+        insertErr?.message ?? "Datenbank-Insert fehlgeschlagen",
+        500,
+        { code: insertErr?.code },
+      );
+    }
+
+    try {
+      const done = await runStrategyJob(
+        supabaseAdmin,
+        user.id,
+        inserted.id,
+        trendInput,
+        generationId,
+        (inserted.metadata ?? {}) as Record<string, unknown>,
+      );
+
+      logPipeline("prompt", "strategy complete", {
+        jobId: inserted.id,
+        hooks: (done?.metadata as Record<string, unknown>)?.blueprint
+          ? "ok"
+          : "missing",
+      });
+
+      const finalRow = await startProviderRenderAfterStrategy(
+        supabaseAdmin,
+        user.id,
+        done ?? inserted,
+      );
+
+      return new Response(JSON.stringify({
+        ok: true,
+        job: formatJobRow(finalRow, appOrigin),
+      }), { headers: jsonHeadersFor(req) });
+    } catch (strategyErr) {
+      const message = strategyErr instanceof Error
+        ? strategyErr.message
+        : String(strategyErr);
+      logPipeline("prompt", "strategy failed", { jobId: inserted.id, message });
+
+      await supabaseAdmin.from("generated_videos").update({
+        status: "failed",
+        error_message: `[prompt] ${message}`,
+        updated_at: new Date().toISOString(),
+      }).eq("id", inserted.id);
+
+      const { data: failedRow } = await supabaseAdmin.from("generated_videos")
+        .select("*")
+        .eq("id", inserted.id)
+        .single();
+
+      return new Response(JSON.stringify({
+        ok: true,
+        job: formatJobRow(failedRow ?? inserted, appOrigin),
+      }), { headers: jsonHeadersFor(req) });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Interner Fehler";
+    console.error("[generate-video][unknown]", err);
+    return jsonError(req,"compose", message, 500, {
+      type: err instanceof Error ? err.name : "unknown",
+    });
+  }
+});
+
+function parseStorageObject(
+  url: string,
+): { bucket: string; path: string } | null {
+  try {
+    const parsed = new URL(url);
+    const match = parsed.pathname.match(
+      /\/storage\/v1\/object\/public\/([^/]+)\/(.+)/,
+    );
+    if (!match) return null;
+    return { bucket: match[1], path: decodeURIComponent(match[2]) };
+  } catch {
+    return null;
+  }
+}
+
+function formatLibraryRow(
+  row: Record<string, unknown>,
+  appOrigin: string,
+) {
+  const jobs = Array.isArray(row.generated_videos)
+    ? row.generated_videos
+    : row.generated_videos
+    ? [row.generated_videos]
+    : [];
+  const job = (jobs[0] ?? {}) as Record<string, unknown>;
+  const jobFormatted = Object.keys(job).length
+    ? formatJobRow(job, appOrigin)
+    : null;
+
+  let videoUrl = (jobFormatted?.videoUrl ?? row.output_url) as string | undefined;
+  let posterUrl = jobFormatted?.posterUrl as string | undefined;
+  if (videoUrl?.startsWith("/") && appOrigin) {
+    videoUrl = `${appOrigin.replace(/\/$/, "")}${videoUrl}`;
+  }
+  if (posterUrl?.startsWith("/") && appOrigin) {
+    posterUrl = `${appOrigin.replace(/\/$/, "")}${posterUrl}`;
+  }
+
+  const prompt = String(row.prompt ?? "");
+  const hookText = (jobFormatted?.hookText ?? prompt) as string;
+
+  return {
+    id: row.id,
+    generationId: row.id,
+    jobId: jobFormatted?.id ?? null,
+    title: hookText.slice(0, 80) || prompt.slice(0, 80) || "AI Video",
+    hookText,
+    niche: String(row.niche ?? ""),
+    platform: String(row.platform ?? ""),
+    status: String(row.status ?? jobFormatted?.status ?? "queued"),
+    creditsUsed: Number(row.credits_used ?? 0),
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+    duration: jobFormatted?.duration ?? "0:15",
+    videoUrl: videoUrl ?? null,
+    posterUrl: posterUrl ?? null,
+    captions: jobFormatted?.captions ?? [],
+    voiceoverUrl: jobFormatted?.voiceoverUrl ?? null,
+    musicUrl: jobFormatted?.musicUrl ?? null,
+    provider: jobFormatted?.provider ?? null,
+    trendId: jobFormatted?.trendId ?? null,
+    errorMessage: jobFormatted?.errorMessage ?? row.error_message ?? null,
+  };
+}
+
+function formatOrphanJobRow(
+  row: Record<string, unknown>,
+  appOrigin: string,
+) {
+  const job = formatJobRow(row, appOrigin);
+  const meta = (row.metadata ?? {}) as Record<string, string>;
+  return {
+    id: `job-${row.id}`,
+    generationId: null,
+    jobId: job.id,
+    title: (job.hookText ?? "AI Video").slice(0, 80),
+    hookText: job.hookText,
+    niche: meta.niche ?? "",
+    platform: meta.platform ?? "",
+    status: job.status,
+    creditsUsed: 0,
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+    duration: job.duration,
+    videoUrl: job.videoUrl ?? null,
+    posterUrl: job.posterUrl ?? null,
+    captions: job.captions,
+    voiceoverUrl: job.voiceoverUrl,
+    musicUrl: job.musicUrl,
+    provider: job.provider,
+    trendId: job.trendId,
+    errorMessage: job.errorMessage,
+  };
+}
+
+function formatJobRow(
+  row: Record<string, unknown>,
+  appOrigin: string,
+) {
+  let videoUrl = row.video_url as string | undefined;
+  let posterUrl = row.poster_url as string | undefined;
+
+  if (videoUrl?.startsWith("/") && appOrigin) {
+    videoUrl = `${appOrigin.replace(/\/$/, "")}${videoUrl}`;
+  }
+  if (posterUrl?.startsWith("/") && appOrigin) {
+    posterUrl = `${appOrigin.replace(/\/$/, "")}${posterUrl}`;
+  }
+
+  const meta = (row.metadata ?? {}) as Record<string, unknown>;
+  const blueprint = meta.blueprint ?? null;
+  const postingStrategy = typeof meta.postingStrategy === "string"
+    ? meta.postingStrategy
+    : undefined;
+
+  return {
+    id: row.id,
+    status: row.status,
+    provider: row.provider,
+    videoUrl,
+    posterUrl,
+    hookText: row.hook_text,
+    captions: row.captions ?? [],
+    scenePrompt: row.scene_prompt ?? row.prompt,
+    pacing: meta.pacing as string | undefined,
+    motionStyle: meta.motionStyle as string | undefined,
+    visualMood: meta.visualMood as string | undefined,
+    voiceoverUrl: row.voiceover_url,
+    musicUrl: row.music_url,
+    duration: row.duration ?? "0:15",
+    hasAudio: row.has_audio ?? false,
+    errorMessage: row.error_message,
+    trendId: row.trend_id,
+    createdAt: row.created_at,
+    blueprint,
+    postingStrategy,
+    mode: meta.mode === "strategy" ? "strategy" : "video",
+  };
+}

@@ -1,0 +1,8 @@
+export { DashboardPage } from '@/views/DashboardPage'
+export { TrendIntelligencePage } from '@/views/trend-intelligence/TrendIntelligencePage'
+export { SavedTrendsPage } from '@/views/SavedTrendsPage'
+export { HookGeneratorPage } from '@/views/HookGeneratorPage'
+export { SettingsPage } from '@/views/SettingsPage'
+export { AdCopyGeneratorPage } from '@/views/tools/AdCopyGeneratorPage'
+export { SeoTitleGeneratorPage } from '@/views/tools/SeoTitleGeneratorPage'
+export { LandingPageAnalyzerPage } from '@/views/tools/LandingPageAnalyzerPage'

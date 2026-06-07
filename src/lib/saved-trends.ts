@@ -1,0 +1,88 @@
+import { logActivity } from '@/lib/activity'
+import type { SavedTrendRecord, TrendIntelligence } from '@/types/trend-intelligence'
+
+const STORAGE_KEY = 'nextrends_saved_trends'
+const MAX_SAVED = 50
+
+/** Supabase table name for future sync — `saved_trends` */
+export const SAVED_TRENDS_TABLE = 'saved_trends' as const
+
+function dedupeRecords(records: SavedTrendRecord[]): SavedTrendRecord[] {
+  const seen = new Set<string>()
+  const unique: SavedTrendRecord[] = []
+
+  for (const record of records) {
+    const id = record.trend?.id
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    unique.push(record)
+  }
+
+  return unique
+}
+
+function readAll(): SavedTrendRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as SavedTrendRecord[]
+    if (!Array.isArray(parsed)) return []
+    const deduped = dedupeRecords(parsed)
+    if (deduped.length !== parsed.length) {
+      writeAll(deduped)
+    }
+    return deduped
+  } catch {
+    return []
+  }
+}
+
+function writeAll(records: SavedTrendRecord[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dedupeRecords(records).slice(0, MAX_SAVED)))
+  } catch {
+    // ignore quota errors
+  }
+}
+
+export function getSavedTrendRecords(): SavedTrendRecord[] {
+  return readAll().sort(
+    (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime(),
+  )
+}
+
+export function getSavedTrends(): TrendIntelligence[] {
+  return getSavedTrendRecords().map((r) => ({ ...r.trend, savedAt: r.savedAt }))
+}
+
+export function isTrendSaved(trendId: string): boolean {
+  return readAll().some((r) => r.trend.id === trendId)
+}
+
+export function saveTrend(trend: TrendIntelligence): boolean {
+  const records = readAll()
+  if (records.some((r) => r.trend.id === trend.id)) return false
+
+  const record: SavedTrendRecord = {
+    trend: { ...trend, savedAt: new Date().toISOString() },
+    savedAt: new Date().toISOString(),
+  }
+
+  writeAll([record, ...records])
+  logActivity('Saved Trends', `Trend gespeichert: ${trend.title}`, 'saved')
+  return true
+}
+
+export function removeSavedTrend(trendId: string): void {
+  writeAll(readAll().filter((r) => r.trend.id !== trendId))
+}
+
+export function toggleSavedTrend(trend: TrendIntelligence): boolean {
+  if (isTrendSaved(trend.id)) {
+    removeSavedTrend(trend.id)
+    return false
+  }
+  saveTrend(trend)
+  return true
+}
+

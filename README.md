@@ -1,3 +1,23 @@
+# NexTrends
+
+React + TypeScript + Vite app with Supabase auth, Stripe, and an admin dashboard at `/admin`.
+
+## Admin API deployment
+
+The admin dashboard requires the **`admin-api`** edge function. Full guide:
+
+**[docs/ADMIN_API_DEPLOY.md](docs/ADMIN_API_DEPLOY.md)**
+
+Quick deploy:
+
+```bash
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+npm run deploy:admin
+```
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
