@@ -15,6 +15,7 @@ export type TrendSessionSnapshot = {
   platform: ScoutPlatform
   trends: TrendIntelligence[]
   isDemo: boolean
+  hasUserSearch: boolean
   view: TrendsView
 }
 
@@ -24,6 +25,7 @@ function toSnapshot(saved: PersistedTrendSession): TrendSessionSnapshot {
     platform: saved.platform,
     trends: saved.trends,
     isDemo: saved.isDemo,
+    hasUserSearch: saved.hasUserSearch,
     view: saved.view,
   }
 }

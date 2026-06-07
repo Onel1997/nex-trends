@@ -21,7 +21,7 @@ import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { formatUiCreditBalance, getUiCreditSnapshot } from '@/lib/credits/display'
 import { getBrowserSearch } from '@/lib/runtime'
 import { createSearchNonce, getDemoUserSeed } from '@/lib/demo-trend-seed'
-import { markDemoSeen, shouldShowDemoOnLoad } from '@/lib/trend-intelligence'
+import { markDemoSeen } from '@/lib/trend-intelligence'
 import { runAiGenerationPipeline } from '@/lib/ai-generation-pipeline'
 import { trackAnalyticsEvent } from '@/lib/track-event'
 import {
@@ -48,16 +48,16 @@ export function TrendIntelligencePanel() {
     if (typeof window === 'undefined') return null
     return new URLSearchParams(getBrowserSearch()).get('trend')
   })
-  const [hasSearched, setHasSearched] = useState(
-    () => Boolean(initial?.searchQuery?.trim()) && !initial?.isDemo,
-  )
+  const [hasSearched, setHasSearched] = useState(() => Boolean(initial?.hasUserSearch))
   const [isSearching, setIsSearching] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [searchNonce, setSearchNonce] = useState<string | null>(null)
   const [isLoadingDemo, setIsLoadingDemo] = useState(false)
-  const [trends, setTrends] = useState<TrendIntelligence[]>(initial?.trends ?? [])
-  const [isDemo, setIsDemo] = useState(initial?.isDemo ?? false)
+  const [trends, setTrends] = useState<TrendIntelligence[]>(
+    () => (initial?.hasUserSearch ? initial.trends : []),
+  )
+  const [isDemo, setIsDemo] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const sessionReadyRef = useRef(false)
@@ -84,31 +84,22 @@ export function TrendIntelligencePanel() {
 
   useEffect(() => {
     if (isRestoring) return
-
     sessionReadyRef.current = true
-
-    if (initial?.trends.length) {
-      return
-    }
-
-    if (shouldShowDemoOnLoad()) {
-      queueMicrotask(() => {
-        void loadDemo()
-      })
-    }
-  }, [isRestoring, initial, loadDemo])
+  }, [isRestoring])
 
   useEffect(() => {
     if (!sessionReadyRef.current) return
+    if (isDemo || !hasSearched) return
 
     persist({
       searchQuery,
       platform,
       trends,
-      isDemo,
+      isDemo: false,
+      hasUserSearch: true,
       view,
     })
-  }, [searchQuery, platform, trends, isDemo, view, persist])
+  }, [searchQuery, platform, trends, isDemo, hasSearched, view, persist])
 
   useEffect(() => {
     if (isRestoring || scrollRestoredRef.current || trends.length === 0) return

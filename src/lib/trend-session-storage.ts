@@ -4,8 +4,8 @@ import { sanitizeTrendMedia } from '@/lib/trend-media-assignment'
 import type { TrendIntelligence } from '@/types/trend-intelligence'
 
 const STORAGE_KEY = 'nextrends_ti_session'
-/** Bump when demo media pool / assignment logic changes */
-const SESSION_VERSION = 3
+/** Bump when session shape / eligibility rules change */
+const SESSION_VERSION = 4
 const MAX_TRENDS = 40
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -15,6 +15,8 @@ export type PersistedTrendSession = {
   platform: ScoutPlatform
   trends: TrendIntelligence[]
   isDemo: boolean
+  /** True only after the user explicitly submitted a Trend Intelligence search */
+  hasUserSearch: boolean
   view: TrendsView
   scrollTop: number
   updatedAt: number
@@ -59,15 +61,17 @@ export function loadTrendSession(): PersistedTrendSession | null {
       .slice(0, MAX_TRENDS)
       .map((trend, index) => sanitizeTrendMedia(trend, index))
     const searchQuery = typeof parsed.searchQuery === 'string' ? parsed.searchQuery : ''
+    const hasUserSearch = parsed.hasUserSearch === true
     const hasContent = trends.length > 0 || searchQuery.trim() !== ''
-    if (!hasContent) return null
+    if (!hasContent || !hasUserSearch) return null
 
     return {
       version: SESSION_VERSION,
       searchQuery,
       platform: parsed.platform,
       trends,
-      isDemo: Boolean(parsed.isDemo),
+      isDemo: false,
+      hasUserSearch: true,
       view: parsed.view,
       scrollTop:
         typeof parsed.scrollTop === 'number' && parsed.scrollTop >= 0
@@ -81,13 +85,16 @@ export function loadTrendSession(): PersistedTrendSession | null {
 }
 
 export function saveTrendSession(session: Omit<PersistedTrendSession, 'version' | 'updatedAt'>): void {
+  if (!session.hasUserSearch || session.isDemo) return
+
   try {
     const payload: PersistedTrendSession = {
       version: SESSION_VERSION,
       searchQuery: session.searchQuery,
       platform: session.platform,
       trends: session.trends.slice(0, MAX_TRENDS),
-      isDemo: session.isDemo,
+      isDemo: false,
+      hasUserSearch: session.hasUserSearch,
       view: session.view,
       scrollTop: Math.max(0, session.scrollTop),
       updatedAt: Date.now(),
@@ -96,6 +103,17 @@ export function saveTrendSession(session: Omit<PersistedTrendSession, 'version' 
   } catch {
     // quota / private mode
   }
+}
+
+/** Trend cards eligible for Hook Generator — only from explicit user searches */
+export function loadHookTrendContext(): TrendIntelligence[] {
+  const session = loadTrendSession()
+  if (!session?.hasUserSearch || session.isDemo) return []
+  return session.trends
+}
+
+export function trendTopicFromIntelligence(trend: TrendIntelligence): string {
+  return trend.niche?.trim() || trend.title
 }
 
 export function clearTrendSession(): void {

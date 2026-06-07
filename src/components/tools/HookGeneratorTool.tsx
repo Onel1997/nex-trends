@@ -40,7 +40,10 @@ import { recordHookGeneration } from '@/lib/hook-analytics'
 import { consumeHookRegeneratePrefill } from '@/lib/hook-regenerate-session'
 import { cn } from '@/lib'
 import { trendToHookInput, type TrendHookStyle } from '@/lib/openai'
-import { loadTrendSession } from '@/lib/trend-session-storage'
+import {
+  loadHookTrendContext,
+  trendTopicFromIntelligence,
+} from '@/lib/trend-session-storage'
 import {
   HOOK_GENERATION_COST,
   HOOK_PLATFORM_OPTIONS,
@@ -84,11 +87,7 @@ export function HookGeneratorTool() {
   const { copiedHook, copyHook, recentCopies } = useHookClipboard()
   const { mostSavedTone, savedCount } = useHookInsights(savedHooks)
 
-  const sessionTrends = useMemo(() => {
-    const session = loadTrendSession()
-    if (!session || session.isDemo) return []
-    return session.trends
-  }, [])
+  const sessionTrends = useMemo(() => loadHookTrendContext(), [])
 
   const [topic, setTopic] = useState('')
   const [tone, setTone] = useState<HookTone>('aggressive')
@@ -150,6 +149,20 @@ export function HookGeneratorTool() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount for session prefill
   }, [])
 
+  const handleTrendSelect = useCallback(
+    (trendId: string) => {
+      setSelectedTrendId((current) => {
+        const next = current === trendId ? null : trendId
+        if (next) {
+          const trend = sessionTrends.find((t) => t.id === next)
+          if (trend) setTopic(trendTopicFromIntelligence(trend))
+        }
+        return next
+      })
+    },
+    [sessionTrends],
+  )
+
   const buildRequest = useCallback(
     (overrides?: Partial<{ topic: string; tone: HookTone; platform: HookPlatform }>) => {
       const resolvedTone = overrides?.tone ?? tone
@@ -162,8 +175,11 @@ export function HookGeneratorTool() {
           resolvedTone as TrendHookStyle,
           trimmedTopic || undefined,
         )
+        const topicForRequest =
+          trimmedTopic.length >= 2 ? trimmedTopic : input.niche
+
         return {
-          topic: input.niche,
+          topic: topicForRequest,
           tone: resolvedTone,
           platform: (input.platform as HookPlatform) || resolvedPlatform,
           context: [
@@ -211,6 +227,7 @@ export function HookGeneratorTool() {
 
   const handleRegenerateFromHistory = useCallback(
     (row: GeneratedHooksRow) => {
+      setSelectedTrendId(null)
       setTopic(row.topic)
       setTone(row.tone as HookTone)
       setPlatform(row.platform as HookPlatform)
@@ -308,9 +325,7 @@ export function HookGeneratorTool() {
               <button
                 key={trend.id}
                 type="button"
-                onClick={() =>
-                  setSelectedTrendId((id) => (id === trend.id ? null : trend.id))
-                }
+                onClick={() => handleTrendSelect(trend.id)}
                 className={cn(
                   'shrink-0 max-w-[200px] min-h-11 rounded-xl border px-3 py-2 text-left transition-smooth touch-manipulation',
                   selectedTrendId === trend.id
@@ -507,6 +522,10 @@ export function HookGeneratorTool() {
             onRefresh={() => void refreshHistory()}
             onSelect={(row) => {
               loadFromHistory(row)
+              setSelectedTrendId(null)
+              setTopic(row.topic)
+              setTone(row.tone as HookTone)
+              setPlatform(row.platform as HookPlatform)
               setActiveTab('results')
               showToast({ type: 'success', title: 'Generierung geladen' })
             }}
