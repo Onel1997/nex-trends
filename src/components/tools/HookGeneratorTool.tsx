@@ -377,23 +377,13 @@ export function HookGeneratorTool() {
           />
         </div>
 
-        <p className="mt-4 mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-600">
-          <BoltIcon className="size-3.5 text-violet-400/80" aria-hidden />
-          AI Generierung
-        </p>
-
-        <div className="hidden flex-col gap-2 sm:flex sm:flex-row sm:items-stretch">
-          {generateButtons}
+        <div className="mt-5 flex flex-col gap-2 sm:mt-4">
+          <p className="mb-0.5 hidden items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-600 sm:flex">
+            <BoltIcon className="size-3.5 text-violet-400/80" aria-hidden />
+            AI Generierung
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">{generateButtons}</div>
         </div>
-      </div>
-
-      {/* Sticky generate bar — mobile only */}
-      <div
-        className={cn(
-          'hook-mobile-sticky-actions fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl transition-smooth sm:hidden',
-        )}
-      >
-        <div className="flex flex-col gap-2">{generateButtons}</div>
       </div>
 
       <section
