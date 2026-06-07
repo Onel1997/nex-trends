@@ -186,9 +186,12 @@ export function updateAdminUser(
     is_pro?: boolean
     is_banned?: boolean
   },
-): Promise<{ profile: AdminUser }> {
-  return adminApiRaw<{ profile: AdminUser }>('update_user', { userId, ...patch })
-    .then((r) => r.data)
+): Promise<{ profile: AdminUser; ok?: boolean }> {
+  return adminApiRaw<{ profile: AdminUser; ok?: boolean }>('update_user', { userId, ...patch })
+    .then((r) => {
+      logAdminDebug('update_user response', r.data)
+      return r.data
+    })
     .catch((err) => {
       throw new Error(formatAdminWriteError(err))
     })

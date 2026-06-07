@@ -20,7 +20,7 @@ import {
   planMonthlyCredits,
   type PlanId,
 } from "../_shared/plans.ts";
-import { applyPlanToProfile } from "../_shared/usage.ts";
+import { applyPlanToProfile, ensureProfile } from "../_shared/usage.ts";
 
 const MAX_ADMIN_SET_CREDITS = planMonthlyCredits("studio") ?? 5000;
 
@@ -369,26 +369,60 @@ Deno.serve(async (req) => {
 
       const updates: Record<string, unknown> = {};
       let planApplied = false;
+      let appliedPlanRow: ProfileRow | null = null;
+
+      const authLookup = await supabaseAdmin.auth.admin.getUserById(userId);
+      const targetEmail = authLookup.data.user?.email ?? null;
 
       if (typeof body.plan === "string" && body.plan.trim()) {
         const plan = normalizePlanId(body.plan) as PlanId;
         const subscriptionStatus = plan === "free" ? "inactive" : "active";
-        await applyPlanToProfile(
+
+        await ensureProfile(supabaseAdmin, userId, targetEmail);
+        const applied = await applyPlanToProfile(
           supabaseAdmin,
           userId,
           plan,
           subscriptionStatus,
         );
+        appliedPlanRow = {
+          id: userId,
+          plan: applied.plan ?? plan,
+          is_pro: applied.is_pro,
+          subscription_status: applied.subscription_status,
+          credit_balance: applied.credit_balance,
+          monthly_usage_count: applied.monthly_usage_count,
+        };
         planApplied = true;
+        console.log("[admin-api] update_user plan", {
+          userId,
+          plan,
+          subscriptionStatus,
+          profile: appliedPlanRow,
+        });
       } else if (typeof body.is_pro === "boolean") {
         const plan: PlanId = body.is_pro ? "pro_creator" : "free";
-        await applyPlanToProfile(
+        await ensureProfile(supabaseAdmin, userId, targetEmail);
+        const applied = await applyPlanToProfile(
           supabaseAdmin,
           userId,
           plan,
           body.is_pro ? "active" : "inactive",
         );
+        appliedPlanRow = {
+          id: userId,
+          plan: applied.plan ?? plan,
+          is_pro: applied.is_pro,
+          subscription_status: applied.subscription_status,
+          credit_balance: applied.credit_balance,
+          monthly_usage_count: applied.monthly_usage_count,
+        };
         planApplied = true;
+        console.log("[admin-api] update_user is_pro", {
+          userId,
+          is_pro: body.is_pro,
+          profile: appliedPlanRow,
+        });
       }
 
       if (typeof body.credit_delta === "number") {
@@ -465,7 +499,22 @@ Deno.serve(async (req) => {
         }
       }
 
-      return jsonResponse({ profile: data });
+      const profileRow = asProfileRow(
+        (data ?? appliedPlanRow ?? { id: userId }) as Record<string, unknown>,
+      );
+      const responseProfile = {
+        ...profileRow,
+        email: targetEmail ?? "—",
+        created_at: authLookup.data.user?.created_at ?? new Date(0).toISOString(),
+      };
+
+      console.log("[admin-api] update_user ok", {
+        userId,
+        planApplied,
+        profile: responseProfile,
+      });
+
+      return jsonResponse({ profile: responseProfile, ok: true });
     }
 
     if (action === "trend_stats") {

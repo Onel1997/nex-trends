@@ -184,7 +184,21 @@ export async function incrementUsage(
   });
 }
 
-/** Apply plan after Stripe subscription sync */
+const APPLY_PLAN_SELECT =
+  "id, plan, is_pro, subscription_status, credit_balance, monthly_usage_count, usage_reset_date";
+
+function isOptionalProfileColumnError(error: { message?: string; code?: string } | null): boolean {
+  if (!error) return false;
+  const msg = (error.message ?? "").toLowerCase();
+  const code = error.code ?? "";
+  return (
+    code === "42703" ||
+    code === "PGRST204" ||
+    (msg.includes("column") && (msg.includes("credits_reset_at") || msg.includes("usage_reset_date")))
+  );
+}
+
+/** Apply plan after Stripe subscription sync or admin assignment */
 export async function applyPlanToProfile(
   supabaseAdmin: SupabaseClient,
   userId: string,
@@ -195,7 +209,7 @@ export async function applyPlanToProfile(
     subscriptionId?: string | null;
     periodEnd?: string | null;
   },
-): Promise<void> {
+): Promise<ProfileUsageRow> {
   const isActive = subscriptionStatus === "active";
   const monthlyCredits = planMonthlyCredits(plan);
 
@@ -235,13 +249,47 @@ export async function applyPlanToProfile(
     update.credit_balance = Math.min(current, freeAllowance);
   }
 
-  const { error } = await supabaseAdmin
-    .from("profiles")
-    .update(update)
-    .eq("id", userId);
+  const writeProfile = async (payload: Record<string, unknown>) =>
+    supabaseAdmin
+      .from("profiles")
+      .update(payload)
+      .eq("id", userId)
+      .select(APPLY_PLAN_SELECT)
+      .single();
+
+  let { data, error } = await writeProfile(update);
+
+  if (error && isOptionalProfileColumnError(error)) {
+    const fallback = { ...update };
+    delete fallback.credits_reset_at;
+    delete fallback.usage_reset_date;
+    ({ data, error } = await writeProfile(fallback));
+  }
 
   if (error) {
-    console.error("[applyPlanToProfile]", error);
+    console.error("[applyPlanToProfile] update failed", { userId, plan, error });
     throw error;
   }
+
+  const appliedPlan = normalizePlanId((data as ProfileUsageRow | null)?.plan);
+  const expectedPlan = !isActive && plan !== "founder" ? "free" : plan;
+  if (appliedPlan !== expectedPlan) {
+    console.error("[applyPlanToProfile] plan mismatch", {
+      userId,
+      expectedPlan,
+      appliedPlan,
+      row: data,
+    });
+    throw new Error("plan_update_failed");
+  }
+
+  console.log("[applyPlanToProfile] ok", {
+    userId,
+    plan: appliedPlan,
+    subscriptionStatus,
+    is_pro: (data as ProfileUsageRow).is_pro,
+    credit_balance: (data as ProfileUsageRow).credit_balance,
+  });
+
+  return data as ProfileUsageRow;
 }

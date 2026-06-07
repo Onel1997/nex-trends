@@ -44,11 +44,15 @@ export function useAdminPanelLoad<T>({
   const loadCountRef = useRef(0)
   const mountedRef = useRef(true)
   const inFlightRef = useRef(false)
+  const pendingReloadRef = useRef(false)
   const reportOfflineRef = useRef(reportOffline)
   reportOfflineRef.current = reportOffline
 
   const runLoad = useCallback(async (options?: { silent?: boolean }) => {
-    if (inFlightRef.current) return
+    if (inFlightRef.current) {
+      pendingReloadRef.current = true
+      return
+    }
     inFlightRef.current = true
 
     const isFirstLoad = loadCountRef.current === 0
@@ -91,6 +95,12 @@ export function useAdminPanelLoad<T>({
     } finally {
       inFlightRef.current = false
       if (mountedRef.current) setLoading(false)
+      if (pendingReloadRef.current && mountedRef.current) {
+        pendingReloadRef.current = false
+        queueMicrotask(() => {
+          void runLoad({ silent: true })
+        })
+      }
     }
   }, [scope, showSkeletonOnRefetch])
 

@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { AdminErrorState } from '@/components/admin/AdminErrorState'
 import { AdminPlanBadge } from '@/components/admin/AdminPlanBadge'
 import { AdminTableSkeleton } from '@/components/admin/AdminSkeleton'
@@ -19,6 +19,7 @@ import {
   type AdminManageablePlan,
 } from '@/lib/plans'
 import { useAdminPanelLoad } from '@/hooks/useAdminPanelLoad'
+import { useToast } from '@/context/ToastContext'
 import { cn } from '@/lib'
 import type { AdminUser } from '@/types/admin'
 
@@ -105,11 +106,38 @@ function UserActions({ user, busy, onUpdate, layout = 'inline' }: UserActionsPro
   )
 }
 
+function mergeAdminUser(base: AdminUser, patch: Partial<AdminUser>): AdminUser {
+  const plan = patch.plan ? normalizePlanId(patch.plan) : resolveAdminUserPlan(base)
+  return {
+    ...base,
+    ...patch,
+    plan,
+    is_pro: patch.is_pro ?? (plan !== 'free'),
+    subscription_status:
+      patch.subscription_status ??
+      (plan === 'free' ? 'inactive' : 'active'),
+  }
+}
+
+function describeUpdate(patch: Parameters<typeof updateAdminUser>[1]): string {
+  if (patch.plan) return `Plan → ${planDisplayLabel(normalizePlanId(patch.plan))}`
+  if (patch.is_pro != null) return patch.is_pro ? 'Plan → PRO CREATOR' : 'Plan → FREE'
+  if (patch.credit_delta != null) {
+    const sign = patch.credit_delta >= 0 ? '+' : ''
+    return `Credits ${sign}${patch.credit_delta}`
+  }
+  if (patch.set_credits != null) return `Credits auf ${patch.set_credits} gesetzt`
+  if (patch.is_banned != null) return patch.is_banned ? 'Nutzer gesperrt' : 'Sperre aufgehoben'
+  return 'Nutzer aktualisiert'
+}
+
 function UserManagementPanelInner() {
+  const { showToast } = useToast()
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [writeError, setWriteError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [userOverrides, setUserOverrides] = useState<Record<string, AdminUser>>({})
 
   const { data, loading, warnings, authError, reload } = useAdminPanelLoad({
     scope: 'UserManagementPanel',
@@ -118,17 +146,55 @@ function UserManagementPanelInner() {
     empty: EMPTY_ADMIN_USERS,
   })
 
-  const users = data.users ?? []
+  const users = useMemo(() => {
+    const base = data.users ?? []
+    if (Object.keys(userOverrides).length === 0) return base
+    return base.map((user) => userOverrides[user.id] ?? user)
+  }, [data.users, userOverrides])
 
   async function runUpdate(userId: string, patch: Parameters<typeof updateAdminUser>[1]) {
+    const existing = users.find((user) => user.id === userId)
     setBusyId(userId)
     setWriteError(null)
+
+    console.log('[UserManagement] update start', { userId, patch, existingPlan: existing?.plan })
+
     try {
-      await updateAdminUser(userId, patch)
+      const result = await updateAdminUser(userId, patch)
+      console.log('[UserManagement] update result', result)
+
+      if (result.profile && existing) {
+        setUserOverrides((prev) => ({
+          ...prev,
+          [userId]: mergeAdminUser(existing, result.profile),
+        }))
+      }
+
+      showToast({
+        type: 'success',
+        title: 'Nutzer aktualisiert',
+        message: describeUpdate(patch),
+        durationMs: 4000,
+      })
+
       await reload()
+      setUserOverrides((prev) => {
+        if (!prev[userId]) return prev
+        const next = { ...prev }
+        delete next[userId]
+        return next
+      })
     } catch (err) {
       logAdminError('UserManagementPanel.update', err)
-      setWriteError(formatAdminWriteError(err))
+      const message = formatAdminWriteError(err)
+      console.error('[UserManagement] update failed', { userId, patch, err })
+      setWriteError(message)
+      showToast({
+        type: 'error',
+        title: 'Update fehlgeschlagen',
+        message,
+        durationMs: 7000,
+      })
     } finally {
       setBusyId(null)
     }
