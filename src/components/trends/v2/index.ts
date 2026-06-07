@@ -1,3 +1,4 @@
+export { TrendDetailModalV2 } from '@/components/trends/v2/TrendDetailModalV2'
 export { TrendFeedV2Panel } from '@/components/trends/v2/TrendFeedV2Panel'
 export { TrendFeedV2List } from '@/components/trends/v2/TrendFeedV2List'
 export { TrendCardV2 } from '@/components/trends/v2/TrendCardV2'

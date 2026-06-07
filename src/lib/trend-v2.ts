@@ -248,3 +248,55 @@ export function filterTrendsV2(
 export function sortTrendsByOpportunity(trends: TrendWithV2[]): TrendWithV2[] {
   return [...trends].sort((a, b) => b.v2.opportunityScore - a.v2.opportunityScore)
 }
+
+/** Insight copy for Trend Detail V2 — why this trend has creator potential */
+export function buildTrendPotentialReason(trend: TrendWithV2): string {
+  const { v2 } = trend
+  const tierMeta = OPPORTUNITY_TIER_META[v2.opportunityTier]
+  const parts: string[] = []
+
+  if (trend.whyViral?.trim()) {
+    parts.push(trend.whyViral.trim())
+  } else if (trend.aiInsight?.trim()) {
+    parts.push(trend.aiInsight.trim())
+  }
+
+  if (v2.status === 'early') {
+    parts.push(
+      'Frühes Zeitfenster — der Trend wächst, bevor die Nische gesättigt ist.',
+    )
+  } else if (v2.status === 'exploding') {
+    parts.push('Explodierender Trend mit hohem Momentum — jetzt einsteigen lohnt sich.')
+  }
+
+  if (v2.growthPercent >= 8) {
+    parts.push(
+      `Wachstum ${v2.growthPercent >= 0 ? '+' : ''}${v2.growthPercent.toFixed(0)}% in den letzten Signalen.`,
+    )
+  }
+
+  parts.push(
+    `Opportunity Score ${v2.opportunityScore} (${tierMeta.label}) — ${v2.competitionScore <= 55 ? 'moderate Konkurrenz' : 'höhere Konkurrenz, aber starke Monetarisierung'}.`,
+  )
+
+  if (trend.hookAnalysis?.whyItWorks?.trim()) {
+    parts.push(trend.hookAnalysis.whyItWorks.trim())
+  }
+
+  return parts.slice(0, 3).join(' ') || trend.engagementPrediction || 'Solides Potenzial für kurzes Video-Content in dieser Nische.'
+}
+
+export function getRecommendedContentIdea(trend: TrendIntelligence): string {
+  const idea = trend.contentIdeas?.find((item) => item.trim().length > 0)
+  if (idea) return idea
+  if (trend.creatorInspiration?.trim()) return trend.creatorInspiration.trim()
+  return 'Kurzes POV- oder Tutorial-Format mit klarem Hook in den ersten 3 Sekunden.'
+}
+
+export function getExampleHook(trend: TrendIntelligence): string {
+  const fromAnalysis = trend.hookAnalysis?.hookText?.trim()
+  if (fromAnalysis) return fromAnalysis
+  const suggestion = trend.hookSuggestions?.find((item) => item.trim().length > 0)
+  if (suggestion) return suggestion
+  return `„${trend.title}" — so startest du mit maximalem Scroll-Stop.`
+}

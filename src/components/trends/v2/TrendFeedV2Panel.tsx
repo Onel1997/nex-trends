@@ -18,18 +18,12 @@ import {
   type TrendCategoryFilterV2 as TrendCategoryFilterId,
   type TrendWithV2,
 } from '@/lib/trend-v2'
-import type { TrendIntelligence } from '@/types/trend-intelligence'
 
-const TrendDetailModal = lazy(() =>
-  import('@/components/trends/TrendDetailModal').then((m) => ({
-    default: m.TrendDetailModal,
+const TrendDetailModalV2 = lazy(() =>
+  import('@/components/trends/v2/TrendDetailModalV2').then((m) => ({
+    default: m.TrendDetailModalV2,
   })),
 )
-
-function toTrendIntelligence(trend: TrendWithV2): TrendIntelligence {
-  const { v2: _v2, ...rest } = trend
-  return rest
-}
 
 export function TrendFeedV2Panel() {
   const { showToast } = useToast()
@@ -41,7 +35,7 @@ export function TrendFeedV2Panel() {
   const [trends, setTrends] = useState<TrendWithV2[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedTrend, setSelectedTrend] = useState<TrendIntelligence | null>(null)
+  const [selectedTrend, setSelectedTrend] = useState<TrendWithV2 | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -86,7 +80,8 @@ export function TrendFeedV2Panel() {
 
   const handleToggleSave = useCallback(
     (trend: TrendWithV2): boolean => {
-      return toggleSave(toTrendIntelligence(trend))
+      const { v2: _v2, ...rest } = trend
+      return toggleSave(rest)
     },
     [toggleSave],
   )
@@ -154,7 +149,7 @@ export function TrendFeedV2Panel() {
             isSaved={isSaved}
             onToggleSave={handleToggleSave}
             onGenerateHook={handleGenerateHook}
-            onSelectTrend={(t) => setSelectedTrend(toTrendIntelligence(t))}
+            onSelectTrend={(t) => setSelectedTrend(t)}
           />
         </>
       )}
@@ -172,7 +167,7 @@ export function TrendFeedV2Panel() {
             isSaved={isSaved}
             onToggleSave={handleToggleSave}
             onGenerateHook={handleGenerateHook}
-            onSelectTrend={(t) => setSelectedTrend(toTrendIntelligence(t))}
+            onSelectTrend={(t) => setSelectedTrend(t)}
             emptyTitle="Noch keine gespeicherten Trends"
             emptyDescription="Speichere Trends aus dem Feed — deine Bibliothek wächst mit jeder Entscheidung."
           />
@@ -190,11 +185,12 @@ export function TrendFeedV2Panel() {
       )}
 
       <Suspense fallback={<TrendDetailModalLoading />}>
-        <TrendDetailModal
+        <TrendDetailModalV2
           trend={selectedTrend}
           onClose={() => setSelectedTrend(null)}
           isSaved={selectedTrend ? isSaved(selectedTrend.id) : false}
-          onToggleSave={(t) => toggleSave(t)}
+          onToggleSave={handleToggleSave}
+          onGenerateHook={handleGenerateHook}
         />
       </Suspense>
     </div>

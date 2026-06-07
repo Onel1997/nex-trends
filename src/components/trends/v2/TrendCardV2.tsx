@@ -1,4 +1,4 @@
-import { memo, useCallback, type MouseEvent } from 'react'
+import { memo, useCallback, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import { cn } from '@/lib'
 import { OPPORTUNITY_TIER_META } from '@/lib/trend-v2'
 import type { TrendWithV2 } from '@/lib/trend-v2'
@@ -87,6 +87,21 @@ function TrendCardV2Component({
     [onGenerateHook, trend],
   )
 
+  const handleCardClick = useCallback(() => {
+    onClick?.()
+  }, [onClick])
+
+  const handleCardKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLElement>) => {
+      if (!onClick) return
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        onClick()
+      }
+    },
+    [onClick],
+  )
+
   return (
     <article
       className={cn(
@@ -98,7 +113,9 @@ function TrendCardV2Component({
         'active:scale-[0.995] sm:active:scale-100',
         onClick && 'cursor-pointer',
       )}
-      onClick={onClick}
+      onClick={onClick ? handleCardClick : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? handleCardKeyDown : undefined}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
