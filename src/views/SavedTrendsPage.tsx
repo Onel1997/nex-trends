@@ -9,6 +9,7 @@ import { useSavedHooks } from '@/hooks/useSavedHooks'
 import { useSavedTrends } from '@/hooks/useSavedTrends'
 import { setHookRegeneratePrefill } from '@/lib/hook-regenerate-session'
 import { attachTrendV2Signals } from '@/lib/trend-v2'
+import { buildTrendHookPrefill } from '@/lib/trend-to-hook-prefill'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { cn, type DashboardToolId } from '@/lib'
 import type { HookPlatform, HookTone, SavedHookRow } from '@/types/ai-generation'
@@ -59,6 +60,19 @@ export function SavedTrendsPage({ onNavigate }: SavedTrendsPageProps) {
         type: 'info',
         title: 'Hook Generator geöffnet',
         message: 'Neue Varianten werden generiert …',
+      })
+      onNavigate('hook')
+    },
+    [onNavigate, showToast],
+  )
+
+  const handleGenerateHookFromTrend = useCallback(
+    (trend: ReturnType<typeof attachTrendV2Signals>) => {
+      setHookRegeneratePrefill(buildTrendHookPrefill(trend))
+      showToast({
+        type: 'info',
+        title: 'Hook Generator geöffnet',
+        message: `"${trend.title}" wurde vorausgefüllt.`,
       })
       onNavigate('hook')
     },
@@ -160,6 +174,7 @@ export function SavedTrendsPage({ onNavigate }: SavedTrendsPageProps) {
           trends={savedTrendsV2}
           isSaved={isSaved}
           onToggleSave={(t) => toggleSave(t)}
+          onGenerateHook={handleGenerateHookFromTrend}
           emptyTitle="Noch keine gespeicherten Trends"
           emptyDescription="Speichere Trends aus dem Feed — sie erscheinen hier in deiner Bibliothek."
         />

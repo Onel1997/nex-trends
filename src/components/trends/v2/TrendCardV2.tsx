@@ -4,9 +4,11 @@ import { OPPORTUNITY_TIER_META } from '@/lib/trend-v2'
 import type { TrendWithV2 } from '@/lib/trend-v2'
 import { TrendStatusBadgeV2 } from '@/components/trends/v2/TrendStatusBadgeV2'
 import { TREND_CATEGORY_V2_LABELS } from '@/types/trend-v2'
+import { Button } from '@/components/ui/Button'
 import {
   BookmarkIcon,
   BookmarkFilledIcon,
+  BoltIcon,
   TrendingUpIcon,
 } from '@/components/ui/icons'
 import { useToast } from '@/context/ToastContext'
@@ -16,6 +18,7 @@ type TrendCardV2Props = {
   rank?: number
   isSaved?: boolean
   onToggleSave?: (trend: TrendWithV2) => boolean
+  onGenerateHook?: (trend: TrendWithV2) => void
   onClick?: () => void
 }
 
@@ -51,6 +54,7 @@ function TrendCardV2Component({
   rank,
   isSaved,
   onToggleSave,
+  onGenerateHook,
   onClick,
 }: TrendCardV2Props) {
   const { showToast } = useToast()
@@ -72,6 +76,15 @@ function TrendCardV2Component({
       })
     },
     [onToggleSave, showToast, trend],
+  )
+
+  const handleGenerateHook = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      onGenerateHook?.(trend)
+    },
+    [onGenerateHook, trend],
   )
 
   return (
@@ -187,27 +200,51 @@ function TrendCardV2Component({
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800/50 pt-3">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums ring-1 ring-inset',
-              growthPositive
-                ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/25'
-                : 'bg-red-500/10 text-red-300 ring-red-500/25',
-            )}
-          >
-            <TrendingUpIcon
-              className={cn('size-3.5', !growthPositive && 'rotate-180')}
-              aria-hidden
-            />
-            {growthPositive ? '+' : ''}
-            {v2.growthPercent.toFixed(1)}%
-          </span>
-          <span className="text-[11px] text-zinc-600">Growth</span>
+      <div className="flex flex-col gap-3 border-t border-zinc-800/50 pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold tabular-nums ring-1 ring-inset',
+                growthPositive
+                  ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/25'
+                  : 'bg-red-500/10 text-red-300 ring-red-500/25',
+              )}
+            >
+              <TrendingUpIcon
+                className={cn('size-3.5', !growthPositive && 'rotate-180')}
+                aria-hidden
+              />
+              {growthPositive ? '+' : ''}
+              {v2.growthPercent.toFixed(1)}%
+            </span>
+            <span className="text-[11px] text-zinc-600">Growth</span>
+          </div>
+
+          <p className={cn('text-[11px] font-semibold', tierMeta.className)}>{tierMeta.label}</p>
         </div>
 
-        <p className={cn('text-[11px] font-semibold', tierMeta.className)}>{tierMeta.label}</p>
+        {onGenerateHook && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            fullWidth
+            onClick={handleGenerateHook}
+            onPointerDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+            className={cn(
+              'min-h-11 touch-manipulation sm:min-h-10',
+              'border-violet-500/20 bg-violet-500/8 text-violet-100',
+              'hover:border-violet-500/35 hover:bg-violet-500/14 hover:text-white',
+            )}
+          >
+            <BoltIcon className="size-3.5 shrink-0" aria-hidden />
+            Hook generieren
+          </Button>
+        )}
       </div>
     </article>
   )
@@ -219,6 +256,7 @@ export const TrendCardV2 = memo(TrendCardV2Component, (prev, next) => {
     prev.isSaved === next.isSaved &&
     prev.rank === next.rank &&
     prev.onToggleSave === next.onToggleSave &&
+    prev.onGenerateHook === next.onGenerateHook &&
     prev.onClick === next.onClick
   )
 })

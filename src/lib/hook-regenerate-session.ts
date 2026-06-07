@@ -8,6 +8,12 @@ export type HookRegeneratePrefill = {
   platform: HookPlatform
   /** When true, Hook Generator auto-starts a free regenerate on load. */
   autoGenerate?: boolean
+  /** Trend Intelligence context — pre-fills Hook Generator from a trend card */
+  trendTitle?: string
+  category?: string
+  description?: string
+  /** Combined context passed to hook generation (description, category, niche) */
+  context?: string
 }
 
 export function setHookRegeneratePrefill(data: HookRegeneratePrefill): void {

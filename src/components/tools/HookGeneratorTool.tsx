@@ -103,6 +103,12 @@ export function HookGeneratorTool() {
   const [justSavedHook, setJustSavedHook] = useState<string | null>(null)
   const [highlightFirstHook, setHighlightFirstHook] = useState(false)
   const [pendingScrollToResults, setPendingScrollToResults] = useState(false)
+  const [trendPrefillContext, setTrendPrefillContext] = useState<string | undefined>()
+  const [trendPrefillMeta, setTrendPrefillMeta] = useState<{
+    title?: string
+    category?: string
+    description?: string
+  } | null>(null)
 
   const selectedTrend = useMemo(
     () => sessionTrends.find((t) => t.id === selectedTrendId) ?? null,
@@ -147,6 +153,18 @@ export function HookGeneratorTool() {
     setPlatform(prefill.platform)
     setSelectedTrendId(null)
     setActiveTab('results')
+
+    if (prefill.context) {
+      setTrendPrefillContext(prefill.context)
+    }
+
+    if (prefill.trendTitle || prefill.category || prefill.description) {
+      setTrendPrefillMeta({
+        title: prefill.trendTitle,
+        category: prefill.category,
+        description: prefill.description,
+      })
+    }
 
     if (prefill.autoGenerate) {
       void generate(
@@ -234,30 +252,40 @@ export function HookGeneratorTool() {
         const topicForRequest =
           trimmedTopic.length >= 2 ? trimmedTopic : input.niche
 
-        return {
-          topic: topicForRequest,
-          tone: resolvedTone,
-          platform: (input.platform as HookPlatform) || resolvedPlatform,
-          context: [
-            input.description,
-            input.briefing,
-            input.contentIdeas?.join(' | '),
-          ]
-            .filter(Boolean)
-            .join('\n'),
-          trendTitle: input.trendTitle,
-          referenceHook: input.hookText,
-        }
+      return {
+        topic: topicForRequest,
+        tone: resolvedTone,
+        platform: (input.platform as HookPlatform) || resolvedPlatform,
+        context: [
+          input.description,
+          input.briefing,
+          input.contentIdeas?.join(' | '),
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        trendTitle: input.trendTitle,
+        referenceHook: input.hookText,
       }
+    }
 
+    if (trendPrefillContext && trimmedTopic.length >= 2) {
       return {
         topic: trimmedTopic,
         tone: resolvedTone,
         platform: resolvedPlatform,
+        context: trendPrefillContext,
+        trendTitle: trendPrefillMeta?.title,
       }
-    },
-    [topic, tone, platform, selectedTrend],
-  )
+    }
+
+    return {
+      topic: trimmedTopic,
+      tone: resolvedTone,
+      platform: resolvedPlatform,
+    }
+  },
+  [topic, tone, platform, selectedTrend, trendPrefillContext, trendPrefillMeta],
+)
 
   const handleGenerate = useCallback(
     async (skipCreditCharge = false, overrides?: Partial<{ topic: string; tone: HookTone; platform: HookPlatform }>) => {
@@ -397,6 +425,37 @@ export function HookGeneratorTool() {
                 )}
               </button>
             ))}
+          </div>
+        </section>
+      )}
+
+      {trendPrefillMeta && (
+        <section className="hook-trend-prefill mb-5 overflow-x-clip">
+          <p className="mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-600">
+            <TrendingUpIcon className="size-3.5 text-violet-400/80" aria-hidden />
+            Trend Intelligence
+          </p>
+          <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/[0.06] via-zinc-950/60 to-zinc-950/80 p-4 sm:p-5">
+            {trendPrefillMeta.title && (
+              <h3 className="text-base font-semibold leading-snug text-white sm:text-[17px]">
+                {trendPrefillMeta.title}
+              </h3>
+            )}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {trendPrefillMeta.category && (
+                <span className="rounded-full bg-zinc-800/70 px-2.5 py-0.5 text-[10px] font-semibold text-zinc-300 ring-1 ring-zinc-700/50">
+                  {trendPrefillMeta.category}
+                </span>
+              )}
+              <span className="rounded-full bg-violet-500/12 px-2.5 py-0.5 text-[10px] font-semibold text-violet-200 ring-1 ring-violet-500/25">
+                {platform}
+              </span>
+            </div>
+            {trendPrefillMeta.description && (
+              <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-zinc-400">
+                {trendPrefillMeta.description}
+              </p>
+            )}
           </div>
         </section>
       )}

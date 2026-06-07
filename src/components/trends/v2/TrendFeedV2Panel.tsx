@@ -6,7 +6,9 @@ import { TrendFeedV2List } from '@/components/trends/v2/TrendFeedV2List'
 import { TrendsTabNav, type TrendsView } from '@/components/trends/TrendsTabNav'
 import { TrendDetailModalLoading } from '@/components/trends/TrendDetailModalLoading'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
+import { useToast } from '@/context/ToastContext'
 import { useSavedTrends } from '@/hooks/useSavedTrends'
+import { openHookGeneratorForTrend } from '@/lib/trend-to-hook-prefill'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import {
   attachTrendV2Signals,
@@ -30,6 +32,7 @@ function toTrendIntelligence(trend: TrendWithV2): TrendIntelligence {
 }
 
 export function TrendFeedV2Panel() {
+  const { showToast } = useToast()
   const { savedTrends, savedCount, isSaved, toggleSave, isLoading: savedLoading } =
     useSavedTrends()
 
@@ -88,6 +91,18 @@ export function TrendFeedV2Panel() {
     [toggleSave],
   )
 
+  const handleGenerateHook = useCallback(
+    (trend: TrendWithV2) => {
+      openHookGeneratorForTrend(trend)
+      showToast({
+        type: 'info',
+        title: 'Hook Generator geöffnet',
+        message: `"${trend.title}" wurde vorausgefüllt.`,
+      })
+    },
+    [showToast],
+  )
+
   const topOpportunity = filteredTrends[0]
 
   return (
@@ -138,6 +153,7 @@ export function TrendFeedV2Panel() {
             isLoading={isLoading}
             isSaved={isSaved}
             onToggleSave={handleToggleSave}
+            onGenerateHook={handleGenerateHook}
             onSelectTrend={(t) => setSelectedTrend(toTrendIntelligence(t))}
           />
         </>
@@ -155,6 +171,7 @@ export function TrendFeedV2Panel() {
             isLoading={savedLoading}
             isSaved={isSaved}
             onToggleSave={handleToggleSave}
+            onGenerateHook={handleGenerateHook}
             onSelectTrend={(t) => setSelectedTrend(toTrendIntelligence(t))}
             emptyTitle="Noch keine gespeicherten Trends"
             emptyDescription="Speichere Trends aus dem Feed — deine Bibliothek wächst mit jeder Entscheidung."

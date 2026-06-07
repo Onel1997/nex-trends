@@ -9,6 +9,7 @@ type TrendFeedV2ListProps = {
   isLoading?: boolean
   isSaved?: (id: string) => boolean
   onToggleSave?: (trend: TrendWithV2) => boolean
+  onGenerateHook?: (trend: TrendWithV2) => void
   onSelectTrend?: (trend: TrendWithV2) => void
   emptyTitle?: string
   emptyDescription?: string
@@ -41,6 +42,7 @@ function TrendFeedV2ListInner({
   isLoading = false,
   isSaved,
   onToggleSave,
+  onGenerateHook,
   onSelectTrend,
   emptyTitle = 'Keine Trends in dieser Kategorie',
   emptyDescription = 'Wähle eine andere Kategorie oder zeige alle Trends an.',
@@ -71,6 +73,7 @@ function TrendFeedV2ListInner({
             rank={index + 1}
             isSaved={isSaved?.(trend.id)}
             onToggleSave={onToggleSave}
+            onGenerateHook={onGenerateHook}
             onClick={onSelectTrend ? () => onSelectTrend(trend) : undefined}
           />
         </div>
