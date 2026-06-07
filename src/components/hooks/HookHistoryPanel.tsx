@@ -1,4 +1,4 @@
-import { memo, useCallback, useState, type ReactNode, type SVGProps } from 'react'
+import { memo, useCallback, useMemo, useState, type ReactNode, type SVGProps } from 'react'
 import { HookCard } from '@/components/hooks/HookCard'
 import { HookPanelError } from '@/components/hooks/HookResultsList'
 import { Button } from '@/components/ui/Button'
@@ -19,17 +19,29 @@ import { cn } from '@/lib'
 import type { GeneratedHooksRow, SavedHookRow } from '@/types/ai-generation'
 
 type HookHistoryItemProps = {
-  row: GeneratedHooksRow
+  rowId: string
+  topic: string
+  tone: string
+  platform: string
+  hookCount: number
+  createdAt: string
+  previewHooks: GeneratedHooksRow['generated_hooks_json']
   index: number
   isActive: boolean
   isExpanded: boolean
-  onToggleExpand: () => void
-  onSelect: () => void
-  onRegenerate: () => void
+  onToggleExpand: (id: string) => void
+  onSelect: (id: string) => void
+  onRegenerate: (id: string) => void
 }
 
 const HookHistoryItem = memo(function HookHistoryItem({
-  row,
+  rowId,
+  topic,
+  tone,
+  platform,
+  hookCount,
+  createdAt,
+  previewHooks,
   index,
   isActive,
   isExpanded,
@@ -37,18 +49,30 @@ const HookHistoryItem = memo(function HookHistoryItem({
   onSelect,
   onRegenerate,
 }: HookHistoryItemProps) {
-  const hookCount = row.generated_hooks_json?.length ?? 0
-  const toneLabel = getToneLabel(row.tone)
-  const platformLabel = getPlatformLabel(row.platform)
-  const previewHooks = (row.generated_hooks_json ?? []).slice(0, 2)
+  const toneLabel = getToneLabel(tone)
+  const platformLabel = getPlatformLabel(platform)
+  const relativeTime = formatHookDate(createdAt, 'relative')
+  const previews = (previewHooks ?? []).slice(0, 2)
+
+  const handleToggleExpand = useCallback(() => {
+    onToggleExpand(rowId)
+  }, [onToggleExpand, rowId])
+
+  const handleSelect = useCallback(() => {
+    onSelect(rowId)
+  }, [onSelect, rowId])
+
+  const handleRegenerate = useCallback(() => {
+    onRegenerate(rowId)
+  }, [onRegenerate, rowId])
 
   return (
-    <li className="overflow-hidden rounded-xl border border-zinc-800/70 bg-zinc-950/40 transition-smooth hover:border-zinc-700/80">
+    <li className="hook-history-item overflow-hidden rounded-xl border border-zinc-800/70 bg-zinc-950/40 transition-smooth hover:border-zinc-700/80">
       <button
         type="button"
-        onClick={onToggleExpand}
+        onClick={handleToggleExpand}
         className={cn(
-          'flex w-full min-h-[4.5rem] items-start gap-3 px-4 py-3.5 text-left touch-manipulation transition-smooth',
+          'flex w-full min-h-[4.25rem] items-start gap-2.5 px-3 py-3 text-left touch-manipulation transition-smooth sm:gap-3 sm:px-4 sm:py-3.5',
           isActive && 'bg-violet-500/[0.07]',
         )}
         aria-expanded={isExpanded}
@@ -57,28 +81,33 @@ const HookHistoryItem = memo(function HookHistoryItem({
           {index}
         </span>
 
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-zinc-100">{row.topic}</p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <p className="line-clamp-2 break-words text-sm font-medium leading-snug text-zinc-100">
+            {topic}
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1 sm:gap-1.5">
             <span className="hook-badge hook-badge--tone">{toneLabel}</span>
             <span className="hook-badge hook-badge--platform">{platformLabel}</span>
-            <span className="text-[10px] font-medium tabular-nums text-zinc-600">
-              {hookCount} Hooks
+            <span
+              className="hook-history-count-badge inline-flex items-center rounded-full bg-violet-500/12 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-violet-300 ring-1 ring-violet-500/20"
+              title={`${hookCount} Hooks`}
+            >
+              {hookCount}
             </span>
           </div>
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1">
           <time
-            dateTime={row.created_at}
-            className="text-[10px] tabular-nums text-zinc-600"
-            title={formatHookDate(row.created_at, 'long')}
+            dateTime={createdAt}
+            className="max-w-[5.5rem] text-right text-[10px] leading-tight text-zinc-500"
+            title={formatHookDate(createdAt, 'long')}
           >
-            {formatHookDate(row.created_at, 'short')}
+            {relativeTime}
           </time>
           <ChevronDownIcon
             className={cn(
-              'size-4 text-zinc-600 transition-transform duration-300',
+              'size-4 text-zinc-600 transition-transform duration-300 ease-out',
               isExpanded && 'rotate-180',
             )}
             aria-hidden
@@ -93,11 +122,11 @@ const HookHistoryItem = memo(function HookHistoryItem({
         )}
       >
         <div className="overflow-hidden">
-          <div className="space-y-3 border-t border-zinc-800/60 px-4 py-3.5">
-            {previewHooks.map((hook, i) => (
+          <div className="space-y-2.5 border-t border-zinc-800/60 px-3 py-3 sm:space-y-3 sm:px-4 sm:py-3.5">
+            {previews.map((hook, i) => (
               <p
                 key={i}
-                className="line-clamp-2 text-xs leading-relaxed text-zinc-400"
+                className="line-clamp-2 break-words text-xs leading-relaxed text-zinc-400"
               >
                 {i + 1}. {formatHookDisplayText(hook)}
               </p>
@@ -111,17 +140,17 @@ const HookHistoryItem = memo(function HookHistoryItem({
                 variant="secondary"
                 size="sm"
                 fullWidth
-                onClick={onSelect}
+                onClick={handleSelect}
                 className="min-h-11 sm:flex-1"
               >
                 <SparklesIcon className="size-3.5" aria-hidden />
-                Laden
+                Ergebnisse öffnen
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 fullWidth
-                onClick={onRegenerate}
+                onClick={handleRegenerate}
                 className="min-h-11 sm:flex-1"
               >
                 <ArrowPathIcon className="size-3.5" aria-hidden />
@@ -132,6 +161,57 @@ const HookHistoryItem = memo(function HookHistoryItem({
         </div>
       </div>
     </li>
+  )
+})
+
+type HookHistoryGroupProps = {
+  label: string
+  items: Array<{
+    row: GeneratedHooksRow
+    index: number
+  }>
+  activeId?: string | null
+  expandedId: string | null
+  onToggleExpand: (id: string) => void
+  onSelect: (id: string) => void
+  onRegenerate: (id: string) => void
+}
+
+const HookHistoryGroup = memo(function HookHistoryGroup({
+  label,
+  items,
+  activeId,
+  expandedId,
+  onToggleExpand,
+  onSelect,
+  onRegenerate,
+}: HookHistoryGroupProps) {
+  return (
+    <section className="min-w-0">
+      <h3 className="mb-2 px-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+        {label}
+      </h3>
+      <ul className="space-y-2">
+        {items.map(({ row, index }) => (
+          <HookHistoryItem
+            key={row.id}
+            rowId={row.id}
+            topic={row.topic}
+            tone={row.tone}
+            platform={row.platform}
+            hookCount={row.generated_hooks_json?.length ?? 0}
+            createdAt={row.created_at}
+            previewHooks={row.generated_hooks_json}
+            index={index}
+            isActive={activeId === row.id}
+            isExpanded={expandedId === row.id}
+            onToggleExpand={onToggleExpand}
+            onSelect={onSelect}
+            onRegenerate={onRegenerate}
+          />
+        ))}
+      </ul>
+    </section>
   )
 })
 
@@ -146,7 +226,7 @@ type HookHistoryPanelProps = {
   className?: string
 }
 
-export function HookHistoryPanel({
+export const HookHistoryPanel = memo(function HookHistoryPanel({
   history,
   isLoading,
   error,
@@ -157,6 +237,43 @@ export function HookHistoryPanel({
   className,
 }: HookHistoryPanelProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const rowById = useMemo(() => {
+    const map = new Map<string, GeneratedHooksRow>()
+    for (const row of history) map.set(row.id, row)
+    return map
+  }, [history])
+
+  const groups = useMemo(() => groupHistoryByDate(history), [history])
+
+  const groupedItems = useMemo(() => {
+    let counter = history.length
+    return groups.map(({ group, label, items }) => ({
+      group,
+      label,
+      items: items.map((row) => ({ row, index: counter-- })),
+    }))
+  }, [groups, history.length])
+
+  const handleToggleExpand = useCallback((id: string) => {
+    setExpandedId((current) => (current === id ? null : id))
+  }, [])
+
+  const handleSelect = useCallback(
+    (id: string) => {
+      const row = rowById.get(id)
+      if (row) onSelect(row)
+    },
+    [onSelect, rowById],
+  )
+
+  const handleRegenerate = useCallback(
+    (id: string) => {
+      const row = rowById.get(id)
+      if (row) onRegenerate(row)
+    },
+    [onRegenerate, rowById],
+  )
 
   if (isLoading) {
     return (
@@ -176,46 +293,29 @@ export function HookHistoryPanel({
     return <HookHistoryEmptyState className={className} />
   }
 
-  const groups = groupHistoryByDate(history)
-  let counter = history.length
-
   return (
-    <div className={cn('hook-history-panel', className)}>
+    <div className={cn('hook-history-panel min-w-0 overflow-x-hidden', className)}>
       <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-600">
         {history.length} Generierung{history.length === 1 ? '' : 'en'}
       </p>
 
       <div className="space-y-5">
-        {groups.map(({ group, label, items }) => (
-          <section key={group}>
-            <h3 className="mb-2 px-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-              {label}
-            </h3>
-            <ul className="space-y-2">
-              {items.map((row) => {
-                const index = counter--
-                return (
-                  <HookHistoryItem
-                    key={row.id}
-                    row={row}
-                    index={index}
-                    isActive={activeId === row.id}
-                    isExpanded={expandedId === row.id}
-                    onToggleExpand={() =>
-                      setExpandedId((id) => (id === row.id ? null : row.id))
-                    }
-                    onSelect={() => onSelect(row)}
-                    onRegenerate={() => onRegenerate(row)}
-                  />
-                )
-              })}
-            </ul>
-          </section>
+        {groupedItems.map(({ group, label, items }) => (
+          <HookHistoryGroup
+            key={group}
+            label={label}
+            items={items}
+            activeId={activeId}
+            expandedId={expandedId}
+            onToggleExpand={handleToggleExpand}
+            onSelect={handleSelect}
+            onRegenerate={handleRegenerate}
+          />
         ))}
       </div>
     </div>
   )
-}
+})
 
 type HookSavedPanelProps = {
   hooks: SavedHookRow[]

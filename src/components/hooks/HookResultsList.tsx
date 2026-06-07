@@ -9,6 +9,8 @@ import { sortHooks } from '@/lib/hook-display'
 import { cn } from '@/lib'
 import type { HookSortMode, PremiumHook } from '@/types/ai-generation'
 
+export const HOOK_RESULT_FIRST_ID = 'hook-result-first'
+
 const SORT_OPTIONS: { value: HookSortMode; label: string }[] = [
   { value: 'retention', label: 'Highest Retention' },
   { value: 'framework', label: 'Framework' },
@@ -25,6 +27,7 @@ type HookResultItemProps = {
   copied: boolean
   copyDisabled: boolean
   justSaved: boolean
+  highlighted?: boolean
   whyExpanded: boolean
   onToggleWhy: () => void
   onCopy: (text: string) => void
@@ -41,6 +44,7 @@ const HookResultItem = memo(function HookResultItem({
   copied,
   copyDisabled,
   justSaved,
+  highlighted = false,
   whyExpanded,
   onToggleWhy,
   onCopy,
@@ -65,6 +69,7 @@ const HookResultItem = memo(function HookResultItem({
       copied={copied}
       copyDisabled={copyDisabled}
       justSaved={justSaved}
+      highlighted={highlighted}
       whyExpanded={whyExpanded}
       onToggleWhy={onToggleWhy}
       animationDelayMs={0}
@@ -88,6 +93,7 @@ type HookResultsListProps = {
   dimmed?: boolean
   className?: string
   showSort?: boolean
+  highlightFirstHook?: boolean
 }
 
 export const HookResultsList = memo(function HookResultsList({
@@ -104,6 +110,7 @@ export const HookResultsList = memo(function HookResultsList({
   dimmed = false,
   className,
   showSort = true,
+  highlightFirstHook = false,
 }: HookResultsListProps) {
   const [sortMode, setSortMode] = useState<HookSortMode>('retention')
   const [expandedWhyKey, setExpandedWhyKey] = useState<string | null>(null)
@@ -169,7 +176,8 @@ export const HookResultsList = memo(function HookResultsList({
           return (
             <li
               key={`${sortMode}-${index}-${hookText.slice(0, 32)}`}
-              className="hook-results-feed__item hook-stagger-item min-w-0 max-w-full"
+              id={index === 0 ? HOOK_RESULT_FIRST_ID : undefined}
+              className="hook-results-feed__item hook-stagger-item min-w-0 max-w-full scroll-mt-24"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <HookResultItem
@@ -182,6 +190,7 @@ export const HookResultsList = memo(function HookResultsList({
                 copied={copiedHook === hookText}
                 copyDisabled={copiedHook != null && copiedHook !== hookText}
                 justSaved={justSavedHook === hookText}
+                highlighted={highlightFirstHook && index === 0}
                 whyExpanded={expandedWhyKey === whyKey}
                 onToggleWhy={() => handleToggleWhy(whyKey)}
                 onCopy={onCopy}
@@ -308,7 +317,9 @@ export function HookGenerationMeta({
               #{generationIndex}
             </span>
           )}
-          <p className="truncate text-sm font-medium text-zinc-100">{topic}</p>
+          <p className="line-clamp-2 break-words text-sm font-medium leading-snug text-zinc-100">
+            {topic}
+          </p>
         </div>
         <p className="mt-1 text-[11px] text-zinc-500">
           {tone} · {platform} · {hookCount} Hooks

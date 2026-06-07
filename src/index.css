@@ -602,6 +602,34 @@ body {
   border-color: rgb(245 158 11 / 0.22);
 }
 
+.hook-card--highlighted {
+  animation: hook-highlight-pulse 1.2s var(--ease-out-expo);
+  border-color: rgb(139 92 246 / 0.42);
+}
+
+@keyframes hook-highlight-pulse {
+  0% {
+    border-color: rgb(139 92 246 / 0.55);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 0 0 0 rgb(139 92 246 / 0.35),
+      0 12px 40px -14px rgb(139 92 246 / 0.45);
+  }
+  45% {
+    border-color: rgb(139 92 246 / 0.38);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 0 0 6px rgb(139 92 246 / 0.12),
+      0 12px 40px -14px rgb(139 92 246 / 0.35);
+  }
+  100% {
+    border-color: rgb(63 63 70 / 0.55);
+    box-shadow:
+      0 1px 0 0 rgb(255 255 255 / 0.03) inset,
+      0 8px 32px -16px rgb(0 0 0 / 0.5);
+  }
+}
+
 .hook-card--removing {
   transform: scale(0.98);
   opacity: 0;
@@ -712,7 +740,8 @@ body {
 .hook-saved-feed,
 .hook-saved-feed__item,
 .hook-saved-panel,
-.hook-history-panel {
+.hook-history-panel,
+.hook-history-item {
   overflow: visible;
   max-height: none;
   height: auto;
@@ -770,6 +799,16 @@ body {
 }
 
 @media (max-width: 639px) {
+  .hook-results-section {
+    overflow-x: hidden;
+  }
+
+  .hook-history-panel,
+  .hook-history-item {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
   .hook-results-feed,
   .hook-saved-feed {
     gap: 0.625rem;

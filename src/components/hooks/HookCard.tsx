@@ -45,6 +45,7 @@ export type HookCardProps = {
   animationDelayMs?: number
   whyExpanded?: boolean
   onToggleWhy?: () => void
+  highlighted?: boolean
 }
 
 export const HookCard = memo(function HookCard({
@@ -69,6 +70,7 @@ export const HookCard = memo(function HookCard({
   animationDelayMs = 0,
   whyExpanded = false,
   onToggleWhy,
+  highlighted = false,
 }: HookCardProps) {
   const hookText = formatHookDisplayText(hook)
   const premium = typeof hook === 'object' && hook !== null ? hook : null
@@ -91,6 +93,7 @@ export const HookCard = memo(function HookCard({
         'hook-card group h-auto max-h-none p-3 sm:p-5',
         saved && 'hook-card--saved',
         justSaved && 'animate-save-glow border-amber-400/40',
+        highlighted && 'hook-card--highlighted',
         removing && 'hook-card--removing',
         className,
       )}

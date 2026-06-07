@@ -76,13 +76,19 @@ export function formatHookDate(
 
   if (style === 'relative') {
     const diffMs = Date.now() - date.getTime()
-    const diffMin = Math.floor(diffMs / 60_000)
-    if (diffMin < 1) return 'Gerade eben'
+    if (diffMs < 0) return 'Gerade eben'
+    const diffSec = Math.floor(diffMs / 1000)
+    if (diffSec < 60) return 'Gerade eben'
+    const diffMin = Math.floor(diffSec / 60)
     if (diffMin < 60) return `Vor ${diffMin} Min.`
     const diffH = Math.floor(diffMin / 60)
     if (diffH < 24) return `Vor ${diffH} Std.`
     const diffD = Math.floor(diffH / 24)
     if (diffD < 7) return `Vor ${diffD} Tag${diffD === 1 ? '' : 'en'}`
+    return new Intl.DateTimeFormat('de-DE', {
+      day: '2-digit',
+      month: 'short',
+    }).format(date)
   }
 
   if (style === 'long') {

@@ -5,6 +5,7 @@ import {
   HookGenerationMeta,
   HookGenerationProgress,
   HookResultsList,
+  HOOK_RESULT_FIRST_ID,
 } from '@/components/hooks/HookResultsList'
 import {
   HookHistoryPanel,
@@ -56,6 +57,7 @@ import {
 type TabId = 'results' | 'history' | 'saved'
 
 const JUST_SAVED_MS = 900
+const HIGHLIGHT_FIRST_HOOK_MS = 1400
 
 export function HookGeneratorTool() {
   const { showToast } = useToast()
@@ -97,6 +99,8 @@ export function HookGeneratorTool() {
   const [activeTab, setActiveTab] = useState<TabId>('results')
   const [savingHook, setSavingHook] = useState<string | null>(null)
   const [justSavedHook, setJustSavedHook] = useState<string | null>(null)
+  const [highlightFirstHook, setHighlightFirstHook] = useState(false)
+  const [pendingScrollToResults, setPendingScrollToResults] = useState(false)
 
   const selectedTrend = useMemo(
     () => sessionTrends.find((t) => t.id === selectedTrendId) ?? null,
@@ -145,6 +149,42 @@ export function HookGeneratorTool() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount for session prefill
   }, [])
+
+  useEffect(() => {
+    if (!pendingScrollToResults || activeTab !== 'results' || hooks.length === 0) return
+
+    const scrollTimer = window.setTimeout(() => {
+      document.getElementById(HOOK_RESULT_FIRST_ID)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+      setPendingScrollToResults(false)
+    }, 80)
+
+    const highlightTimer = window.setTimeout(
+      () => setHighlightFirstHook(false),
+      HIGHLIGHT_FIRST_HOOK_MS,
+    )
+
+    return () => {
+      window.clearTimeout(scrollTimer)
+      window.clearTimeout(highlightTimer)
+    }
+  }, [pendingScrollToResults, activeTab, hooks.length])
+
+  const handleSelectFromHistory = useCallback(
+    (row: GeneratedHooksRow) => {
+      loadFromHistory(row)
+      setSelectedTrendId(null)
+      setTopic(row.topic)
+      setTone(row.tone as HookTone)
+      setPlatform(row.platform as HookPlatform)
+      setActiveTab('results')
+      setHighlightFirstHook(true)
+      setPendingScrollToResults(true)
+    },
+    [loadFromHistory],
+  )
 
   const handleTrendSelect = useCallback(
     (trendId: string) => {
@@ -429,103 +469,100 @@ export function HookGeneratorTool() {
           )}
         </div>
 
-        {activeTab === 'results' && (
-          <div key="results" className="hook-results-panel animate-fade-in">
-            {isUsageLimitReached && userPlan === 'free' && !unlimited ? (
-              <UsageLimitWarning />
-            ) : error ? (
-              <HookErrorState
-                message={error}
-                onRetry={() => void handleGenerate(false)}
+        <div
+          className={cn('hook-results-panel', activeTab !== 'results' && 'hidden')}
+          aria-hidden={activeTab !== 'results'}
+        >
+          {isUsageLimitReached && userPlan === 'free' && !unlimited ? (
+            <UsageLimitWarning />
+          ) : error ? (
+            <HookErrorState
+              message={error}
+              onRetry={() => void handleGenerate(false)}
+            />
+          ) : (
+            <>
+              <HookInsightsBar
+                recentCopies={recentCopies}
+                mostSavedTone={mostSavedTone}
+                savedCount={savedCount}
               />
-            ) : (
-              <>
-                <HookInsightsBar
-                  recentCopies={recentCopies}
-                  mostSavedTone={mostSavedTone}
-                  savedCount={savedCount}
+
+              {isGenerating && (
+                <HookGenerationProgress
+                  isRegenerating={isRegenerating}
+                  step={status === 'checking' ? 'checking' : 'generating'}
                 />
+              )}
 
-                {isGenerating && (
-                  <HookGenerationProgress
-                    isRegenerating={isRegenerating}
-                    step={status === 'checking' ? 'checking' : 'generating'}
+              {generation && hooks.length > 0 && !isGenerating && (
+                <HookGenerationMeta
+                  topic={generation.topic}
+                  tone={generation.tone}
+                  platform={generation.platform}
+                  createdAt={generation.created_at}
+                  hookCount={hooks.length}
+                  generationIndex={generationIndex}
+                />
+              )}
+
+              {isGenerating && !isRegenerating ? (
+                <HookGeneratingSkeleton count={10} />
+              ) : hooks.length > 0 ? (
+                <div className="hook-results-panel__list relative">
+                  <HookResultsList
+                    hooks={hooks}
+                    tone={displayTone}
+                    platform={displayPlatform}
+                    onCopy={copyHook}
+                    onToggleSave={handleToggleSave}
+                    isHookSaved={isSaved}
+                    isSaving={savingHook}
+                    justSavedHook={justSavedHook}
+                    copiedHook={copiedHook}
+                    dimmed={isRegenerating}
+                    highlightFirstHook={highlightFirstHook}
                   />
-                )}
-
-                {generation && hooks.length > 0 && !isGenerating && (
-                  <HookGenerationMeta
-                    topic={generation.topic}
-                    tone={generation.tone}
-                    platform={generation.platform}
-                    createdAt={generation.created_at}
-                    hookCount={hooks.length}
-                    generationIndex={generationIndex}
-                  />
-                )}
-
-                {isGenerating && !isRegenerating ? (
-                  <HookGeneratingSkeleton count={10} />
-                ) : hooks.length > 0 ? (
-                  <div className="hook-results-panel__list relative">
-                    <HookResultsList
-                      hooks={hooks}
-                      tone={displayTone}
-                      platform={displayPlatform}
-                      onCopy={copyHook}
-                      onToggleSave={handleToggleSave}
-                      isHookSaved={isSaved}
-                      isSaving={savingHook}
-                      justSavedHook={justSavedHook}
-                      copiedHook={copiedHook}
-                      dimmed={isRegenerating}
+                  {isRegenerating && (
+                    <div className="mt-4">
+                      <HookGeneratingSkeleton count={3} />
+                    </div>
+                  )}
+                </div>
+              ) : !isGenerating ? (
+                <HookResultsEmptyState
+                  action={
+                    <HookEmptyStateAction
+                      label="Jetzt generieren"
+                      onClick={() => void handleGenerate(false)}
+                      disabled={isGenerating || !canGenerate}
                     />
-                    {isRegenerating && (
-                      <div className="mt-4">
-                        <HookGeneratingSkeleton count={3} />
-                      </div>
-                    )}
-                  </div>
-                ) : !isGenerating ? (
-                  <HookResultsEmptyState
-                    action={
-                      <HookEmptyStateAction
-                        label="Jetzt generieren"
-                        onClick={() => void handleGenerate(false)}
-                        disabled={isGenerating || !canGenerate}
-                      />
-                    }
-                  />
-                ) : null}
-              </>
-            )}
-          </div>
-        )}
+                  }
+                />
+              ) : null}
+            </>
+          )}
+        </div>
 
-        {activeTab === 'history' && (
-          <div key="history" className="hook-history-panel animate-fade-in">
+        <div
+          className={cn('hook-history-panel', activeTab !== 'history' && 'hidden')}
+          aria-hidden={activeTab !== 'history'}
+        >
           <HookHistoryPanel
             history={history}
             isLoading={historyLoading}
             error={historyError}
             activeId={generation?.id}
             onRefresh={() => void refreshHistory()}
-            onSelect={(row) => {
-              loadFromHistory(row)
-              setSelectedTrendId(null)
-              setTopic(row.topic)
-              setTone(row.tone as HookTone)
-              setPlatform(row.platform as HookPlatform)
-              setActiveTab('results')
-              showToast({ type: 'success', title: 'Generierung geladen' })
-            }}
+            onSelect={handleSelectFromHistory}
             onRegenerate={handleRegenerateFromHistory}
           />
-          </div>
-        )}
+        </div>
 
-        {activeTab === 'saved' && (
-          <div key="saved" className="hook-saved-panel animate-fade-in">
+        <div
+          className={cn('hook-saved-panel', activeTab !== 'saved' && 'hidden')}
+          aria-hidden={activeTab !== 'saved'}
+        >
           <HookSavedPanel
             hooks={savedHooks}
             isLoading={savedLoading}
@@ -542,8 +579,7 @@ export function HookGeneratorTool() {
               }
             }}
           />
-          </div>
-        )}
+        </div>
       </section>
     </AiToolLayout>
   )
