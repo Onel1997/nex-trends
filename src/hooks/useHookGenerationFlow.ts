@@ -12,6 +12,7 @@ import { useUsageLimit } from '@/hooks/useUsageLimit'
 import type {
   GeneratedHooksRow,
   HookGenerationRequest,
+  PremiumHook,
 } from '@/types/ai-generation'
 
 export type HookGenerationStatus = 'idle' | 'checking' | 'generating' | 'success' | 'error'
@@ -24,7 +25,7 @@ export function useHookGenerationFlow() {
     unlimited,
   } = useUsageLimit()
 
-  const [hooks, setHooks] = useState<string[]>([])
+  const [hooks, setHooks] = useState<PremiumHook[]>([])
   const [generation, setGeneration] = useState<GeneratedHooksRow | null>(null)
   const [status, setStatus] = useState<HookGenerationStatus>('idle')
   const [error, setError] = useState<string | null>(null)

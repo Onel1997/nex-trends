@@ -12,6 +12,7 @@ import {
   ArrowPathIcon,
   SparklesIcon,
 } from '@/components/ui/icons'
+import { formatHookDisplayText } from '@/lib/ai/parse-hooks-response'
 import { formatHookDate, getPlatformLabel, getToneLabel } from '@/lib/hook-display'
 import { groupHistoryByDate } from '@/lib/hook-history-utils'
 import { cn } from '@/lib'
@@ -98,7 +99,7 @@ const HookHistoryItem = memo(function HookHistoryItem({
                 key={i}
                 className="line-clamp-2 text-xs leading-relaxed text-zinc-400"
               >
-                {i + 1}. {hook}
+                {i + 1}. {formatHookDisplayText(hook)}
               </p>
             ))}
             {hookCount > 2 && (

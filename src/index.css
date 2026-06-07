@@ -494,6 +494,44 @@ body {
   box-shadow: inset 0 0 0 1px rgb(39 39 42 / 0.8);
 }
 
+.hook-badge--score {
+  font-variant-numeric: tabular-nums;
+}
+
+.hook-badge--score-high {
+  background: rgb(16 185 129 / 0.14);
+  color: rgb(110 231 183 / 0.95);
+  box-shadow: inset 0 0 0 1px rgb(16 185 129 / 0.22);
+}
+
+.hook-badge--score-mid {
+  background: rgb(139 92 246 / 0.14);
+  color: rgb(196 181 253 / 0.95);
+  box-shadow: inset 0 0 0 1px rgb(139 92 246 / 0.22);
+}
+
+.hook-badge--score-low {
+  background: rgb(245 158 11 / 0.12);
+  color: rgb(252 211 77 / 0.95);
+  box-shadow: inset 0 0 0 1px rgb(245 158 11 / 0.2);
+}
+
+.hook-badge--framework {
+  background: rgb(59 130 246 / 0.12);
+  color: rgb(147 197 253 / 0.95);
+  box-shadow: inset 0 0 0 1px rgb(59 130 246 / 0.2);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.hook-badge--trigger {
+  background: rgb(236 72 153 / 0.1);
+  color: rgb(244 114 182 / 0.95);
+  box-shadow: inset 0 0 0 1px rgb(236 72 153 / 0.18);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
 .hook-action-btn {
   display: flex;
   min-height: 2.75rem;

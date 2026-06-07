@@ -1,12 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?target=deno";
-import { callOpenAI } from "../_shared/ai/openai-client.ts";
+import { generatePremiumHooks } from "../_shared/ai/generate-premium-hooks.ts";
 import {
-  buildHookSystemPrompt,
-  buildHookUserMessage,
   validateHookInput,
   type HookGenerationInput,
 } from "../_shared/ai/prompts/hooks.ts";
-import { parseHooksResponse } from "../_shared/ai/response-parser.ts";
 import {
   checkRateLimit,
   rateLimitHeaders,
@@ -201,9 +198,6 @@ Deno.serve(async (req) => {
       }, 503);
     }
 
-    const systemPrompt = buildHookSystemPrompt(input.tone, input.platform);
-    const userMessage = buildHookUserMessage(input);
-
     console.log("[hook-generator] generating", {
       userId: user.id,
       topic: input.topic.slice(0, 40),
@@ -212,37 +206,31 @@ Deno.serve(async (req) => {
       model: Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-4o-mini",
     });
 
-    let rawContent: string;
+    let hooks;
+    let regenAttempts = 0;
     try {
-      rawContent = await callOpenAI({
-        systemPrompt,
-        userMessage,
-        temperature: 0.75,
-        jsonMode: true,
-      });
-    } catch (openAiErr) {
-      logEdgeError("hook-generator", openAiErr, { phase: "openai" });
+      const result = await generatePremiumHooks(input);
+      hooks = result.hooks;
+      regenAttempts = result.regenAttempts;
+
+      if (regenAttempts > 0) {
+        console.log("[hook-generator] framework regen completed", {
+          regenAttempts,
+          hookCount: hooks.length,
+        });
+      }
+    } catch (genErr) {
+      logEdgeError("hook-generator", genErr, { phase: "generate" });
       return jsonResponse(req, {
-        error: formatEdgeError(openAiErr),
-        step: "openai",
+        error: formatEdgeError(genErr),
+        step: "generate",
       }, 502);
     }
 
-    let hooks: string[];
-    try {
-      hooks = parseHooksResponse(rawContent, 10);
-    } catch (parseErr) {
-      logEdgeError("hook-generator", parseErr, {
-        phase: "parse",
-        rawPreview: rawContent.slice(0, 400),
-      });
-      return jsonResponse(req, {
-        error: formatEdgeError(parseErr),
-        step: "parse",
-      }, 502);
-    }
-
-    console.log("[hook-generator] parsed hooks", { count: hooks.length });
+    console.log("[hook-generator] parsed hooks", {
+      count: hooks.length,
+      frameworks: hooks.map((hook) => hook.framework),
+    });
 
     const { data: saved, error: insertError } = await supabaseAdmin
       .from("generated_hooks")

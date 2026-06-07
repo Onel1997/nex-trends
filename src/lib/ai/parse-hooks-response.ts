@@ -1,4 +1,4 @@
-import type { GeneratedHooksRow } from '@/types/ai-generation'
+import type { GeneratedHooksRow, PremiumHook } from '@/types/ai-generation'
 
 const HOOK_OBJECT_KEYS = [
   'hook',
@@ -18,11 +18,107 @@ const HOOK_OBJECT_KEYS = [
   'caption',
 ] as const
 
+const FRAMEWORK_ALIASES: Record<string, string> = {
+  contrarian: 'Contrarian',
+  'result first': 'Result First',
+  'result-first': 'Result First',
+  resultfirst: 'Result First',
+  'myth bust': 'Myth Bust',
+  'myth-bust': 'Myth Bust',
+  mythbust: 'Myth Bust',
+  'identity callout': 'Identity Callout',
+  'identity-callout': 'Identity Callout',
+  identitycallout: 'Identity Callout',
+  comparison: 'Comparison',
+  authority: 'Authority',
+  'social proof': 'Social Proof',
+  'social-proof': 'Social Proof',
+  socialproof: 'Social Proof',
+  challenge: 'Challenge',
+  'negative hook': 'Negative Hook',
+  'negative-hook': 'Negative Hook',
+  negativehook: 'Negative Hook',
+  'specificity hook': 'Specificity Hook',
+  'specificity-hook': 'Specificity Hook',
+  specificityhook: 'Specificity Hook',
+  specificity: 'Specificity Hook',
+}
+
 const INVALID_DISPLAY_STRINGS = new Set(['[object Object]', '[object Array]'])
 
 function isUsableDisplayString(value: string): boolean {
   const trimmed = value.trim()
   return trimmed.length > 0 && !INVALID_DISPLAY_STRINGS.has(trimmed)
+}
+
+function asString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function clampRetentionScore(value: unknown, fallback = 82): number {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return fallback
+  return Math.min(99, Math.max(70, Math.round(n)))
+}
+
+export function normalizeFramework(value: unknown): string {
+  const raw = asString(value)
+  if (!raw) return ''
+
+  const canonical = FRAMEWORK_ALIASES[raw.toLowerCase().replace(/\s+/g, ' ')]
+  if (canonical) return canonical
+
+  return raw
+}
+
+export function legacyPremiumHook(text: string): PremiumHook {
+  return {
+    text,
+    framework: '',
+    trigger: '',
+    retentionScore: 0,
+    whyItWorks: '',
+  }
+}
+
+export function isLegacyPremiumHook(hook: PremiumHook): boolean {
+  return hook.retentionScore === 0 && !hook.framework && !hook.trigger
+}
+
+export function normalizePremiumHook(item: unknown, index = 0): PremiumHook | null {
+  if (typeof item === 'string') {
+    const trimmed = item.trim()
+    return isUsableDisplayString(trimmed) ? legacyPremiumHook(trimmed) : null
+  }
+
+  if (typeof item === 'number' || typeof item === 'boolean') {
+    const text = String(item).trim()
+    return isUsableDisplayString(text) ? legacyPremiumHook(text) : null
+  }
+
+  if (!item || typeof item !== 'object') return null
+
+  const record = item as Record<string, unknown>
+  const text = coerceHookText(record)
+  if (!text) return null
+
+  const framework = normalizeFramework(record.framework ?? record.style)
+  const trigger = asString(record.trigger ?? record.psychologicalTrigger)
+  const whyItWorks = asString(record.whyItWorks ?? record.why_it_works ?? record.explanation)
+  const fallbackScore = 88 - index * 2
+  const hasMetadata = Boolean(
+    framework || trigger || whyItWorks || record.retentionScore != null || record.score != null,
+  )
+
+  return {
+    text,
+    framework,
+    trigger,
+    retentionScore: hasMetadata
+      ? clampRetentionScore(record.retentionScore ?? record.score, fallbackScore)
+      : 0,
+    whyItWorks,
+  }
 }
 
 /** Coerce a single hook item (string or OpenAI object shape) to display text. */
@@ -84,7 +180,7 @@ function unwrapRecord(value: unknown): Record<string, unknown> | null {
     record.data &&
     typeof record.data === 'object' &&
     !Array.isArray(record.data) &&
-  !('hooks' in record)
+    !('hooks' in record)
   ) {
     return record.data as Record<string, unknown>
   }
@@ -92,8 +188,8 @@ function unwrapRecord(value: unknown): Record<string, unknown> | null {
   return record
 }
 
-/** Normalize hooks from API, DB JSON, or nested OpenAI shapes → string[]. */
-export function normalizeHooksList(value: unknown): string[] {
+/** Normalize hooks from API, DB JSON, or nested OpenAI shapes → PremiumHook[]. */
+export function normalizeHooksList(value: unknown): PremiumHook[] {
   if (value == null) return []
 
   const record = unwrapRecord(value)
@@ -123,21 +219,21 @@ export function normalizeHooksList(value: unknown): string[] {
       source = JSON.parse(trimmed) as unknown
       return normalizeHooksList(source)
     } catch {
-      return isUsableDisplayString(trimmed) ? [trimmed] : []
+      return isUsableDisplayString(trimmed) ? [legacyPremiumHook(trimmed)] : []
     }
   }
 
   if (Array.isArray(source)) {
     const seen = new Set<string>()
-    const hooks: string[] = []
+    const hooks: PremiumHook[] = []
 
-    for (const item of source) {
-      const text = coerceHookText(item)
-      if (text && !seen.has(text)) {
-        seen.add(text)
-        hooks.push(text)
+    source.forEach((item, index) => {
+      const hook = normalizePremiumHook(item, index)
+      if (hook && !seen.has(hook.text)) {
+        seen.add(hook.text)
+        hooks.push(hook)
       }
-    }
+    })
 
     return hooks
   }
@@ -159,7 +255,7 @@ export function normalizeHooksList(value: unknown): string[] {
     }
   }
 
-  const single = coerceHookText(source)
+  const single = normalizePremiumHook(source)
   return single ? [single] : []
 }
 
@@ -171,7 +267,7 @@ export function normalizeGeneratedHooksRow(row: GeneratedHooksRow): GeneratedHoo
 }
 
 export type ParsedHookGeneratorPayload = {
-  hooks: string[]
+  hooks: PremiumHook[]
   generation?: GeneratedHooksRow
 }
 
@@ -280,5 +376,13 @@ export function coerceErrorMessage(value: unknown): string {
 
 /** Safe text for hook cards — never returns [object Object]. */
 export function formatHookDisplayText(value: unknown): string {
+  if (value && typeof value === 'object' && 'text' in value) {
+    return coerceHookText(value) ?? ''
+  }
   return coerceHookText(value) ?? ''
+}
+
+/** Resolve hook text for save/copy/compare operations. */
+export function getHookText(value: PremiumHook | string | unknown): string {
+  return formatHookDisplayText(value)
 }

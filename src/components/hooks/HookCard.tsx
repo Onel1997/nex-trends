@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import {
   ArrowPathIcon,
@@ -10,16 +10,21 @@ import {
 } from '@/components/ui/icons'
 import {
   formatHookDate,
+  formatRetentionScore,
   getHookCharCountClass,
   getHookCharState,
   getPlatformLabel,
+  getRetentionScoreClass,
   getToneLabel,
+  hasPremiumMetadata,
   HOOK_CHAR_LIMIT,
 } from '@/lib/hook-display'
+import { formatHookDisplayText } from '@/lib/ai/parse-hooks-response'
 import { cn } from '@/lib'
+import type { PremiumHook } from '@/types/ai-generation'
 
 export type HookCardProps = {
-  hook: string
+  hook: string | PremiumHook
   index?: number
   tone?: string | null
   platform?: string | null
@@ -61,10 +66,26 @@ export const HookCard = memo(function HookCard({
   className,
   animationDelayMs = 0,
 }: HookCardProps) {
-  const charState = getHookCharState(hook.length)
+  const [whyExpanded, setWhyExpanded] = useState(false)
+
+  const hookText = formatHookDisplayText(hook)
+  const premium = typeof hook === 'object' && hook !== null ? hook : null
+  const isPremium = premium ? hasPremiumMetadata(premium) : false
+
+  const charState = getHookCharState(hookText.length)
   const charClass = getHookCharCountClass(charState)
   const toneLabel = getToneLabel(tone)
   const platformLabel = getPlatformLabel(platform)
+  const scoreLabel = premium ? formatRetentionScore(premium.retentionScore) : ''
+
+  const toggleWhy = useCallback(() => {
+    setWhyExpanded((prev) => !prev)
+  }, [])
+
+  const whyId = useMemo(
+    () => `hook-why-${index ?? 'x'}-${hookText.slice(0, 12).replace(/\s+/g, '-')}`,
+    [index, hookText],
+  )
 
   return (
     <article
@@ -102,16 +123,37 @@ export const HookCard = memo(function HookCard({
 
         <div className="hook-card__content min-w-0 flex-1">
           <p className="hook-card__text break-words text-[15px] font-medium leading-[1.6] tracking-tight text-zinc-50 sm:text-base sm:leading-relaxed">
-            {hook}
+            {hookText}
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {isPremium && scoreLabel && premium && (
+              <span
+                className={cn(
+                  'hook-badge hook-badge--score',
+                  getRetentionScoreClass(premium.retentionScore),
+                )}
+                title="Retention Score"
+              >
+                {scoreLabel}
+              </span>
+            )}
+            {isPremium && premium?.framework && (
+              <span className="hook-badge hook-badge--framework" title="Framework">
+                {premium.framework}
+              </span>
+            )}
+            {isPremium && premium?.trigger && (
+              <span className="hook-badge hook-badge--trigger" title="Psychologischer Trigger">
+                {premium.trigger}
+              </span>
+            )}
             {toneLabel && <span className="hook-badge hook-badge--tone">{toneLabel}</span>}
             {platformLabel && (
               <span className="hook-badge hook-badge--platform">{platformLabel}</span>
             )}
             <span className={cn('hook-badge hook-badge--chars', charClass)}>
-              {hook.length}/{HOOK_CHAR_LIMIT}
+              {hookText.length}/{HOOK_CHAR_LIMIT}
             </span>
             {savedAt && variant === 'saved' && (
               <span className="text-[10px] font-medium text-zinc-500">
@@ -119,6 +161,42 @@ export const HookCard = memo(function HookCard({
               </span>
             )}
           </div>
+
+          {isPremium && premium?.whyItWorks && variant === 'result' && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={toggleWhy}
+                className="flex min-h-9 items-center gap-1.5 text-xs font-semibold text-violet-300/90 transition-smooth hover:text-violet-200"
+                aria-expanded={whyExpanded}
+                aria-controls={whyId}
+              >
+                <span
+                  className={cn(
+                    'inline-block text-[10px] transition-transform duration-200',
+                    whyExpanded && 'rotate-90',
+                  )}
+                  aria-hidden
+                >
+                  ▶
+                </span>
+                Why It Works
+              </button>
+              <div
+                id={whyId}
+                className={cn(
+                  'grid transition-all duration-200 ease-out',
+                  whyExpanded ? 'mt-2 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+                )}
+              >
+                <div className="overflow-hidden">
+                  <p className="rounded-lg border border-violet-500/15 bg-violet-500/5 px-3 py-2.5 text-xs leading-relaxed text-zinc-300">
+                    {premium.whyItWorks}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="hook-card__actions flex w-full shrink-0 items-stretch gap-2 sm:w-auto sm:flex-col sm:gap-1.5">

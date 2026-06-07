@@ -24,7 +24,7 @@ import {
   type HookPlatform,
   type HookTone,
 } from '@/types/ai-generation'
-import { formatHookDisplayText } from '@/lib/ai/parse-hooks-response'
+import { formatHookDisplayText, getHookText } from '@/lib/ai/parse-hooks-response'
 import { cn } from '@/lib'
 
 const PREVIEW_COUNT = 3
@@ -43,7 +43,7 @@ export function HookGeneratorPanel() {
   const [savingHook, setSavingHook] = useState<string | null>(null)
 
   const canGenerate = topic.trim().length >= 2
-  const displayHooks = hooks.map((h) => formatHookDisplayText(h)).filter(Boolean)
+  const displayHooks = hooks.filter((h) => formatHookDisplayText(h).length > 0)
   const previewHooks = displayHooks.slice(0, PREVIEW_COUNT)
   const hasMore = displayHooks.length > PREVIEW_COUNT
 
@@ -179,17 +179,17 @@ export function HookGeneratorPanel() {
               variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
             >
               {previewHooks.map((hook, index) => (
-                <motion.li key={`${index}-${hook.slice(0, 24)}`} variants={fadeUp} transition={transition}>
+                <motion.li key={`${index}-${getHookText(hook).slice(0, 24)}`} variants={fadeUp} transition={transition}>
                   <HookCard
                     hook={hook}
                     index={index}
                     tone={tone}
                     platform={platform}
-                    saved={isSaved(hook)}
-                    saving={savingHook === hook}
-                    copied={copiedHook === hook}
-                    onCopy={() => copyHook(hook)}
-                    onToggleSave={() => void handleToggleSave(hook)}
+                    saved={isSaved(getHookText(hook))}
+                    saving={savingHook === getHookText(hook)}
+                    copied={copiedHook === getHookText(hook)}
+                    onCopy={() => copyHook(getHookText(hook))}
+                    onToggleSave={() => void handleToggleSave(getHookText(hook))}
                     showIndex
                     variant="result"
                     className="dashboard-ws-hook-card !p-3.5"

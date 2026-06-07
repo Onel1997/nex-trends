@@ -70,11 +70,39 @@ async function callHookGenerator(body) {
   return { status: res.status, payload }
 }
 
+const REQUIRED_FRAMEWORKS = [
+  'Contrarian',
+  'Result First',
+  'Myth Bust',
+  'Identity Callout',
+  'Comparison',
+  'Authority',
+  'Social Proof',
+  'Challenge',
+  'Negative Hook',
+  'Specificity Hook',
+]
+
 function assert(condition, message) {
   if (!condition) {
     console.error(`❌ ${message}`)
     process.exit(1)
   }
+}
+
+function assertFrameworkCoverage(hooks) {
+  assert(hooks.length === 10, `expected 10 hooks, got ${hooks.length}`)
+  const frameworks = hooks.map((h) => h.framework)
+  for (const framework of REQUIRED_FRAMEWORKS) {
+    assert(
+      frameworks.includes(framework),
+      `missing framework: ${framework}`,
+    )
+  }
+  assert(
+    new Set(frameworks).size === 10,
+    `duplicate frameworks detected: ${frameworks.join(', ')}`,
+  )
 }
 
 console.log('hook-generator test →', url)
@@ -116,9 +144,20 @@ if (token) {
     assert(Array.isArray(gen.payload?.hooks), 'response.hooks must be an array')
     assert(gen.payload.hooks.length > 0, 'response.hooks must not be empty')
     assert(
-      gen.payload.hooks.every((h) => typeof h === 'string' && h.trim().length > 0),
-      'each hook must be a non-empty string',
+      gen.payload.hooks.every(
+        (h) =>
+          typeof h === 'object' &&
+          h !== null &&
+          typeof h.text === 'string' &&
+          h.text.trim().length > 0 &&
+          typeof h.framework === 'string' &&
+          typeof h.trigger === 'string' &&
+          typeof h.retentionScore === 'number' &&
+          typeof h.whyItWorks === 'string',
+      ),
+      'each hook must be a PremiumHook object with text, framework, trigger, retentionScore, whyItWorks',
     )
+    assertFrameworkCoverage(gen.payload.hooks)
     assert(gen.payload?.generation?.id, 'response.generation.id required')
     assert(
       Array.isArray(gen.payload?.generation?.generated_hooks_json),

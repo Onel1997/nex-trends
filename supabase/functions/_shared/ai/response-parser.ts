@@ -1,5 +1,24 @@
 /** Parse structured JSON responses from AI models. */
 
+import {
+  type PremiumHook,
+  parsePremiumHooksField,
+} from "./premium-hook.ts";
+
+export type { PremiumHook } from "./premium-hook.ts";
+export {
+  HOOK_FRAMEWORKS,
+  analyzeFrameworkCoverage,
+  assertFullFrameworkCoverage,
+  assembleFrameworkHooks,
+  getMissingFrameworks,
+  isKnownFramework,
+  isLegacyPremiumHook,
+  legacyPremiumHook,
+  mergeHookSets,
+  normalizePremiumHook,
+} from "./premium-hook.ts";
+
 const HOOK_OBJECT_KEYS = ["hook", "text", "content", "headline", "title", "value"];
 
 function coerceHookString(item: unknown): string | null {
@@ -34,6 +53,7 @@ function coerceHookString(item: unknown): string | null {
   return null;
 }
 
+/** @deprecated Legacy string-only parser — kept for backward compatibility. */
 export function parseStringArrayField(
   parsed: unknown,
   field: string,
@@ -67,6 +87,7 @@ export function parseStringArrayField(
   return items.slice(0, maxItems);
 }
 
+/** @deprecated Legacy string-only parser — kept for backward compatibility. */
 export function parseHooksResponse(content: string, expected = 10): string[] {
   let parsed: unknown;
 
@@ -77,4 +98,19 @@ export function parseHooksResponse(content: string, expected = 10): string[] {
   }
 
   return parseStringArrayField(parsed, "hooks", expected);
+}
+
+export function parsePremiumHooksResponse(
+  content: string,
+  expected = 10,
+): PremiumHook[] {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new Error("AI-Antwort konnte nicht als JSON gelesen werden.");
+  }
+
+  return parsePremiumHooksField(parsed, "hooks", expected);
 }

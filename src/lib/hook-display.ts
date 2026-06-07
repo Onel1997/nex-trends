@@ -1,4 +1,6 @@
 import { HOOK_PLATFORM_OPTIONS, HOOK_TONE_OPTIONS } from '@/types/ai-generation'
+import type { HookSortMode, PremiumHook } from '@/types/ai-generation'
+import { isLegacyPremiumHook } from '@/lib/ai/parse-hooks-response'
 
 export const HOOK_CHAR_LIMIT = 120
 export const HOOK_CHAR_OPTIMAL = 80
@@ -20,6 +22,49 @@ export function getHookCharCountClass(state: HookCharState): string {
     case 'over':
       return 'text-red-400/85'
   }
+}
+
+export function getRetentionScoreClass(score: number): string {
+  if (score >= 90) return 'hook-badge--score-high'
+  if (score >= 80) return 'hook-badge--score-mid'
+  if (score >= 70) return 'hook-badge--score-low'
+  return 'hook-badge--score-legacy'
+}
+
+export function formatRetentionScore(score: number): string {
+  if (score <= 0) return ''
+  return `${score}`
+}
+
+export function sortHooks(hooks: PremiumHook[], mode: HookSortMode): PremiumHook[] {
+  const copy = [...hooks]
+
+  switch (mode) {
+    case 'retention':
+      return copy.sort((a, b) => {
+        const scoreDiff = b.retentionScore - a.retentionScore
+        if (scoreDiff !== 0) return scoreDiff
+        return a.text.localeCompare(b.text, 'de')
+      })
+    case 'framework':
+      return copy.sort((a, b) => {
+        const frameworkDiff = (a.framework || 'zzz').localeCompare(b.framework || 'zzz', 'de')
+        if (frameworkDiff !== 0) return frameworkDiff
+        return b.retentionScore - a.retentionScore
+      })
+    case 'trigger':
+      return copy.sort((a, b) => {
+        const triggerDiff = (a.trigger || 'zzz').localeCompare(b.trigger || 'zzz', 'de')
+        if (triggerDiff !== 0) return triggerDiff
+        return b.retentionScore - a.retentionScore
+      })
+    default:
+      return copy
+  }
+}
+
+export function hasPremiumMetadata(hook: PremiumHook): boolean {
+  return !isLegacyPremiumHook(hook)
 }
 
 export function formatHookDate(

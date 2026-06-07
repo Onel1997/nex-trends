@@ -11,6 +11,7 @@ import type {
   GeneratedHooksRow,
   HookGenerationRequest,
   HookGenerationResult,
+  PremiumHook,
 } from '@/types/ai-generation'
 
 type HookGeneratorResponse = HookGenerationResult & { error?: string; retryAfterMs?: number }
@@ -134,7 +135,7 @@ export async function fetchHookGenerationHistory(
 
 function buildEphemeralGenerationRow(
   request: HookGenerationRequest,
-  hooks: string[],
+  hooks: PremiumHook[],
 ): GeneratedHooksRow {
   return {
     id: `ephemeral-${Date.now()}`,

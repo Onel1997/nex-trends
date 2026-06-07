@@ -14,6 +14,31 @@ export type HookPlatform =
   | 'Meta Ads'
   | 'Universal'
 
+export const HOOK_FRAMEWORKS = [
+  'Contrarian',
+  'Result First',
+  'Myth Bust',
+  'Identity Callout',
+  'Comparison',
+  'Authority',
+  'Social Proof',
+  'Challenge',
+  'Negative Hook',
+  'Specificity Hook',
+] as const
+
+export type HookFramework = (typeof HOOK_FRAMEWORKS)[number]
+
+export type PremiumHook = {
+  text: string
+  framework: string
+  trigger: string
+  retentionScore: number
+  whyItWorks: string
+}
+
+export type HookSortMode = 'retention' | 'framework' | 'trigger'
+
 export type HookGenerationRequest = {
   topic: string
   tone: HookTone
@@ -28,12 +53,12 @@ export type GeneratedHooksRow = {
   topic: string
   tone: string
   platform: string
-  generated_hooks_json: string[]
+  generated_hooks_json: PremiumHook[]
   created_at: string
 }
 
 export type HookGenerationResult = {
-  hooks: string[]
+  hooks: PremiumHook[]
   generation: GeneratedHooksRow
 }
 

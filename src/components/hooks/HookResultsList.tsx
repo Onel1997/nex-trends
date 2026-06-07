@@ -1,14 +1,22 @@
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
 import { HookCard } from '@/components/hooks/HookCard'
 import { Button } from '@/components/ui/Button'
 import {
   coerceErrorMessage,
-  formatHookDisplayText,
+  getHookText,
 } from '@/lib/ai/parse-hooks-response'
+import { sortHooks } from '@/lib/hook-display'
 import { cn } from '@/lib'
+import type { HookSortMode, PremiumHook } from '@/types/ai-generation'
+
+const SORT_OPTIONS: { value: HookSortMode; label: string }[] = [
+  { value: 'retention', label: 'Highest Retention' },
+  { value: 'framework', label: 'Framework' },
+  { value: 'trigger', label: 'Trigger' },
+]
 
 type HookResultItemProps = {
-  hook: string
+  hook: PremiumHook
   index: number
   tone?: string | null
   platform?: string | null
@@ -34,10 +42,12 @@ const HookResultItem = memo(function HookResultItem({
   onCopy,
   onToggleSave,
 }: HookResultItemProps) {
-  const handleCopy = useCallback(() => onCopy(hook), [hook, onCopy])
+  const hookText = getHookText(hook)
+
+  const handleCopy = useCallback(() => onCopy(hookText), [hookText, onCopy])
   const handleToggleSave = useCallback(
-    () => onToggleSave?.(hook),
-    [hook, onToggleSave],
+    () => onToggleSave?.(hookText),
+    [hookText, onToggleSave],
   )
 
   return (
@@ -59,7 +69,7 @@ const HookResultItem = memo(function HookResultItem({
 })
 
 type HookResultsListProps = {
-  hooks: string[]
+  hooks: PremiumHook[]
   onCopy: (text: string) => void
   onToggleSave?: (text: string) => void
   savedHooks?: Set<string>
@@ -70,6 +80,7 @@ type HookResultsListProps = {
   copiedHook?: string | null
   dimmed?: boolean
   className?: string
+  showSort?: boolean
 }
 
 export const HookResultsList = memo(function HookResultsList({
@@ -84,45 +95,75 @@ export const HookResultsList = memo(function HookResultsList({
   copiedHook,
   dimmed = false,
   className,
+  showSort = true,
 }: HookResultsListProps) {
+  const [sortMode, setSortMode] = useState<HookSortMode>('retention')
+
+  const sortedHooks = useMemo(
+    () => sortHooks(hooks, sortMode),
+    [hooks, sortMode],
+  )
+
   if (hooks.length === 0) return null
 
-  const displayHooks = hooks
-    .map((hook) => formatHookDisplayText(hook))
-    .filter((hook) => hook.length > 0)
-
-  if (displayHooks.length === 0) return null
-
   return (
-    <ol
-      className={cn(
-        'hook-results-feed w-full min-w-0 max-w-full',
-        dimmed && 'pointer-events-none opacity-30 transition-opacity duration-500',
-        className,
+    <div className={cn('w-full min-w-0 max-w-full', className)}>
+      {showSort && hooks.length > 1 && (
+        <div className="hook-results-sort mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+            Sortieren
+          </span>
+          {SORT_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setSortMode(value)}
+              className={cn(
+                'rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-smooth touch-manipulation',
+                sortMode === value
+                  ? 'border-violet-500/35 bg-violet-500/12 text-violet-200'
+                  : 'border-zinc-800/80 bg-zinc-950/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300',
+              )}
+              aria-pressed={sortMode === value}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       )}
-    >
-      {displayHooks.map((hook, index) => (
-        <li
-          key={`${index}-${hook.slice(0, 32)}`}
-          className="hook-results-feed__item hook-stagger-item min-w-0 max-w-full"
-          style={{ animationDelay: `${index * 50}ms` }}
-        >
-          <HookResultItem
-            hook={hook}
-            index={index}
-            tone={tone}
-            platform={platform}
-            isSaved={savedHooks?.has(hook) ?? false}
-            saving={isSaving === hook}
-            copied={copiedHook === hook}
-            copyDisabled={copiedHook != null && copiedHook !== hook}
-            justSaved={justSavedHook === hook}
-            onCopy={onCopy}
-            onToggleSave={onToggleSave}
-          />
-        </li>
-      ))}
-    </ol>
+
+      <ol
+        className={cn(
+          'hook-results-feed w-full min-w-0 max-w-full',
+          dimmed && 'pointer-events-none opacity-30 transition-opacity duration-500',
+        )}
+      >
+        {sortedHooks.map((hook, index) => {
+          const hookText = getHookText(hook)
+          return (
+            <li
+              key={`${sortMode}-${index}-${hookText.slice(0, 32)}`}
+              className="hook-results-feed__item hook-stagger-item min-w-0 max-w-full"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <HookResultItem
+                hook={hook}
+                index={index}
+                tone={tone}
+                platform={platform}
+                isSaved={savedHooks?.has(hookText) ?? false}
+                saving={isSaving === hookText}
+                copied={copiedHook === hookText}
+                copyDisabled={copiedHook != null && copiedHook !== hookText}
+                justSaved={justSavedHook === hookText}
+                onCopy={onCopy}
+                onToggleSave={onToggleSave}
+              />
+            </li>
+          )
+        })}
+      </ol>
+    </div>
   )
 })
 
@@ -186,7 +227,7 @@ export function HookGenerationProgress({
       ? 'Credits werden geprüft …'
       : isRegenerating
         ? 'Neue Hooks werden generiert …'
-        : '10 virale Hooks werden erstellt …'
+        : '10 Premium-Hooks werden erstellt …'
 
   return (
     <div
