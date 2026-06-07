@@ -58,7 +58,7 @@ export function AdminSidebar({ active, onSelect, className }: AdminSidebarProps)
       <div className="space-y-2 border-t border-zinc-800/50 p-4">
         <button
           type="button"
-          onClick={navigateFromAdminToDashboard}
+          onClick={() => navigateFromAdminToDashboard()}
           className="w-full rounded-xl border border-zinc-800/60 bg-zinc-900/50 px-3 py-2.5 text-sm text-zinc-300 transition-smooth hover:border-zinc-700 hover:text-white"
         >
           ← Zur App
