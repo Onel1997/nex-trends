@@ -35,6 +35,7 @@ import { useHookClipboard } from '@/hooks/useHookClipboard'
 import { useHookGenerationFlow } from '@/hooks/useHookGenerationFlow'
 import { useHookHistory } from '@/hooks/useHookHistory'
 import { useHookInsights } from '@/hooks/useHookInsights'
+import { useHookQuickActions } from '@/hooks/useHookQuickActions'
 import { useSavedHooks } from '@/hooks/useSavedHooks'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
 import { recordHookGeneration } from '@/lib/hook-analytics'
@@ -85,6 +86,7 @@ export function HookGeneratorTool() {
     removeSavedHook,
     refresh: refreshSaved,
     isSaved,
+    saveHookIfNotSaved,
   } = useSavedHooks()
 
   const { copiedHook, copyHook, recentCopies } = useHookClipboard()
@@ -112,6 +114,23 @@ export function HookGeneratorTool() {
 
   const displayTone = generation?.tone ?? tone
   const displayPlatform = generation?.platform ?? platform
+
+  const {
+    copyAll,
+    saveAll,
+    exportTxt,
+    loadingAction: quickActionLoading,
+    isBusy: quickActionsBusy,
+  } = useHookQuickActions({
+    hooks,
+    topic: generation?.topic ?? topic,
+    tone: displayTone,
+    platform: displayPlatform,
+    generationId: generation?.id,
+    isSaved,
+    saveHookIfNotSaved,
+    refreshSaved,
+  })
 
   const generationIndex = useMemo(() => {
     if (!generation?.id) return undefined
@@ -533,6 +552,13 @@ export function HookGeneratorTool() {
                     copiedHook={copiedHook}
                     dimmed={isRegenerating}
                     highlightFirstHook={highlightFirstHook}
+                    quickActions={{
+                      onCopyAll: () => void copyAll(),
+                      onSaveAll: () => void saveAll(),
+                      onExportTxt: () => void exportTxt(),
+                      loadingAction: quickActionLoading,
+                      disabled: isRegenerating || quickActionsBusy,
+                    }}
                   />
                   {isRegenerating && (
                     <div className="mt-4">

@@ -12,6 +12,7 @@ import { ArrowPathIcon, BoltIcon, SparklesIcon } from '@/components/ui/icons'
 import { useToast } from '@/context/ToastContext'
 import { useHookClipboard } from '@/hooks/useHookClipboard'
 import { useHookGenerationFlow } from '@/hooks/useHookGenerationFlow'
+import { useHookQuickActions } from '@/hooks/useHookQuickActions'
 import { useSavedHooks } from '@/hooks/useSavedHooks'
 import { recordHookGeneration } from '@/lib/hook-analytics'
 import { cn } from '@/lib'
@@ -34,7 +35,8 @@ const JUST_SAVED_MS = 900
 export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps) {
   const { showToast } = useToast()
   const { hooks, generation, status, error, isGenerating, generate } = useHookGenerationFlow()
-  const { savedHooks, toggleSave, refresh: refreshSaved, isSaved } = useSavedHooks()
+  const { savedHooks, toggleSave, refresh: refreshSaved, isSaved, saveHookIfNotSaved } =
+    useSavedHooks()
   const { copiedHook, copyHook } = useHookClipboard()
 
   const [tone, setTone] = useState<HookTone>('aggressive')
@@ -51,6 +53,23 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
   const isRegenerating = isGenerating && hooks.length > 0
   const displayTone = generation?.tone ?? tone
   const displayPlatform = generation?.platform ?? platform
+
+  const {
+    copyAll,
+    saveAll,
+    exportTxt,
+    loadingAction: quickActionLoading,
+    isBusy: quickActionsBusy,
+  } = useHookQuickActions({
+    hooks,
+    topic: trend.niche?.trim() || trend.title,
+    tone: displayTone,
+    platform: displayPlatform,
+    generationId: generation?.id,
+    isSaved,
+    saveHookIfNotSaved,
+    refreshSaved,
+  })
 
   const runGenerate = useCallback(
     async (skipCreditCharge: boolean) => {
@@ -187,6 +206,13 @@ export function TrendHookGenerator({ trend, className }: TrendHookGeneratorProps
             justSavedHook={justSavedHook}
             copiedHook={copiedHook}
             dimmed={isRegenerating}
+            quickActions={{
+              onCopyAll: () => void copyAll(),
+              onSaveAll: () => void saveAll(),
+              onExportTxt: () => void exportTxt(),
+              loadingAction: quickActionLoading,
+              disabled: isRegenerating || quickActionsBusy,
+            }}
           />
           {isRegenerating && (
             <div className="mt-3">

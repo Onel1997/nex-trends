@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { recordHookSave, recordHookUnsave } from '@/lib/hook-analytics'
 import type { SavedHookRow } from '@/types/ai-generation'
@@ -15,6 +15,11 @@ export function useSavedHooks() {
   const [savedHooks, setSavedHooks] = useState<SavedHookRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const savedHooksRef = useRef(savedHooks)
+
+  useEffect(() => {
+    savedHooksRef.current = savedHooks
+  }, [savedHooks])
 
   const refresh = useCallback(async () => {
     setIsLoading(true)
@@ -128,6 +133,50 @@ export function useSavedHooks() {
     [savedHooks, persistSave, deleteSavedHook],
   )
 
+  const saveHookIfNotSaved = useCallback(
+    async (params: {
+      hookText: string
+      generationId?: string
+      topic?: string
+      tone?: string
+      platform?: string
+    }): Promise<'saved' | 'already_saved'> => {
+      const hookText = normalizeHookText(params.hookText)
+      const existing = savedHooksRef.current.find(
+        (h) => normalizeHookText(h.hook_text) === hookText,
+      )
+      if (existing) return 'already_saved'
+
+      const optimistic: SavedHookRow = {
+        id: tempId(),
+        generation_id: params.generationId ?? null,
+        hook_text: hookText,
+        topic: params.topic ?? null,
+        tone: params.tone ?? null,
+        platform: params.platform ?? null,
+        saved_at: new Date().toISOString(),
+      }
+
+      setSavedHooks((prev) => [optimistic, ...prev])
+      savedHooksRef.current = [optimistic, ...savedHooksRef.current]
+
+      try {
+        const row = await persistSave({ ...params, hookText })
+        setSavedHooks((prev) => prev.map((h) => (h.id === optimistic.id ? row : h)))
+        savedHooksRef.current = savedHooksRef.current.map((h) =>
+          h.id === optimistic.id ? row : h,
+        )
+        recordHookSave(params.tone, params.platform)
+        return 'saved'
+      } catch (err) {
+        setSavedHooks((prev) => prev.filter((h) => h.id !== optimistic.id))
+        savedHooksRef.current = savedHooksRef.current.filter((h) => h.id !== optimistic.id)
+        throw err
+      }
+    },
+    [persistSave],
+  )
+
   const removeSavedHook = useCallback(
     async (id: string) => {
       const existing = savedHooks.find((h) => h.id === id)
@@ -159,6 +208,7 @@ export function useSavedHooks() {
     error,
     refresh,
     toggleSave,
+    saveHookIfNotSaved,
     removeSavedHook,
     isSaved,
   }

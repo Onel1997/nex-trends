@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { HookCard } from '@/components/hooks/HookCard'
+import { HookQuickActions } from '@/components/hooks/HookQuickActions'
 import { Button } from '@/components/ui/Button'
 import {
   coerceErrorMessage,
@@ -7,6 +8,7 @@ import {
 } from '@/lib/ai/parse-hooks-response'
 import { sortHooks } from '@/lib/hook-display'
 import { cn } from '@/lib'
+import type { HookQuickActionId } from '@/hooks/useHookQuickActions'
 import type { HookSortMode, PremiumHook } from '@/types/ai-generation'
 
 export const HOOK_RESULT_FIRST_ID = 'hook-result-first'
@@ -94,6 +96,13 @@ type HookResultsListProps = {
   className?: string
   showSort?: boolean
   highlightFirstHook?: boolean
+  quickActions?: {
+    onCopyAll: () => void
+    onSaveAll: () => void
+    onExportTxt: () => void
+    loadingAction?: HookQuickActionId | null
+    disabled?: boolean
+  }
 }
 
 export const HookResultsList = memo(function HookResultsList({
@@ -111,6 +120,7 @@ export const HookResultsList = memo(function HookResultsList({
   className,
   showSort = true,
   highlightFirstHook = false,
+  quickActions,
 }: HookResultsListProps) {
   const [sortMode, setSortMode] = useState<HookSortMode>('retention')
   const [expandedWhyKey, setExpandedWhyKey] = useState<string | null>(null)
@@ -140,6 +150,16 @@ export const HookResultsList = memo(function HookResultsList({
 
   return (
     <div className={cn('w-full min-w-0 max-w-full', className)}>
+      {quickActions && (
+        <HookQuickActions
+          onCopyAll={quickActions.onCopyAll}
+          onSaveAll={quickActions.onSaveAll}
+          onExportTxt={quickActions.onExportTxt}
+          loadingAction={quickActions.loadingAction}
+          disabled={quickActions.disabled || dimmed}
+        />
+      )}
+
       {showSort && hooks.length > 1 && (
         <div className="hook-results-sort mb-4 flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
