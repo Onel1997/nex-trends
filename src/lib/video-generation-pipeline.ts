@@ -47,7 +47,7 @@ export type VideoGenerationResult = {
 const MAX_RETRIES = 2
 const PROGRESS_TICK_MS = 900
 const POLL_INTERVAL_MS = 2500
-const POLL_MAX_ATTEMPTS = 48
+const POLL_MAX_ATTEMPTS = 180
 
 function log(scope: string, detail?: unknown) {
   if (isVideoDebugEnabled()) {

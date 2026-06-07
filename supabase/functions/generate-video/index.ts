@@ -761,6 +761,18 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (envCheck.providerMode === "synthetic") {
+      return jsonError(req,
+        "env",
+        "REPLICATE_API_TOKEN oder LUMA_API_KEY fehlt. Setze mindestens eines der Secrets im Supabase Dashboard unter Edge Functions → Secrets.",
+        503,
+        {
+          missing: ["REPLICATE_API_TOKEN", "LUMA_API_KEY"],
+          providerMode: envCheck.providerMode,
+        },
+      );
+    }
+
     const idempotencyKey = typeof body.idempotency_key === "string"
       ? body.idempotency_key
       : generationId
