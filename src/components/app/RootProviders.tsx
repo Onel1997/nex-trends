@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, type ReactNode } from 'react'
+import { AuthReturnHandler } from '@/components/auth/AuthReturnHandler'
 import { logSupabaseEnvStatus } from '@/lib/env'
 import { ToastProvider } from '@/context/ToastContext'
 
@@ -10,5 +11,10 @@ export function RootProviders({ children }: { children: ReactNode }) {
     logSupabaseEnvStatus('root')
   }, [])
 
-  return <ToastProvider>{children}</ToastProvider>
+  return (
+    <ToastProvider>
+      <AuthReturnHandler />
+      {children}
+    </ToastProvider>
+  )
 }

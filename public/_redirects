@@ -1,2 +1,1 @@
-/auth/callback    /index.html   200
-/*                /index.html   200
+# Next.js handles all routes — do not add SPA fallbacks here.

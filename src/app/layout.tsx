@@ -38,10 +38,14 @@ export const metadata: Metadata = {
   },
 }
 
+/** Runs before React — forwards OAuth return params to /auth/callback when middleware is skipped. */
+const OAUTH_BOOTSTRAP_SCRIPT = `(function(){try{var u=new URL(location.href);var p=(u.pathname||'/').replace(/\\/+$/,'')||'/';if(p==='/auth/callback')return;if(!u.searchParams.has('code')&&!u.searchParams.get('error')&&!u.searchParams.get('error_description'))return;var t=new URL('/auth/callback',u.origin);['code','state','error','error_description'].forEach(function(k){var v=u.searchParams.get(k);if(v)t.searchParams.set(k,v);});location.replace(t.toString());}catch(e){}})();`
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: OAUTH_BOOTSTRAP_SCRIPT }} />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="theme-color" content="#09090b" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

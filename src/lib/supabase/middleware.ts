@@ -41,6 +41,15 @@ function shouldForwardOAuthToCallback(
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
+  const pathname = request.nextUrl.pathname
+
+  // Always forward OAuth params — does not require Supabase env on the Edge.
+  if (shouldForwardOAuthToCallback(pathname, request.nextUrl.searchParams)) {
+    const callbackUrl = request.nextUrl.clone()
+    callbackUrl.pathname = AUTH_CALLBACK_PATH
+    return NextResponse.redirect(callbackUrl)
+  }
+
   const supabaseUrl = readEnv('NEXT_PUBLIC_SUPABASE_URL', 'VITE_SUPABASE_URL')
   const supabaseAnonKey = readEnv(
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
@@ -50,8 +59,6 @@ export async function updateSession(request: NextRequest) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return supabaseResponse
   }
-
-  const pathname = request.nextUrl.pathname
 
   try {
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -73,12 +80,6 @@ export async function updateSession(request: NextRequest) {
       },
     })
 
-    if (shouldForwardOAuthToCallback(pathname, request.nextUrl.searchParams)) {
-      const callbackUrl = request.nextUrl.clone()
-      callbackUrl.pathname = AUTH_CALLBACK_PATH
-      return NextResponse.redirect(callbackUrl)
-    }
-
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -90,6 +91,13 @@ export async function updateSession(request: NextRequest) {
       loginUrl.searchParams.delete('code')
       loginUrl.searchParams.delete('state')
       return NextResponse.redirect(loginUrl)
+    }
+
+    if (user && (pathname.replace(/\/$/, '') || '/') === '/') {
+      const dashboardUrl = request.nextUrl.clone()
+      dashboardUrl.pathname = DASHBOARD_PREFIX
+      dashboardUrl.search = ''
+      return NextResponse.redirect(dashboardUrl)
     }
 
     if (user && pathname.replace(/\/$/, '') === AUTH_LOGIN_PATH) {
