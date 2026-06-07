@@ -292,10 +292,14 @@ export function TrendDetailModalV2({
                 fullWidth
                 className="min-h-11 sm:min-h-10 sm:flex-1"
                 onClick={handleVideoPlaceholder}
+                aria-label="Video erstellen — bald verfügbar"
               >
                 <ClapperboardIcon className="size-4" aria-hidden />
                 Video erstellen
-                <span className="rounded-md bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
+                <span
+                  className="rounded-md bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500"
+                  aria-hidden
+                >
                   Bald
                 </span>
               </Button>

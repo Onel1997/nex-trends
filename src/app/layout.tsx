@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import { RootProviders } from '@/components/app/RootProviders'
 import './globals.css'
 
@@ -45,7 +46,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="de" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: OAUTH_BOOTSTRAP_SCRIPT }} />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="theme-color" content="#09090b" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -56,6 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning>
+        <Script id="oauth-bootstrap" strategy="beforeInteractive">
+          {OAUTH_BOOTSTRAP_SCRIPT}
+        </Script>
         <RootProviders>{children}</RootProviders>
       </body>
     </html>
