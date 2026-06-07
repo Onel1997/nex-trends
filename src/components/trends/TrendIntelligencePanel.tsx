@@ -18,7 +18,7 @@ import { useSavedTrends } from '@/hooks/useSavedTrends'
 import { useTrendHistory } from '@/hooks/useTrendHistory'
 import { useTrendSessionRestore } from '@/hooks/useTrendSessionRestore'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
+import { formatUiCreditBalance, getUiCreditSnapshot } from '@/lib/credits/display'
 import { getBrowserSearch } from '@/lib/runtime'
 import { createSearchNonce, getDemoUserSeed } from '@/lib/demo-trend-seed'
 import { markDemoSeen, shouldShowDemoOnLoad } from '@/lib/trend-intelligence'
@@ -63,7 +63,7 @@ export function TrendIntelligencePanel() {
   const sessionReadyRef = useRef(false)
   const scrollRestoredRef = useRef(false)
 
-  const { remaining, limit: creditLimit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
+  const creditSnapshot = getUiCreditSnapshot(userPlan, usage, isAdmin)
 
   const loadDemo = useCallback(async () => {
     setIsLoadingDemo(true)
@@ -247,7 +247,7 @@ export function TrendIntelligencePanel() {
   return (
     <div className="ti-panel space-y-4 min-w-0 max-w-full overflow-x-hidden sm:space-y-5">
       {!hasProAccess && isCreditsLow && (
-        <LowCreditBanner remaining={remaining} className="mb-1" />
+        <LowCreditBanner remaining={usage.remaining ?? 0} className="mb-1" />
       )}
 
       <TrendsTabNav active={view} onChange={setView} savedCount={savedCount} />
@@ -288,8 +288,8 @@ export function TrendIntelligencePanel() {
           )}
 
           <p className="text-center text-xs text-zinc-500 sm:text-left">
-            <span className="font-medium text-violet-300/90">{formatCreditAmount(remaining)}</span> von{' '}
-            {formatCreditAmount(creditLimit)} Credits · 1 Credit pro Analyse
+            <span className="font-medium text-violet-300/90">{formatUiCreditBalance(creditSnapshot)}</span>
+            {!creditSnapshot.unlimited && ' · 1 Credit pro Analyse'}
           </p>
 
           {error && (
@@ -316,8 +316,8 @@ export function TrendIntelligencePanel() {
               hasSearched={hasSearched || trends.length > 0}
               searchQuery={searchQuery.trim()}
               platformFilter={platformFilterLabel}
-              creditsRemaining={remaining}
-              creditsLimit={creditLimit}
+              creditsRemaining={creditSnapshot.unlimited ? null : creditSnapshot.remaining}
+              creditsLimit={creditSnapshot.unlimited ? undefined : creditSnapshot.limit}
               onTryDemo={() => void loadDemo()}
               isSaved={isSaved}
               onToggleSave={toggleSave}

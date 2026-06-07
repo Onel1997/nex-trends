@@ -1,13 +1,18 @@
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { CreditIcon } from '@/components/ui/icons'
 import { useDashboardData } from '@/hooks/useDashboardData'
-import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
+import {
+  formatUiCreditAllowance,
+  formatUiCreditBalance,
+  getUiCreditSnapshot,
+} from '@/lib/credits/display'
 
 export function CreditsOverview() {
   const { usage, isAdmin, userPlan } = useDashboardData()
-  const { planLabel, remaining, limit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
-  const used = Math.max(0, limit - remaining)
-  const pctUsed = limit > 0 ? Math.round((used / limit) * 100) : 0
+  const creditSnapshot = getUiCreditSnapshot(userPlan, usage, isAdmin)
+  const { planLabel, remaining, limit, unlimited } = creditSnapshot
+  const used = unlimited ? 0 : Math.max(0, limit - remaining)
+  const pctUsed = unlimited ? 0 : limit > 0 ? Math.round((used / limit) * 100) : 0
 
   return (
     <div className="dashboard-os-account-card dashboard-os-account-panel dashboard-os-credits-card relative overflow-hidden">
@@ -25,24 +30,26 @@ export function CreditsOverview() {
               AI Credits
             </p>
             <p className="mt-0.5 text-lg font-semibold tracking-tight text-white">
-              {formatCreditAmount(remaining)} / {formatCreditAmount(limit)}
+              {formatUiCreditBalance(creditSnapshot)}
             </p>
             <p className="mt-0.5 text-[10px] font-medium text-violet-300/90">
-              {planLabel} · {formatCreditAmount(limit)} Credits / Monat
+              {planLabel} · {formatUiCreditAllowance(userPlan, isAdmin)}
             </p>
           </div>
           <span className="shrink-0 rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold tabular-nums text-violet-200">
             {pctUsed}%
           </span>
         </div>
-        <div className="mt-3">
-          <ProgressBar
-            value={remaining}
-            max={limit}
-            mode="remaining"
-            label={`${formatCreditAmount(remaining)} von ${formatCreditAmount(limit)} Credits`}
-          />
-        </div>
+        {!unlimited && (
+          <div className="mt-3">
+            <ProgressBar
+              value={remaining}
+              max={limit}
+              mode="remaining"
+              label={formatUiCreditBalance(creditSnapshot)}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

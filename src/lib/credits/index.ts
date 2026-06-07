@@ -19,6 +19,7 @@ export {
   formatUiCreditBalance,
   getUiCreditSnapshot,
   UI_PLAN_MONTHLY_CREDITS,
+  UNLIMITED_CREDITS_LABEL,
   uiMonthlyAllowance,
   uiPlanDisplayName,
 } from './display'

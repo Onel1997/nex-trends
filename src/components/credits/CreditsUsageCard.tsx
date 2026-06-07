@@ -1,7 +1,11 @@
 import { CreditIcon } from '@/components/ui/icons'
 import { PlanBadge } from '@/components/billing/PlanBadge'
 import { useCredits } from '@/hooks/useCredits'
-import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
+import {
+  formatUiCreditAllowance,
+  formatUiCreditBalance,
+  getUiCreditSnapshot,
+} from '@/lib/credits/display'
 import { formatUsageResetDate } from '@/lib/usage'
 import { cn } from '@/lib'
 
@@ -18,15 +22,17 @@ export function CreditsUsageCard({ className, onUpgrade }: CreditsUsageCardProps
     percentUsed,
     openUpgradeModal,
     isAdmin,
+    unlimited,
     remaining,
     limit,
   } = useCredits()
 
-  const { planLabel, remaining: displayRemaining, limit: displayLimit } = getUiCreditSnapshot(
+  const creditSnapshot = getUiCreditSnapshot(
     userPlan,
-    { remaining, limit, used },
+    { remaining, limit, used, unlimited },
     isAdmin,
   )
+  const { planLabel, remaining: displayRemaining, unlimited: isUnlimited } = creditSnapshot
 
   const handleUpgrade = onUpgrade ?? openUpgradeModal
 
@@ -55,7 +61,7 @@ export function CreditsUsageCard({ className, onUpgrade }: CreditsUsageCardProps
             )}
           </div>
           <p className="mt-1.5 text-[11px] text-zinc-500">
-            {planLabel} · {formatCreditAmount(displayLimit)} Credits / Monat
+            {planLabel} · {formatUiCreditAllowance(userPlan, isAdmin)}
           </p>
         </div>
 
@@ -63,9 +69,8 @@ export function CreditsUsageCard({ className, onUpgrade }: CreditsUsageCardProps
           <CreditIcon className="size-5 text-violet-400" aria-hidden />
           <div>
             <p className="text-[9px] uppercase tracking-wider text-zinc-500">Available</p>
-            <p className="text-lg font-bold tabular-nums text-white">
-              {formatCreditAmount(displayRemaining)}
-              <span className="text-sm font-medium text-violet-400/80"> / {formatCreditAmount(displayLimit)}</span>
+            <p className="text-lg font-bold text-white">
+              {formatUiCreditBalance(creditSnapshot)}
             </p>
           </div>
         </div>
@@ -79,7 +84,7 @@ export function CreditsUsageCard({ className, onUpgrade }: CreditsUsageCardProps
         {!usageResetDate && <> · {percentUsed}% of monthly allowance</>}
       </p>
 
-      {displayRemaining <= 0 && (
+      {!isUnlimited && displayRemaining <= 0 && (
         <button
           type="button"
           onClick={() => void handleUpgrade()}

@@ -1,7 +1,7 @@
 import { CreditsProgressBar } from '@/components/ui/CreditsProgressBar'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useCredits } from '@/hooks/useCredits'
-import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
+import { formatCreditAmount, formatUiCreditBalance, getUiCreditSnapshot } from '@/lib/credits/display'
 import { formatUsageResetDate } from '@/lib/usage'
 import { cn } from '@/lib'
 
@@ -17,14 +17,25 @@ export function MonthlyUsageProgressBar({
   compact = false,
   mode = 'remaining',
 }: MonthlyUsageProgressBarProps) {
-  const { userPlan, isAdmin, remaining, limit, used, usageResetDate, percentUsed, depleted, low } =
-    useCredits()
-
-  const { remaining: displayRemaining, limit: displayLimit } = getUiCreditSnapshot(
+  const {
     userPlan,
-    { remaining, limit, used },
+    isAdmin,
+    unlimited,
+    remaining,
+    limit,
+    used,
+    usageResetDate,
+    percentUsed,
+    depleted,
+    low,
+  } = useCredits()
+
+  const creditSnapshot = getUiCreditSnapshot(
+    userPlan,
+    { remaining, limit, used, unlimited },
     isAdmin,
   )
+  const { remaining: displayRemaining, limit: displayLimit } = creditSnapshot
 
   const safeLimit = displayLimit
   const safeRemaining = displayRemaining
@@ -36,26 +47,28 @@ export function MonthlyUsageProgressBar({
         <span className="font-semibold uppercase tracking-wider text-zinc-500">
           Monthly usage
         </span>
-        <span className="tabular-nums text-zinc-400">
-          {mode === 'remaining'
-            ? `${formatCreditAmount(safeRemaining)} left`
-            : `${formatCreditAmount(usedAmount)} / ${formatCreditAmount(safeLimit)}`}
+        <span className="text-zinc-400">
+          {unlimited
+            ? formatUiCreditBalance(creditSnapshot)
+            : mode === 'remaining'
+              ? `${formatCreditAmount(safeRemaining)} left`
+              : `${formatCreditAmount(usedAmount)} / ${formatCreditAmount(safeLimit)}`}
         </span>
       </div>
 
-      {mode === 'remaining' ? (
+      {!unlimited && mode === 'remaining' ? (
         <CreditsProgressBar
           remaining={safeRemaining}
           limit={safeLimit}
           size={compact ? 'sm' : 'md'}
         />
-      ) : (
+      ) : !unlimited ? (
         <ProgressBar
           value={usedAmount}
           max={safeLimit}
           label={`${percentUsed}% used`}
         />
-      )}
+      ) : null}
 
       {!compact && (
         <p
@@ -66,7 +79,9 @@ export function MonthlyUsageProgressBar({
             !depleted && !low && 'text-zinc-500',
           )}
         >
-          {depleted
+          {unlimited
+            ? 'Unlimited Credits — keine Limits.'
+            : depleted
             ? 'Monthly credits depleted — upgrade your plan to continue.'
             : low
               ? 'Running low on credits — heavier tools cost more.'

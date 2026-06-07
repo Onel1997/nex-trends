@@ -19,10 +19,13 @@ export type UiCreditUsage = {
   unlimited?: boolean
 }
 
+export const UNLIMITED_CREDITS_LABEL = 'Unlimited Credits'
+
 export type UiCreditSnapshot = {
   planLabel: string
   remaining: number
   limit: number
+  unlimited: boolean
 }
 
 export function formatCreditAmount(value: number): string {
@@ -45,6 +48,17 @@ export function getUiCreditSnapshot(
   usage: UiCreditUsage,
   isAdmin = false,
 ): UiCreditSnapshot {
+  const unlimited = isAdmin || usage.unlimited === true
+
+  if (unlimited) {
+    return {
+      planLabel: uiPlanDisplayName(userPlan, isAdmin),
+      remaining: 0,
+      limit: 0,
+      unlimited: true,
+    }
+  }
+
   const limit = usage.limit ?? uiMonthlyAllowance(userPlan, isAdmin)
   const remaining =
     usage.remaining ??
@@ -54,13 +68,16 @@ export function getUiCreditSnapshot(
     planLabel: uiPlanDisplayName(userPlan, isAdmin),
     remaining,
     limit: limit || MAX_FREE_CREDITS,
+    unlimited: false,
   }
 }
 
 export function formatUiCreditBalance(snapshot: UiCreditSnapshot): string {
+  if (snapshot.unlimited) return UNLIMITED_CREDITS_LABEL
   return `${formatCreditAmount(snapshot.remaining)} / ${formatCreditAmount(snapshot.limit)}`
 }
 
 export function formatUiCreditAllowance(plan: PlanId, isAdmin = false): string {
+  if (isAdmin) return UNLIMITED_CREDITS_LABEL
   return `${formatCreditAmount(uiMonthlyAllowance(plan, isAdmin))} Credits / Monat`
 }

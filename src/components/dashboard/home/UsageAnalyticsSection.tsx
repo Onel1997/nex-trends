@@ -4,12 +4,13 @@ import { TrendingUpIcon } from '@/components/ui/icons'
 import { UsageBarChart } from '@/components/dashboard/home/UsageBarChart'
 import { RecentActivityList } from '@/components/dashboard/home/RecentActivityList'
 import { useDashboardData } from '@/hooks/useDashboardData'
-import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
+import { formatUiCreditBalance, getUiCreditSnapshot } from '@/lib/credits/display'
 
 export function UsageAnalyticsSection() {
   const { usage, weeklyUsage, resetDateLabel, userPlan, isAdmin } = useDashboardData()
 
-  const { remaining, limit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
+  const creditSnapshot = getUiCreditSnapshot(userPlan, usage, isAdmin)
+  const { remaining, limit, unlimited } = creditSnapshot
   const used = usage.used
 
   return (
@@ -29,7 +30,7 @@ export function UsageAnalyticsSection() {
         <div className="grid gap-3 sm:grid-cols-3">
           <MetricCard
             label="Verfügbar"
-            value={`${formatCreditAmount(remaining)} Credits`}
+            value={formatUiCreditBalance(creditSnapshot)}
           />
           <MetricCard
             label="Genutzt"
@@ -38,20 +39,22 @@ export function UsageAnalyticsSection() {
           <MetricCard label="Reset" value={resetDateLabel || '—'} />
         </div>
 
-        <div>
-          <div className="mb-2.5 flex items-center justify-between text-xs">
-            <span className="font-medium text-zinc-500">Credits</span>
-            <span className="font-semibold tabular-nums text-zinc-300">
-              {formatCreditAmount(remaining)} / {formatCreditAmount(limit)} übrig
-            </span>
+        {!unlimited && (
+          <div>
+            <div className="mb-2.5 flex items-center justify-between text-xs">
+              <span className="font-medium text-zinc-500">Credits</span>
+              <span className="font-semibold tabular-nums text-zinc-300">
+                {formatUiCreditBalance(creditSnapshot)} übrig
+              </span>
+            </div>
+            <ProgressBar
+              value={remaining}
+              max={limit}
+              mode="remaining"
+              label={`${formatUiCreditBalance(creditSnapshot)} verbleibend`}
+            />
           </div>
-          <ProgressBar
-            value={remaining}
-            max={limit}
-            mode="remaining"
-            label={`${formatCreditAmount(remaining)} von ${formatCreditAmount(limit)} Credits verbleibend`}
-          />
-        </div>
+        )}
 
         <UsageBarChart data={weeklyUsage} />
         <RecentActivityList />

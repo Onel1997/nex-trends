@@ -1,6 +1,6 @@
 import { CreditIcon } from '@/components/ui/icons'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
+import { formatUiCreditBalance, getUiCreditSnapshot } from '@/lib/credits/display'
 import { cn } from '@/lib'
 
 type ToolCreditsBadgeProps = {
@@ -15,7 +15,7 @@ export function ToolCreditsBadge({
   className,
 }: ToolCreditsBadgeProps) {
   const { userPlan, isAdmin, usage } = useUsageLimit()
-  const { planLabel, remaining, limit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
+  const creditSnapshot = getUiCreditSnapshot(userPlan, usage, isAdmin)
 
   return (
     <div
@@ -26,11 +26,10 @@ export function ToolCreditsBadge({
     >
       <CreditIcon className="size-3.5 text-violet-400/80" aria-hidden />
       <span className="text-zinc-400">
-        {planLabel} ·{' '}
-        <span className="font-semibold tabular-nums text-violet-300">
-          {formatCreditAmount(remaining)}
+        {creditSnapshot.planLabel} ·{' '}
+        <span className="font-semibold text-violet-300">
+          {formatUiCreditBalance(creditSnapshot)}
         </span>
-        <span className="text-zinc-600"> / {formatCreditAmount(limit)}</span> Credits
         {creditCost != null && (
           <>
             {' '}

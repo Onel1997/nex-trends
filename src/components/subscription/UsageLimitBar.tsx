@@ -1,7 +1,7 @@
 import { CreditIcon } from '@/components/ui/icons'
 import { CreditsProgressBar } from '@/components/ui/CreditsProgressBar'
 import { useUsageLimit } from '@/hooks/useUsageLimit'
-import { formatCreditAmount, getUiCreditSnapshot } from '@/lib/credits/display'
+import { formatUiCreditBalance, getUiCreditSnapshot } from '@/lib/credits/display'
 import { formatUsageResetDate } from '@/lib/usage'
 import { cn } from '@/lib'
 
@@ -12,10 +12,11 @@ type UsageLimitBarProps = {
 
 export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps) {
   const { usage, isAdmin, userPlan } = useUsageLimit()
-  const { planLabel, remaining, limit } = getUiCreditSnapshot(userPlan, usage, isAdmin)
+  const creditSnapshot = getUiCreditSnapshot(userPlan, usage, isAdmin)
+  const { planLabel, remaining, limit, unlimited } = creditSnapshot
 
-  const isDepleted = remaining <= 0
-  const isLow = remaining > 0 && remaining <= 3
+  const isDepleted = !unlimited && remaining <= 0
+  const isLow = !unlimited && remaining > 0 && remaining <= 3
 
   return (
     <div
@@ -43,22 +44,25 @@ export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps
             Credits
           </span>
         </div>
-        <span className="text-sm font-bold tabular-nums text-white">
-          {formatCreditAmount(remaining)}
-          <span className="font-medium text-violet-400/80"> / {formatCreditAmount(limit)}</span>
+        <span className="text-sm font-bold text-white">
+          {formatUiCreditBalance(creditSnapshot)}
         </span>
       </div>
 
-      <CreditsProgressBar
-        className="relative mt-3"
-        remaining={remaining}
-        limit={limit}
-        size={compact ? 'sm' : 'md'}
-      />
+      {!unlimited && (
+        <CreditsProgressBar
+          className="relative mt-3"
+          remaining={remaining}
+          limit={limit}
+          size={compact ? 'sm' : 'md'}
+        />
+      )}
 
       {!compact && (
         <p className="relative mt-2.5 text-[11px] leading-relaxed text-zinc-400">
-          {isDepleted ? (
+          {unlimited ? (
+            <span className="text-violet-300/90">Unlimited Credits — keine Limits.</span>
+          ) : isDepleted ? (
             <span className="text-fuchsia-300/90">
               Keine Credits mehr — upgrade für mehr monatliches Kontingent.
             </span>
@@ -69,7 +73,7 @@ export function UsageLimitBar({ className, compact = false }: UsageLimitBarProps
           ) : (
             <>
               <span className="text-zinc-300">{planLabel}</span> ·{' '}
-              {formatCreditAmount(remaining)} von {formatCreditAmount(limit)} Credits verfügbar
+              {formatUiCreditBalance(creditSnapshot)} verfügbar
               {usage.usageResetDate && (
                 <> · Nächste Aufladung {formatUsageResetDate(usage.usageResetDate)}</>
               )}
