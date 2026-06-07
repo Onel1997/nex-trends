@@ -2,10 +2,20 @@ import { cn } from '@/lib'
 
 type LowCreditBannerProps = {
   remaining: number
+  creditCost?: number
   className?: string
 }
 
-export function LowCreditBanner({ remaining, className }: LowCreditBannerProps) {
+export function LowCreditBanner({
+  remaining,
+  creditCost,
+  className,
+}: LowCreditBannerProps) {
+  const costHint =
+    creditCost != null
+      ? `diese Aktion kostet ${creditCost} Credit${creditCost === 1 ? '' : 's'}`
+      : 'jede Generierung verbraucht Credits'
+
   return (
     <div
       role="status"
@@ -18,7 +28,7 @@ export function LowCreditBanner({ remaining, className }: LowCreditBannerProps) 
       <span className="font-semibold text-amber-100">
         {remaining} Credit{remaining === 1 ? '' : 's'}
       </span>{' '}
-      übrig — jede Aktion kostet 1 Credit.
+      übrig — {costHint}.
     </div>
   )
 }

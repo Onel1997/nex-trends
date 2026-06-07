@@ -13,11 +13,24 @@ import {
   buildHookUserMessage,
   buildMissingFrameworksSystemPrompt,
   buildMissingFrameworksUserMessage,
+  normalizeHookTone,
   type HookGenerationInput,
 } from "./prompts/hooks.ts";
 import { parsePremiumHooksResponse } from "./response-parser.ts";
 
 const DEFAULT_MAX_REGEN_ATTEMPTS = 3;
+
+const TONE_TEMPERATURE: Record<string, number> = {
+  aggressive: 0.82,
+  luxury: 0.62,
+  storytelling: 0.78,
+  faceless: 0.68,
+  ugc: 0.8,
+};
+
+function temperatureForTone(tone: string): number {
+  return TONE_TEMPERATURE[normalizeHookTone(tone)] ?? 0.75;
+}
 
 export type GeneratePremiumHooksResult = {
   hooks: PremiumHook[];
@@ -34,7 +47,7 @@ export async function generatePremiumHooks(
   const initialRaw = await callOpenAI({
     systemPrompt: buildHookSystemPrompt(input.tone, input.platform),
     userMessage: buildHookUserMessage(input),
-    temperature: 0.75,
+    temperature: temperatureForTone(input.tone),
     jsonMode: true,
   });
 
@@ -66,7 +79,7 @@ export async function generatePremiumHooks(
         input.platform,
       ),
       userMessage: buildMissingFrameworksUserMessage(input, missing, hooks),
-      temperature: 0.65,
+      temperature: Math.max(0.55, temperatureForTone(input.tone) - 0.08),
       jsonMode: true,
     });
 

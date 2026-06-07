@@ -15,6 +15,45 @@ export const HOOK_TONE_LABELS: Record<string, string> = {
   ugc: "UGC — authentisch, raw, relatable, wie von einem echten User",
 };
 
+const TONE_ALIASES: Record<string, keyof typeof HOOK_TONE_LABELS> = {
+  educational: "faceless",
+  casual: "ugc",
+  professional: "luxury",
+};
+
+const TONE_STYLE_DIRECTIVES: Record<keyof typeof HOOK_TONE_LABELS, string> = {
+  aggressive: `AGGRESSIVE STIL (verbindlich für JEDEN Hook):
+- Konfrontativ, ungeduldig, harte Wahrheiten — kein Weichspülen
+- Direkte Du-Ansprache mit Druck: „Stopp.", „Du machst das falsch.", „Niemand sagt dir…"
+- Kurze Schläge, Imperative, Pattern Interrupts — Scroll-Stop in Wort 1–3
+- Erlaubt: Provokation, Tabubruch, Challenge, leichte Aggression (nicht beleidigend)
+- Verboten: weiche Formulierungen, Premium-Vokabular, erzählerische Ich-Perspektive, Tutorial-Ton`,
+  luxury: `LUXURY STIL (verbindlich für JEDEN Hook):
+- Quiet Luxury: zurückhaltend, selbstbewusst, aspirational — nie laut oder billig
+- Premium-Wortwahl: exklusiv, kuratiert, Investment, Standard, Signatur, Ritual
+- Ruhiger Rhythmus, elegante Satzmelodie — kein Slang, keine Ausrufezeichen-Flut
+- FOMO durch Exklusivität und Status, nicht durch Schreien
+- Verboten: „Stopp.", Straßen-Slang, Tutorial-Schritte, rohe UGC-Sprache, Konfrontation`,
+  storytelling: `STORYTELLING STIL (verbindlich für JEDEN Hook):
+- Persönliche Ich-Erzählung: „Ich hab…", „Vor 6 Monaten…", „Als ich…" — emotionale Reise
+- Cliffhanger und offene Loops: Leser MUSS wissen, wie es weitergeht
+- Verletzlichkeit, Wendepunkt, Before/After implizit in Satz 1
+- Narrativer Fluss statt Listen oder Fakten-Bullets
+- Verboten: reine How-to-Anleitungen, Premium-Posing, aggressive Konfrontation, Casual-Filler`,
+  faceless: `FACELESS / EDUCATIONAL STIL (verbindlich für JEDEN Hook):
+- Voice-over & Text-on-Screen: klar, lehrreich, strukturiert — kein Gesicht nötig
+- „So geht's:", „Der Fehler Nr. 1:", „3 Sekunden Regel:" — Wissens- und How-to-Energie
+- Sachlich-didaktisch aber spannend: Fakten + Neugier-Lücke, nicht langweilig
+- Ideal für Erklär-Reels: konkret, spezifisch, merkfähig
+- Verboten: persönliche Geschichten in Ich-Form, Luxury-Posing, roher UGC-Slang, aggressive Angriffe`,
+  ugc: `UGC / CASUAL STIL (verbindlich für JEDEN Hook):
+- Wie ein echter User: locker, ungefiltert, relatable — „Okay also…", „Niemand redet darüber…"
+- Imperfekt und menschlich: Alltagssprache, leichte Unsicherheit, „ich schwöre", „real talk"
+- Authentisch-raw, nicht poliert — fühlt sich an wie Front-Cam, nicht wie Agentur
+- Community-Vibe: Insider-Wissen teilen, nicht belehren
+- Verboten: Corporate-Sprache, Premium-Vokabular, formelle Lehr-Tonlage, aggressive Konfrontation`,
+};
+
 export const HOOK_PLATFORMS = [
   "TikTok",
   "Instagram Reels",
@@ -57,7 +96,26 @@ const PREMIUM_HOOK_JSON_SHAPE =
 
 export function normalizeHookTone(tone: string): string {
   const key = tone.trim().toLowerCase();
-  return HOOK_TONE_LABELS[key] ? key : "aggressive";
+  if (HOOK_TONE_LABELS[key]) return key;
+  if (TONE_ALIASES[key]) return TONE_ALIASES[key];
+  return "aggressive";
+}
+
+function resolveToneKey(tone: string): keyof typeof HOOK_TONE_LABELS {
+  return normalizeHookTone(tone) as keyof typeof HOOK_TONE_LABELS;
+}
+
+function buildTonePromptBlock(tone: string): string {
+  const toneKey = resolveToneKey(tone);
+  const toneDesc = HOOK_TONE_LABELS[toneKey];
+  const directives = TONE_STYLE_DIRECTIVES[toneKey];
+
+  return `TON — ${toneDesc}
+
+${directives}
+
+KRITISCH: Jeder der 10 Hooks MUSS eindeutig im obigen Ton geschrieben sein.
+Wenn man nur den Ton wechselt, müssen sich Wortwahl, Rhythmus und Energie komplett unterscheiden — nicht nur einzelne Adjektive.`;
 }
 
 export function normalizeHookPlatform(platform: string): string {
@@ -68,16 +126,16 @@ export function normalizeHookPlatform(platform: string): string {
 }
 
 export function buildHookSystemPrompt(tone: string, platform: string): string {
-  const toneKey = normalizeHookTone(tone);
   const platformKey = normalizeHookPlatform(platform);
-  const toneDesc = HOOK_TONE_LABELS[toneKey] ?? HOOK_TONE_LABELS.aggressive;
   const platformHint = PLATFORM_HINTS[platformKey] ?? PLATFORM_HINTS.Universal;
+  const toneBlock = buildTonePromptBlock(tone);
 
   return `Du bist ein Elite Viral Hook Copywriter für Creator im DACH-Market (TikTok, Instagram Reels, YouTube Shorts).
 
 Zielgruppe: Solo-Creator, UGC-Brands und Performance-Marketer — keine Corporate-Sprache.
 
-Ton: ${toneDesc}
+${toneBlock}
+
 Plattform: ${platformKey} — ${platformHint}
 
 KRITISCH — Framework-Regeln (verbindlich):
@@ -114,15 +172,15 @@ export function buildMissingFrameworksSystemPrompt(
   tone: string,
   platform: string,
 ): string {
-  const toneKey = normalizeHookTone(tone);
   const platformKey = normalizeHookPlatform(platform);
-  const toneDesc = HOOK_TONE_LABELS[toneKey] ?? HOOK_TONE_LABELS.aggressive;
   const platformHint = PLATFORM_HINTS[platformKey] ?? PLATFORM_HINTS.Universal;
+  const toneBlock = buildTonePromptBlock(tone);
   const missingList = missing.map((framework) => `- ${framework}`).join("\n");
 
   return `Du bist ein Elite Viral Hook Copywriter für Creator im DACH-Market.
 
-Ton: ${toneDesc}
+${toneBlock}
+
 Plattform: ${platformKey} — ${platformHint}
 
 AUFGABE: Generiere NUR die fehlenden Framework-Hooks — nichts anderes.
@@ -153,7 +211,11 @@ export function buildHookUserMessage(input: HookGenerationInput): string {
     lines.push(`Zusätzlicher Kontext: ${input.context.trim()}`);
   }
 
-  lines.push(`Ton: ${normalizeHookTone(input.tone)}`);
+  const toneKey = resolveToneKey(input.tone);
+  lines.push(`Gewählter Ton: ${toneKey} — ${HOOK_TONE_LABELS[toneKey]}`);
+  lines.push(
+    `Schreibe ALLE Hooks strikt in diesem Ton. Wortwahl und Energie müssen sich klar von anderen Tönen unterscheiden.`,
+  );
   lines.push(`Plattform: ${normalizeHookPlatform(input.platform)}`);
 
   return lines.join("\n");

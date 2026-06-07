@@ -46,7 +46,11 @@ export function AiToolLayout({
       </header>
 
       {!hasProAccess && isCreditsLow && (
-        <LowCreditBanner remaining={remaining} className="mb-5" />
+        <LowCreditBanner
+          remaining={remaining}
+          creditCost={creditCost}
+          className="mb-5"
+        />
       )}
 
       {children}

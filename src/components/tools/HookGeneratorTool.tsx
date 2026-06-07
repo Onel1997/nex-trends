@@ -84,18 +84,16 @@ export function HookGeneratorTool() {
   const { copiedHook, copyHook, recentCopies } = useHookClipboard()
   const { mostSavedTone, savedCount } = useHookInsights(savedHooks)
 
-  const sessionTrends = useMemo(() => loadTrendSession()?.trends ?? [], [])
-  const sessionNiche = useMemo(
-    () => loadTrendSession()?.searchQuery?.trim() ?? '',
-    [],
-  )
+  const sessionTrends = useMemo(() => {
+    const session = loadTrendSession()
+    if (!session || session.isDemo) return []
+    return session.trends
+  }, [])
 
-  const [topic, setTopic] = useState(sessionNiche)
+  const [topic, setTopic] = useState('')
   const [tone, setTone] = useState<HookTone>('aggressive')
   const [platform, setPlatform] = useState<HookPlatform>('TikTok')
-  const [selectedTrendId, setSelectedTrendId] = useState<string | null>(() =>
-    sessionTrends[0]?.id ?? null,
-  )
+  const [selectedTrendId, setSelectedTrendId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabId>('results')
   const [savingHook, setSavingHook] = useState<string | null>(null)
   const [justSavedHook, setJustSavedHook] = useState<string | null>(null)
@@ -120,12 +118,6 @@ export function HookGeneratorTool() {
     const idx = history.findIndex((h) => h.id === generation.id)
     return idx >= 0 ? history.length - idx : undefined
   }, [generation?.id, history])
-
-  useEffect(() => {
-    if (!selectedTrendId && sessionTrends[0]) {
-      setSelectedTrendId(sessionTrends[0].id)
-    }
-  }, [sessionTrends, selectedTrendId])
 
   useEffect(() => {
     const prefill = consumeHookRegeneratePrefill()
