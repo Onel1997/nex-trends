@@ -7,7 +7,7 @@ import { useToast } from '@/context/ToastContext'
 import { APP_NAME, type DashboardToolId } from '@/lib'
 import { cn } from '@/lib'
 import { getUserAvatarUrl, getUserDisplayName } from '@/lib/auth/profile'
-import { navigateToHome, navigateToTool } from '@/lib/navigation'
+import { navigateToTool } from '@/lib/navigation'
 import { getRouteConfig } from '@/lib/routes'
 import { SIDEBAR_LIBRARY_ROUTES, SIDEBAR_SECTIONS } from '@/lib/sidebar-navigation'
 import { navigateToAdmin } from '@/lib/admin-navigation'
@@ -149,10 +149,7 @@ export function Sidebar({ activeTool, onSelectTool, className }: SidebarProps) {
       <div className="shrink-0 px-4 pb-2 pt-5">
         <button
           type="button"
-          onClick={() => {
-            navigateToHome()
-            onSelectTool('dashboard')
-          }}
+          onClick={() => onSelectTool('dashboard')}
           className="group flex w-full items-center gap-3 rounded-xl p-1 text-left transition-smooth hover:bg-white/[0.02] active:scale-[0.99]"
           aria-label={`${APP_NAME} Home`}
         >

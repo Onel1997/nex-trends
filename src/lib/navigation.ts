@@ -1,5 +1,6 @@
 import { getBrowserHref, getBrowserPathname, getBrowserSearch, isBrowser } from './runtime'
 import {
+  DASHBOARD_BASE,
   getPathForTool,
   isValidToolId,
   pathToToolId,
@@ -30,6 +31,30 @@ function buildUrl(tool: DashboardRouteId): string {
   return `${url.pathname}${url.search}`
 }
 
+/** True when pathname is served by the dashboard Next.js app (`/dashboard/*`). */
+export function isDashboardAppPath(pathname?: string): boolean {
+  const normalized = (pathname ?? getBrowserPathname()).replace(/\/$/, '') || '/'
+  return normalized === DASHBOARD_BASE || normalized.startsWith(`${DASHBOARD_BASE}/`)
+}
+
+export function isDashboardShellMounted(): boolean {
+  if (!isBrowser()) return false
+  return document.querySelector('.dashboard-shell') != null
+}
+
+/** Use a full navigation when leaving marketing/auth shells or the dashboard SPA is not mounted. */
+export function shouldHardNavigateToTool(tool: DashboardRouteId): boolean {
+  if (!isBrowser()) return false
+
+  const current = getBrowserPathname().replace(/\/$/, '') || '/'
+  if (current === '/' || current === '/login') return true
+
+  const target = getPathForTool(tool)
+  if (target.startsWith(DASHBOARD_BASE) && !isDashboardShellMounted()) return true
+
+  return false
+}
+
 export function readToolFromUrl(): DashboardRouteId {
   if (!isBrowser()) return 'dashboard'
 
@@ -54,17 +79,30 @@ function notifyDashboardNavigate(tool: DashboardRouteId) {
 
 export function navigateToTool(
   tool: DashboardRouteId,
-  options?: { replace?: boolean },
+  options?: { replace?: boolean; hard?: boolean },
 ): void {
   if (!isBrowser()) return
 
   const href = buildUrl(tool)
+
+  if (options?.hard || shouldHardNavigateToTool(tool)) {
+    if (options?.replace) window.location.replace(href)
+    else window.location.assign(href)
+    notifyDashboardNavigate(tool)
+    return
+  }
+
   if (options?.replace) {
     window.history.replaceState({ tool }, '', href)
   } else {
     window.history.pushState({ tool }, '', href)
   }
   notifyDashboardNavigate(tool)
+}
+
+/** Navigate to dashboard home — prefers hard navigation from marketing pages. */
+export function navigateToDashboard(options?: { replace?: boolean }) {
+  navigateToTool('dashboard', options)
 }
 
 /** @deprecated Use navigateToTool */
@@ -91,7 +129,7 @@ export function readCheckoutParam(): 'success' | 'cancel' | null {
 export function navigateToHome() {
   if (!isBrowser()) return
 
-  navigateToTool('dashboard')
+  navigateToDashboard()
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 

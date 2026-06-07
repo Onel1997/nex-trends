@@ -26,6 +26,10 @@ type MobileBottomNavProps = {
 export function MobileBottomNav({ activeTool, onSelectTool }: MobileBottomNavProps) {
   const activeTab = getMobileBottomNavTabForTool(activeTool)
 
+  const handleTabPress = (toolId: DashboardToolId) => {
+    onSelectTool(toolId)
+  }
+
   return (
     <nav
       className="mobile-bottom-nav pointer-events-auto fixed inset-x-0 bottom-0 z-40 md:hidden"
@@ -39,7 +43,7 @@ export function MobileBottomNav({ activeTool, onSelectTool }: MobileBottomNavPro
             label={tab.label}
             icon={TAB_ICONS[tab.id]}
             active={activeTab === tab.id}
-            onSelect={() => onSelectTool(tab.toolId)}
+            onSelect={() => handleTabPress(tab.toolId)}
           />
         ))}
       </div>

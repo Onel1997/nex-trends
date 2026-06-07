@@ -229,7 +229,7 @@ export function getDashboardMarketingTools(): DashboardRouteConfig[] {
 
 export function pathToToolId(pathname: string): DashboardRouteId | null {
   const normalized = pathname.replace(/\/$/, '') || '/'
-  if (normalized === '/') return 'dashboard'
+  if (normalized === '/') return null
   const exact = ROUTE_BY_PATH.get(normalized)
   if (exact) return exact.id
   return null

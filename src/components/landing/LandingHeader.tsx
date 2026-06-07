@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { APP_NAME, cn } from '@/lib'
+import { getPostAuthRedirectPath, useSession } from '@/lib/auth'
 import { scrollToSection } from '@/lib/scroll'
 import { GoogleSignInButton } from '@/components/landing/GoogleSignInButton'
 import { CloseIcon, MenuIcon } from '@/components/ui/icons'
@@ -15,6 +16,7 @@ const NAV_LINKS = [
 ] as const
 
 export function LandingHeader() {
+  const session = useSession()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -23,6 +25,13 @@ export function LandingHeader() {
     document.body.style.removeProperty('overflow')
     document.documentElement.style.removeProperty('overflow')
     scrollToSection(id)
+  }
+
+  function goToDashboard() {
+    setMobileOpen(false)
+    document.body.style.removeProperty('overflow')
+    document.documentElement.style.removeProperty('overflow')
+    window.location.assign(getPostAuthRedirectPath())
   }
 
   useEffect(() => {
@@ -95,22 +104,34 @@ export function LandingHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setMobileOpen(false)
-              window.location.href = '/login'
-            }}
-            className="landing-btn-secondary hidden !min-h-9 !rounded-xl !px-3.5 !py-2 !text-[13px] lg:inline-flex"
-          >
-            Anmelden
-          </button>
-          <GoogleSignInButton
-            label="Starten"
-            size="md"
-            useToast
-            className="landing-btn-primary hidden lg:inline-flex !w-auto !min-h-9 !rounded-xl !px-4 !py-2 !text-[13px]"
-          />
+          {session?.user ? (
+            <button
+              type="button"
+              onClick={goToDashboard}
+              className="landing-btn-primary hidden !min-h-9 !rounded-xl !px-3.5 !py-2 !text-[13px] lg:inline-flex"
+            >
+              Dashboard
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false)
+                  window.location.href = '/login'
+                }}
+                className="landing-btn-secondary hidden !min-h-9 !rounded-xl !px-3.5 !py-2 !text-[13px] lg:inline-flex"
+              >
+                Anmelden
+              </button>
+              <GoogleSignInButton
+                label="Starten"
+                size="md"
+                useToast
+                className="landing-btn-primary hidden lg:inline-flex !w-auto !min-h-9 !rounded-xl !px-4 !py-2 !text-[13px]"
+              />
+            </>
+          )}
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -132,6 +153,17 @@ export function LandingHeader() {
           aria-label="Mobile Navigation"
         >
           <ul className="space-y-1">
+            {session?.user ? (
+              <li>
+                <button
+                  type="button"
+                  onClick={goToDashboard}
+                  className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-violet-200 transition-all duration-300 hover:bg-violet-500/10"
+                >
+                  Dashboard
+                </button>
+              </li>
+            ) : null}
             {NAV_LINKS.map(({ id, label }) => (
               <li key={id}>
                 <button
@@ -143,21 +175,25 @@ export function LandingHeader() {
                 </button>
               </li>
             ))}
-            <li>
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false)
-                  window.location.href = '/login'
-                }}
-                className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-300 transition-all duration-300 hover:bg-white/[0.05] hover:text-white"
-              >
-                Anmelden
-              </button>
-            </li>
-            <li className="pt-2">
-              <GoogleSignInButton size="md" useToast className="!w-full" />
-            </li>
+            {!session?.user ? (
+              <>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false)
+                      window.location.href = '/login'
+                    }}
+                    className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-300 transition-all duration-300 hover:bg-white/[0.05] hover:text-white"
+                  >
+                    Anmelden
+                  </button>
+                </li>
+                <li className="pt-2">
+                  <GoogleSignInButton size="md" useToast className="!w-full" />
+                </li>
+              </>
+            ) : null}
           </ul>
         </nav>
       ) : null}

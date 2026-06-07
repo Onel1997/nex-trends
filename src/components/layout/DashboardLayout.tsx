@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { CloseIcon, MenuIcon } from '@/components/ui/icons'
 import { APP_NAME, type DashboardToolId } from '@/lib'
 import { cn } from '@/lib'
-import { navigateToHome } from '@/lib/navigation'
 import { MobileBottomNav } from './mobile-bottom-nav'
 import { Sidebar } from './Sidebar'
 
@@ -25,7 +24,6 @@ export function DashboardLayout({
   }
 
   const handleNavigateHome = () => {
-    navigateToHome()
     onSelectTool('dashboard')
     setMobileOpen(false)
   }
