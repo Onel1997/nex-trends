@@ -1,4 +1,4 @@
-export type AdminSection = 'overview' | 'users' | 'trends' | 'controls'
+export type AdminSection = 'overview' | 'users' | 'trends' | 'controls' | 'code'
 
 export type AdminUser = {
   id: string

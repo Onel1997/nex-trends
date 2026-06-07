@@ -10,6 +10,7 @@ const NAV: { id: AdminSection; label: string }[] = [
   { id: 'users', label: 'Users' },
   { id: 'trends', label: 'Trends' },
   { id: 'controls', label: 'Controls' },
+  { id: 'code', label: 'AI Code Generator' },
 ]
 
 type AdminSidebarProps = {

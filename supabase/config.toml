@@ -490,3 +490,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/seo-title-generator/deno.json"
 entrypoint = "./functions/seo-title-generator/index.ts"
+
+[functions.code-generator]
+enabled = true
+verify_jwt = true
+import_map = "./functions/code-generator/deno.json"
+entrypoint = "./functions/code-generator/index.ts"

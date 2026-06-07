@@ -18,6 +18,7 @@ const GENERATORS = [
   { name: 'hook-generator', generateBody: { action: 'generate', topic: 'Test topic', tone: 'bold', platform: 'TikTok', skipCreditCharge: true } },
   { name: 'ad-copy-generator', generateBody: { action: 'generate', briefing: 'Test product launch', tone: 'aggressive', platform: 'Meta Ads' } },
   { name: 'seo-title-generator', generateBody: { action: 'generate', briefing: 'AI marketing trends', keyword: 'AI marketing', platform: 'Google Search', searchIntent: 'informational' } },
+  { name: 'code-generator', generateBody: { action: 'generate', projectDescription: 'Dark landing page hero for SaaS product', framework: 'React', outputType: 'Component' } },
 ]
 
 function loadEnv() {

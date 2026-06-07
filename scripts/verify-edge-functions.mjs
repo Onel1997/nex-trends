@@ -44,6 +44,7 @@ const AI_GENERATORS = [
   'hook-generator',
   'ad-copy-generator',
   'seo-title-generator',
+  'code-generator',
 ]
 
 const FUNCTIONS = [

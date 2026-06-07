@@ -3,3 +3,4 @@ export { AnalyticsOverviewPanel } from '@/components/admin/AnalyticsOverviewPane
 export { UserManagementPanel } from '@/components/admin/UserManagementPanel'
 export { TrendMonitoringPanel } from '@/components/admin/TrendMonitoringPanel'
 export { AdminControlsPanel } from '@/components/admin/AdminControlsPanel'
+export { AdminCodeGeneratorPanel } from '@/components/admin/AdminCodeGeneratorPanel'

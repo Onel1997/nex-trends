@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { AdminOfflineBanner } from '@/components/admin/AdminOfflineBanner'
 import { AnalyticsOverviewPanel } from '@/components/admin/AnalyticsOverviewPanel'
+import { AdminCodeGeneratorPanel } from '@/components/admin/AdminCodeGeneratorPanel'
 import { AdminControlsPanel } from '@/components/admin/AdminControlsPanel'
 import { TrendMonitoringPanel } from '@/components/admin/TrendMonitoringPanel'
 import { UserManagementPanel } from '@/components/admin/UserManagementPanel'
@@ -43,6 +44,9 @@ function AdminPageContent() {
       </AdminSectionPanel>
       <AdminSectionPanel active={section === 'controls'}>
         <AdminControlsPanel />
+      </AdminSectionPanel>
+      <AdminSectionPanel active={section === 'code'}>
+        <AdminCodeGeneratorPanel />
       </AdminSectionPanel>
     </AdminLayout>
   )

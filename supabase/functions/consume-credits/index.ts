@@ -24,6 +24,7 @@ const VALID_FEATURES = new Set<string>([
   "ai_video",
   "voiceover",
   "captions",
+  "ai_code",
 ]);
 
 function jsonResponse(

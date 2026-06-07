@@ -21,7 +21,8 @@ export type UsageActionId =
   | "landing_analysis"
   | "ai_video"
   | "voiceover"
-  | "captions";
+  | "captions"
+  | "ai_code";
 
 export const CREDIT_COSTS: Record<UsageActionId, number> = {
   trend_search: 1,
@@ -32,6 +33,7 @@ export const CREDIT_COSTS: Record<UsageActionId, number> = {
   ai_video: 20,
   voiceover: 10,
   captions: 5,
+  ai_code: 1,
 };
 
 export const PLAN_RANK: Record<PlanId, number> = {

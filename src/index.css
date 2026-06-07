@@ -8453,3 +8453,39 @@ html.nex-reduced-motion *::after {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Admin AI Code Generator syntax tokens */
+.code-token--keyword {
+  color: #c4b5fd;
+}
+
+.code-token--string {
+  color: #86efac;
+}
+
+.code-token--comment {
+  color: #71717a;
+  font-style: italic;
+}
+
+.code-token--tag {
+  color: #f0abfc;
+}
+
+.code-token--attr {
+  color: #93c5fd;
+}
+
+.code-block__scroll {
+  scrollbar-color: rgb(63 63 70) transparent;
+}
+
+.code-block__ln {
+  min-width: 2.75rem;
+  border-right: 1px solid rgb(39 39 42 / 0.8);
+  background: rgb(9 9 11 / 0.55);
+}
+
+.code-block__line:hover .code-block__content {
+  background: rgb(139 92 246 / 0.04);
+}
+

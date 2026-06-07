@@ -29,6 +29,7 @@ export type UsageActionId =
   | 'ai_video'
   | 'voiceover'
   | 'captions'
+  | 'ai_code'
 
 /** Per-feature credit cost — keep in sync with DB + edge _shared/plans.ts */
 export const CREDIT_COSTS: Record<UsageActionId, number> = {
@@ -40,6 +41,7 @@ export const CREDIT_COSTS: Record<UsageActionId, number> = {
   ai_video: 20,
   voiceover: 10,
   captions: 5,
+  ai_code: 1,
 }
 
 export const PLAN_RANK: Record<PlanId, number> = {
